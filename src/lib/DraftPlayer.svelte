@@ -6,7 +6,7 @@
             team_name: '',
             date_of_birth: 0,
             nationality: '',
-            image_path: ''
+            nation_image: ''
         }
     } = $props()
 
@@ -60,6 +60,9 @@
             <div class="photo-section">
                 {#if player.image_path}
                     <img src={player.image_path} alt={player.name} class="player-photo" />
+                {/if}
+                {#if player.nation_image}
+                    <img src={player.nation_image} alt={player.nationality} class="player-photo" />
                 {/if}
             </div>
             <div class="expanded-info">

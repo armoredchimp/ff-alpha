@@ -54,46 +54,51 @@
 		}
 	}
 
-	async function getNation(id){
-		
+	async function getNation(id) {
 		try {
-			const nationRes = await axios.get(`/core/countries/${id}`)
-			console.log(nationRes.data.data)
-			return nationRes.data.data
-		} catch(err){
-			console.error(err)
+			const nationRes = await axios.get(`/core/countries/${id}`);
+			return {
+				name: nationRes.data.data.name,
+				image_path: nationRes.data.data.image_path
+			}
+		} catch (err) {
+			console.error(`Error fetching nation for country_id ${id}:`, err);
+			return {
+				name: 'Unknown',
+				image_path: ''
+			}
 		}
+}
 
-	}
+	async function currentScotlandTeams() {
+    try {
+        const scotsRes = await axios.get('/api/teams/seasons/23690', {
+            params: {
+                include: 'players.player',
+            }
+        });
+        scots = scotsRes.data.data;
 
-	async function currentScotlandTeams(){
-		try {
-			const scotsRes = await axios.get('/api/teams/seasons/23690',{
-				params: {
-					include: 'players.player',
-				}
-			})
-			// testLeagues = leaguesRes.data
-			scots = scotsRes.data.data
-			// console.log(scots)
-
-			scots.forEach(team => {
-				if (team.players && team.players.length > 0) {
-					team.players.forEach(player => {
+        for (const team of scots) {
+            if (team.players && team.players.length > 0) {
+                for (const player of team.players) {
+					if(player.player.date_of_birth !== null){
+						const nation = await getNation(player.player.country_id);	
 						allPlayers.push({
 							...player.player,
-							nationality: getNation(player.country_id),
+							nationality: nation.name,
+							nation_image: nation.image_path,
 							team_name: team.name
-						})
-					})
-				}
-			})
-			console.log(allPlayers)
-		}catch(err){
-			console.error(err)
-		}
-	}
-
+						});
+					}	
+                }
+            }
+        }
+        console.log(allPlayers);
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 
 </script>
@@ -102,7 +107,7 @@
 
 <button onclick={getFixturesTest}>Fixtures</button>
 <button onclick={getLeaguesTest}>Leagues</button>
-<button onclick={getPlayersTest}>Players</button>
+<button onclick={getNation(146)}>Nation</button>
 <button onclick={currentScotlandTeams}>Scots Season</button>
 
 <!-- <h1>Fixtures</h1>
