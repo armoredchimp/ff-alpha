@@ -1,1 +1,3 @@
 curr season scotland = 23690
+
+https://api.sportmonks.com/v3/football/players/758?api_token=YOUR_TOKEN&include=statistics.details.type

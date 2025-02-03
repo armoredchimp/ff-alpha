@@ -54,6 +54,18 @@
 		}
 	}
 
+	async function getNation(id){
+		
+		try {
+			const nationRes = await axios.get(`/core/countries/${id}`)
+			console.log(nationRes.data.data)
+			return nationRes.data.data
+		} catch(err){
+			console.error(err)
+		}
+
+	}
+
 	async function currentScotlandTeams(){
 		try {
 			const scotsRes = await axios.get('/api/teams/seasons/23690',{
@@ -70,7 +82,7 @@
 					team.players.forEach(player => {
 						allPlayers.push({
 							...player.player,
-							team_id: team.id,
+							nationality: getNation(player.country_id),
 							team_name: team.name
 						})
 					})

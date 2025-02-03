@@ -50,6 +50,8 @@
     <div class="details">
         <span>{calculateAge(player.date_of_birth)} yrs</span>
         <span></span>
+        <span>{player.nationality}</span>
+        <span></span>
         <span>{player.team_name}</span>
     </div>
 
@@ -61,7 +63,7 @@
                 {/if}
             </div>
             <div class="expanded-info">
-                <span>Expanded Content</span>
+                <span></span>
 
             </div>
         </div>
