@@ -13,8 +13,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
             queryParams.set('api_token', API_TOKEN)
 
-            console.log('Proxied URL:', `${BASE_URL}${endpoint}?${queryParams.toString()}`);
-
             const response = await axios.get(`${BASE_URL}${endpoint}`, {
                 params: queryParams
             })
