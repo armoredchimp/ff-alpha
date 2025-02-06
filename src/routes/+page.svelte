@@ -6,7 +6,7 @@
     import PlayerTeam from "$lib/PlayerTeam.svelte";
 	import { countryMap, getCountry } from '$lib/data/countries';
 
-	let { children } = $props();
+	
 
 	async function getScotlandPlayers() {
         let scots = []

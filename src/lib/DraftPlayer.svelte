@@ -18,7 +18,7 @@
         isExpanded = !isExpanded;
         if (isExpanded){
             getNation(player.nationality_id)
-            getPlayerStats(player.id)
+            getPlayerStats(player.id, 19735)
         }
     }
 
@@ -33,18 +33,24 @@
         return age;
     }
 
-    async function getPlayerStats(id){
-        try {
-            const stats = await axios.get(`/api/players/${id}`,{
-                params: {
-                    include: 'statistics.details.type'
-                }
-            })
-            console.log(stats)
-        } catch(err){
-            console.error(err)
+    async function getPlayerStats(id, seasonId) {  
+    try {
+        const params = {
+            include: 'statistics.details.type'
+        };
+
+        if (seasonId) { 
+            params.filters = `playerStatisticSeasons:${seasonId}`;
         }
+
+        const stats = await axios.get(`/api/players/${id}`, { params });
+        console.log(stats);
+        return stats.data; 
+    } catch (err) {
+        console.error(err);
+        throw err; 
     }
+}
 
     async function getNation(id) {
         try {
