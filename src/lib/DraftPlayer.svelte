@@ -18,7 +18,7 @@
         isExpanded = !isExpanded;
         if (isExpanded){
             getNation(player.nationality_id)
-            getPlayerStats(player.id, 19735)
+            getPlayerStats(player.id)
         }
     }
 
@@ -33,24 +33,39 @@
         return age;
     }
 
-    async function getPlayerStats(id, seasonId) {  
-    try {
-        const params = {
-            include: 'statistics.details.type'
-        };
+    async function getPlayerStats(id) {
+  const baseUrl = `/api/players/${id}`;
+  const includeParam = `include=statistics.details.type`;
+  const filtersParam = `filters=playerStatisticsSeasons:19735;playerStatisticDetailTypes:117`; // No URL encoding here!
 
-        if (seasonId) { 
-            params.filters = `playerStatisticSeasons:${seasonId}`;
-        }
+  const url = `${baseUrl}?${includeParam}&${filtersParam}`; // Manual query string construction
 
-        const stats = await axios.get(`/api/players/${id}`, { params });
-        console.log(stats);
-        return stats.data; 
-    } catch (err) {
-        console.error(err);
-        throw err; 
-    }
+  try {
+    const response = await axios.get(url);
+    console.log("Full URL:", url);
+    console.log("Response Data:", response.data);
+    return response.data;
+
+  } catch (error) {
+    console.error("Error fetching player stats:", error);
+    console.error("Full URL (on error):", url);
+    return null;
+  }
 }
+
+    // async function getPlayerStats(id){
+    //     try {
+    //         const stats = await axios.get(`/api/players/${id}`,{
+    //             params: {
+    //                 include: 'statistics.details.type',
+    //                 filter: 'playerStatisticsSeasons:23690;playerStatisticDetailTypes:117'
+    //             }
+    //         })
+    //         console.log(stats.data)
+    //     } catch(err){
+    //         console.error(err)
+    //     }
+    // }
 
     async function getNation(id) {
         try {
