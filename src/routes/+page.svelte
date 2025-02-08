@@ -8,23 +8,27 @@
 
 	
 
-	async function getScotlandPlayers() {
-        let scots = []
+	async function getPremPlayers() {
+        let lads = []
         try {
-            const scotsRes = await axios.get('/api/teams/seasons/23690', {
+            const premRes = await axios.get('/api/teams/seasons/23614', {
                 params: {
-                    include: 'players.player',
+                    include: 'players.player.detailedPosition;players.player.position' 
                 }
-            });
-            scots = scotsRes.data.data;
+        });
+            lads = premRes.data.data;
 
-            for (const team of scots) {
+            for (const team of lads) {
                 if (team.players && team.players.length > 0) {
                     for (const player of team.players) {
                         if (player.player.date_of_birth !== null) {
+                            const position = player.player.position.name;
+                            const dPosition = player.player.detailedposition.name
                             const nation = await getCountry(player.player.country_id);	
                             allPlayers.push({
                                 ...player.player,
+                                position: position,
+                                detailedPosition: dPosition,
                                 nationality: nation,
                                 team_name: team.name
                             });
@@ -39,10 +43,10 @@
     }
 </script>
 
-<button onclick={getScotlandPlayers}>Get Players</button>
+<button onclick={getPremPlayers}>Get Players</button>
 <div class="page-container">
 	<div class="players-section">
-		<h3>Scottish Players: {allPlayers.length + 1}</h3>
+		<h3>Prem Players: {allPlayers.length + 1}</h3>
 		<div class="player-list">
 			{#each allPlayers as player}
 				<DraftPlayer player={player} />

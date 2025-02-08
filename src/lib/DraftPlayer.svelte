@@ -5,6 +5,8 @@
             id: 0,
             name: '',
             team_name: '',
+            position: '',
+            detailedPosition: '',
             date_of_birth: 0,
             nationality_id: '',
             nationality: '',
@@ -33,40 +35,51 @@
         return age;
     }
 
-    async function getPlayerStats(id) {
-  const baseUrl = `/api/players/${id}`;
-  const includeParam = `include=statistics.details.type`;
-  const filtersParam = `filters=playerStatisticsSeasons:19735;playerStatisticDetailTypes:117`; // No URL encoding here!
+    async function getPlayerStats(id){
+        try {
+            const lad = await axios.get(`/api/players/${id}`,{
+                params: {
+                    include: 'statistics.details.type;position;detailedPosition',
+                    filter: 'playerStatisticSeasons:23614'
+                }
+            })
 
-  const url = `${baseUrl}?${includeParam}&${filtersParam}`; // Manual query string construction
+            const playerData = lad.data.data; 
+            console.log(playerData)
+            if (playerData && playerData.statistics && playerData.statistics.length > 0) {
+            playerData.statistics.forEach(seasonStats => {
+                if (seasonStats.details) {
+                    seasonStats.details.forEach(stat => {
+                        const { type, value } = stat;
+                        const statName = type.name;
+                        let statValue;
 
-  try {
-    const response = await axios.get(url);
-    console.log("Full URL:", url);
-    console.log("Response Data:", response.data);
-    return response.data;
+                        if (statName === 'Substitutions') {
+                            statValue = value.in; 
+                        } else if (statName === 'Rating') {
+                            statValue = value.average; 
+                        } else if (value && value.total) { 
+                          statValue = value.total;
+                        } else if (typeof value === 'object' && Object.keys(value).length > 0) {
+                          statValue = value; 
+                        } else {
+                            statValue = null; 
+                        }
 
-  } catch (error) {
-    console.error("Error fetching player stats:", error);
-    console.error("Full URL (on error):", url);
-    return null;
-  }
-}
+                        console.log(`${statName}: ${statValue}`);
+                    });
+                }
+            });
+        } else {
+            console.log("No statistics found for this player.");
+        }
+                } catch(err){
+                    console.error(err)
+                }
+    }
 
-    // async function getPlayerStats(id){
-    //     try {
-    //         const stats = await axios.get(`/api/players/${id}`,{
-    //             params: {
-    //                 include: 'statistics.details.type',
-    //                 filter: 'playerStatisticsSeasons:23690;playerStatisticDetailTypes:117'
-    //             }
-    //         })
-    //         console.log(stats.data)
-    //     } catch(err){
-    //         console.error(err)
-    //     }
-    // }
 
+    //playerStatisticsSeasons:23614 playerStatisticDetailTypes:117'
     async function getNation(id) {
         try {
             const nationRes = await axios.get(`/core/countries/${id}`);
@@ -99,6 +112,7 @@
             <span>{calculateAge(player.date_of_birth)} yrs</span>
             <span>{player.nationality}</span>
             <span>{player.team_name}</span>
+            <span>{player.position}</span>
         </div>
 
         {#if isExpanded}
@@ -110,6 +124,7 @@
                     {#if player.nation_image}
                         <img src={player.nation_image} alt={player.nationality} class="nation-image" />
                     {/if}
+                    <span>{player.detailedPosition}</span>
                 </div>
                 <div class="expanded-info">
                     <!-- Additional expanded info can go here -->

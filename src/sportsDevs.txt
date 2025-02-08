@@ -1,0 +1,163 @@
+ {
+        "id": 16,
+        "name": "Premier League",
+        "importance": 1,
+        "level": 1,
+        "current_champion_team_id": 12,
+        "current_champion_team_name": "Manchester City",
+        "current_champion_team_hash_image": "302cb62c447e870778c786eebf83f5fee881e1e289f2bb552fb2900acb4b5a35",
+        "current_champion_team_num_titles": 10,
+        "teams_most_titles": [
+            {
+                "team_id": 14,
+                "team_name": "Manchester United",
+                "team_hash_image": "93af4a34b678aeb2dfded46e78c4b89de583eebc7085072be37e7a1c64b790cd"
+            }
+        ],
+        "most_titles": 20,
+        "primary_color": "#3c1c5a",
+        "secondary_color": "#f80158",
+        "lower_leagues": [
+            {
+                "league_id": 172,
+                "league_name": "Championship",
+                "league_hash_image": "f6e1e146682aca6bc217db36a4e0a4cff4a74e5df43a43353140c3fe647bf730"
+            }
+        ],
+        "start_league": "2024-08-16T00:00:00+00:00",
+        "end_league": "2025-05-25T00:00:00+00:00",
+        "hash_image": "69a3f23712e51ed08e223d7d438c358acea5b8eac0b75cb1526589024fcd255b",
+        "class_id": 158,
+        "class_name": "England",
+        "class_hash_image": "39bcba0feb303912d90fe5917cdfbabab8d0ac780d3c73f387344293b2e3ae58"
+    },
+
+
+    [
+    {
+        "league_id": 16,
+        "league_name": "Premier League",
+        "league_hash_image": "69a3f23712e51ed08e223d7d438c358acea5b8eac0b75cb1526589024fcd255b",
+        "teams": [
+            {
+                "id": 12,
+                "name": "Manchester City",
+                "hash_image": "302cb62c447e870778c786eebf83f5fee881e1e289f2bb552fb2900acb4b5a35"
+            },
+            {
+                "id": 14,
+                "name": "Manchester United",
+                "hash_image": "93af4a34b678aeb2dfded46e78c4b89de583eebc7085072be37e7a1c64b790cd"
+            },
+            {
+                "id": 22,
+                "name": "Arsenal",
+                "hash_image": "d5be9d1e751ccbab7cd4033c85744d13bab2b6ded1e2a3897a1316008e8b591a"
+            },
+            {
+                "id": 45,
+                "name": "Liverpool",
+                "hash_image": "183de07f3bff0597d62ea95de3ba804b4c1564e07d6451c9a696d19826523ddb"
+            },
+            {
+                "id": 48,
+                "name": "West Ham United",
+                "hash_image": "77bbe70a5db64ac3519db54da26141f9d593ebb4d0bd660babf2a2fc359d3ad9"
+            },
+            {
+                "id": 75,
+                "name": "Chelsea",
+                "hash_image": "958888144fe3febf710a181a996b0201ab9cdf81814c7f0583f3ce55a2f61b8b"
+            },
+            {
+                "id": 163,
+                "name": "Wolverhampton",
+                "hash_image": "7d7a052b270aeaf716ac0af6f8151eede4d73447fc7c5b3aecd3452e769855cd"
+            },
+            {
+                "id": 174,
+                "name": "Newcastle United",
+                "hash_image": "e1b6932565a891e1304480ebbb856f9d3eb6936adb5c2f181aaf82a6714748e2"
+            },
+            {
+                "id": 737,
+                "name": "Tottenham Hotspur",
+                "hash_image": "66441b67ffa7ca26ce9b65cc16848d2216d7ccd1c3ef715b076184c09119d324"
+            },
+            {
+                "id": 3951,
+                "name": "Fulham",
+                "hash_image": "fd95fdc80fb091a791a8d59e567ec41be386f58f38b70a66be7a71ab0f5fe5ac"
+            },
+            {
+                "id": 3976,
+                "name": "Bournemouth",
+                "hash_image": "ed8c248940b2bf2ffcaab1946fb4f449c301ff45b663f8c98f62337405b43f8c"
+            },
+            {
+                "id": 4000,
+                "name": "Nottingham Forest",
+                "hash_image": "877617530e3949c7e94d81cf8d2b33d9a11ffc7837c11cf3b38137d73715f466"
+            },
+            {
+                "id": 4068,
+                "name": "Sheffield United",
+                "hash_image": "6e248d3ce49894640c693786d74767f2dced1d5de61f8e25595656a0e52e83fb"
+            },
+            {
+                "id": 4095,
+                "name": "Aston Villa",
+                "hash_image": "460d2d5d90576de6bdc715294fc42be69fd37d3dc79f320cbfe8854345a467a1"
+            },
+            {
+                "id": 4431,
+                "name": "Burnley",
+                "hash_image": "e476d5c9475e72b53e8412cbaa09d73cec1e800b53fcb905fab61d6d62001071"
+            },
+            {
+                "id": 4611,
+                "name": "Luton Town",
+                "hash_image": "dc8abe7f205e66cf6dcf10fd7dbdaac9bb520b881935d6afa328ea2c7cbc9689"
+            },
+            {
+                "id": 6697,
+                "name": "Everton",
+                "hash_image": "c7459ec029ddc50f05c9fbda0e99b01da9131be793764e8da9673e90c742288f"
+            },
+            {
+                "id": 8189,
+                "name": "Crystal Palace",
+                "hash_image": "31cd143b4ac3c6e00818886fa3048ceda94876467e63615e7616923a93508e45"
+            },
+            {
+                "id": 8296,
+                "name": "Brentford",
+                "hash_image": "c1b97dc08bab78edc01c61e0c4d6f50da51c30ccaf3343eb4cb9ba4a2f4bbce8"
+            },
+            {
+                "id": 9298,
+                "name": "Brighton & Hove Albion",
+                "hash_image": "647a34520e18c0dbb70e7800ecc8cdbd1fc7bae9b5c42b50b585d88f1f4aae85"
+            }
+        ]
+    }
+]
+
+
+ {
+                "id": 7284,
+                "name": "Myles Lewis-Skelly",
+                "position": "M",
+                "country_id": 4,
+                "hash_image": "1f5a00cb814ac2f5a91a6ec2dc98bb1b15654f8a8c5ae7b27ed53089298d3279",
+                "short_name": "M. Lewis-Skelly",
+                "country_name": "England",
+                "market_value": 2100000,
+                "shirt_number": 59,
+                "date_of_birth": "2006-09-26T00:00:00+00:00",
+                "player_height": 178,
+                "preferred_foot": "Left",
+                "market_currency": "EUR",
+                "country_hash_image": "69374b09b1681162ba2d6bba92d6a167ea5ca5921eb172eb173e999e3be5d8ba",
+                "player_jersey_number": "59"
+            },
