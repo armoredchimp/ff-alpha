@@ -56,8 +56,10 @@
 
                         if (statName === 'Substitutions') {
                             statValue = value.in; 
-                        } else if (statName === 'Rating') {
-                            statValue = value.average; 
+                        } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
+                            statValue = value.average;    
+                        } else if (statName === 'Crosses Blocked') {
+                           statValue = value.crosses_blocked;
                         } else if (value && value.total) { 
                           statValue = value.total;
                         } else if (typeof value === 'object' && Object.keys(value).length > 0) {
