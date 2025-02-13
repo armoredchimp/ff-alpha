@@ -1,5 +1,7 @@
 <script>
+    import axios from "axios";
     import { allPlayers } from "$lib/stores/stores.svelte";
+    import { createClient } from "@supabase/supabase-js";
 
     const supabaseURL = import.meta.env.VITE_DB_URL
     const supabaseKey = import.meta.env.VITE_DB_API_KEY
@@ -8,6 +10,7 @@
 
     async function getPlayerStatsAndUpload(id) {
     try {
+        console.log()
         const lad = await axios.get(`/api/players/${id}`, { // Your API call
             params: {
                 include: 'statistics.details.type;position;detailedPosition',
@@ -16,7 +19,7 @@
         });
 
         const playerData = lad.data.data;
-
+        console.log(playerData)
         if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             const seasonStats = playerData.statistics[0];
             if (seasonStats.details) {
@@ -51,11 +54,16 @@
 }     
 
 async function getPremPlayersAndUpload() {
+        console.log('hi')
         let lads = []
         try {
-            const premRes = await axios.get('/api/teams/seasons/23614');
+            const premRes = await axios.get('/api/teams/seasons/23614',{
+                params: {
+                    include: 'players.player'
+                }
+            });
             lads = premRes.data.data;
-
+            console.log(lads)
             for (const team of lads) {
                 if (team.players && team.players.length > 0) {
                     for (const player of team.players) {
@@ -63,6 +71,7 @@ async function getPremPlayersAndUpload() {
                             allPlayers.push({
                                 ...player.player,
                             });
+                            console.log(`yes ${player.player.id}`)
                             getPlayerStatsAndUpload(player.player.id)
                         }	
                     }
