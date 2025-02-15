@@ -3,7 +3,7 @@
     let {
         player = {
             id: 0,
-            name: '',
+            display_name: '',
             team_name: '',
             position: '',
             detailedPosition: '',
@@ -108,7 +108,7 @@
 >
     <div class="info">
         <div class="name-value">
-            <h3>{player.name}</h3>
+            <h3>{player.display_name}</h3>
         </div>
         <div class="details">
             <span>{calculateAge(player.date_of_birth)} yrs</span>
@@ -121,7 +121,7 @@
             <div class="expanded-content">
                 <div class="image-section">
                     {#if player.image_path}
-                        <img src={player.image_path} alt={player.name} class="player-photo" />
+                        <img src={player.image_path} alt={player.display_name} class="player-photo" />
                     {/if}
                     {#if player.nation_image}
                         <img src={player.nation_image} alt={player.nationality} class="nation-image" />
