@@ -56,22 +56,21 @@
     }
 
 
-    function getDefensiveScore(row) {
-    // Define base weights for each defensive metric
+function getDefensiveScore(row) {
     const baseWeights = {
         TacklesPer90: 20,
         InterceptionsPer90: 25,
         BlockedShotsPer90: 15,
         Cleansheets: 40,
-        GoalsConcededPer90: -80, // Increased penalty
+        GoalsConcededPer90: -180,
         ClearancesPer90: 15,
         AerialsWonPercentage: 30,
         DuelsWonPercentage: 40,
-        DribbledPastPer90: -70,
+        DribbledPastPer90: -70,  // Base penalty
         ErrorLeadToGoal: -30,
     };
 
-    const isDefender = row.position && (row.position.toLowerCase() === 'defender' || row.position.toLowerCase() === 'center back' || row.position.toLowerCase() === 'centre back');
+    const isDefender = player.position === 'Defender'
     const weights = { ...baseWeights };
     if (!isDefender) {
         weights.Cleansheets = 10;
@@ -126,148 +125,33 @@
 
     const rating = row.Rating || 0;
 
-    // More Significant Rating Bonuses/Penalties
     if (rating >= 7.2) {
-        defensiveScore += (rating - 7.2) * 100; // Increased bonus
+        defensiveScore += (rating - 7.1) * 100;
     } else if (rating >= 7.0) {
-        defensiveScore += (rating - 7.0) * 75; // Increased bonus
+        defensiveScore += (rating - 6.9) * 75;
     } else if (rating < 6.5) {
-        defensiveScore -= (6.5 - rating) * 100; // Increased penalty
+        defensiveScore -= (6.5 - rating) * 100;
     } else if (rating < 6.7) {
-        defensiveScore -= (6.7 - rating) * 75; // Increased penalty
+        defensiveScore -= (6.7 - rating) * 75;
+    }
+
+    // Dribbled Past Adjustment (Non-linear penalty)
+    const dribbledPast = per90Stats.DribbledPastPer90 || 0;
+    let dribbledPastPenalty = 0;
+
+    
+    if (dribbledPast > 0) {
+        const basePenalty = 20; // Penalty for even being dribbled past once
+        const scaleFactor = 30;  // Adjust steepness of the curve
+        const exponent = 2;       // Adjust the shape of the curve (higher = faster increase)
+        const maxPenalty = 250;    // Cap on the penalty
+
+        dribbledPastPenalty = Math.min(basePenalty + scaleFactor * Math.pow(dribbledPast, exponent), maxPenalty);
+        defensiveScore -= dribbledPastPenalty;
     }
 
     defense = defensiveScore.toFixed(2);
 }
-
-
-//     function getDefensiveScore(row) {
-//     // Define base weights for each defensive metric
-//     const baseWeights = {
-//         TacklesPer90: 30, // High weight
-//         InterceptionsPer90: 30, // High weight
-//         BlockedShotsPer90: 20, // Slightly increased weight (was 15)
-//         Cleansheets: 45, // Increased weight (was 20)
-//         GoalsConcededPer90: -60, // Increased weight (was -30)
-//         ClearancesPer90: 35, // Increased weight (was 10)
-//         AerialsWonPer90: 45, // Increased weight (was 10)
-//         DuelsEffectiveness: 15, // Duels effectiveness stat
-//         ErrorLeadToGoal: -20, // Reasonable penalty for errors leading to goals
-//         DribbledPastPer90: 0 // Placeholder, will be calculated dynamically
-//     };
-
-//     // Adjust weights for clean sheets and goals conceded based on position
-//     const position = player.position;
-//     const isDefender = position.toLowerCase() === 'defender';
-
-//     const weights = { ...baseWeights }; // Copy base weights
-//     if (!isDefender) {
-//         // Reduce weights for clean sheets and goals conceded for non-defenders
-//         weights.Cleansheets = 10; // Still higher than before (was 5)
-//         weights.GoalsConcededPer90 = -5; // Still higher than before (was -5)
-//     }
-
-//     // Extract relevant stats from the row
-//     const stats = {
-//         Tackles: row.Tackles || 0,
-//         Interceptions: row.Interceptions || 0,
-//         BlockedShots: row['Shots Blocked'] || 0,
-//         Cleansheets: row.Cleansheets || 0,
-//         GoalsConceded: row['Goals Conceded'] || 0,
-//         Clearances: row.Clearances || 0,
-//         AerialsWon: row['Aerials Won'] || 0,
-//         DuelsWon: row['Duels Won'] || 0,
-//         TotalDuels: row['Total Duels'] || 0,
-//         ErrorLeadToGoal: row['Error Lead To Goal'] || 0, // New: Errors leading to goals
-//         DribbledPast: row['Dribbled Past'] || 0 // New: Dribbled Past stat
-//     };
-
-//     // Get total minutes played
-//     const minutesPlayed = row['Minutes Played'] || 0;
-
-//     // Calculate per 90 stats
-//     const per90Stats = {};
-//     for (const [key, value] of Object.entries(stats)) {
-//         if (key !== 'Cleansheets' && key !== 'ErrorLeadToGoal') {
-//             per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
-//         } else {
-//             per90Stats[key] = value; // Clean sheets and errors are not per 90
-//         }
-//     }
-
-//     // Calculate duels effectiveness
-//     const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
-//     const duelsPer90 = (stats.TotalDuels / minutesPlayed) * 90;
-//     const duelsEffectiveness = duelsWonPercentage * duelsPer90 / 100; // Combine percentage and volume
-
-//     // Add duels effectiveness to per90Stats
-//     per90Stats.DuelsEffectiveness = duelsEffectiveness;
-
-//     // Calculate scaling multiplier for duels won percentage
-//     let duelsMultiplier = 1; // Default multiplier
-//     if (duelsWonPercentage > 50) {
-//         // Scale multiplier linearly from 1.25 (at 50%) to 1.4 (at 100%)
-//         duelsMultiplier = 1.25 + (0.15 * ((duelsWonPercentage - 50) / 50));
-//     }
-
-//     // Apply the duels multiplier to the DuelsEffectiveness weight
-//     weights.DuelsEffectiveness *= duelsMultiplier;
-
-//     // Minutes played adjustment
-//     // Players with fewer minutes get a penalty to avoid inflated scores
-//     const minutesMultiplier = Math.min(1, minutesPlayed / 1000); // Scales from 0 to 1 based on minutes played
-
-//     // Calculate weighted defensive score
-//     let defensiveScore = 0;
-//     for (const [key, weight] of Object.entries(weights)) {
-//         defensiveScore += (per90Stats[key] || 0) * weight;
-//     }
-
-//     // Apply minutes played multiplier
-//     defensiveScore *= minutesMultiplier;
-
-//     // Add consistency bonus for players with significant minutes
-//     let consistencyBonus = 0;
-//     if (minutesPlayed > 1000) {
-//         // Bonus: 1 point for every 500 minutes over 1000
-//         consistencyBonus = Math.floor((minutesPlayed - 1000) / 100);
-//     }
-
-//     // Add consistency bonus to the defensive score
-//     defensiveScore += consistencyBonus;
-
-//     // Add Rating bonus/penalty
-//     const rating = row.Rating || 0; // Default to 0 if Rating is missing
-//     if (rating >= 7.0) {
-//         // Bonus: +5 points for every 0.1 above 7.0
-//         const bonus = (rating - 7.0) * 50; // (rating - 7.0) * 10 * 5
-//         defensiveScore += bonus;
-//     } else if (rating < 6.7) {
-//         // Penalty: -5 points for every 0.1 below 6.7
-//         const penalty = (6.7 - rating) * 50; // (6.7 - rating) * 10 * 5
-//         defensiveScore -= penalty;
-//     }
-
-//     // Add Dribbled Past penalty (non-linear scaling with diminishing returns)
-//     const dribbledPastPer90 = per90Stats.DribbledPastPer90 || 0;
-//     let dribbledPastPenalty = 0;
-
-//     if (dribbledPastPer90 > 0) {
-//         // Logarithmic scaling with a cap:
-//         const scalingFactor = 10; // Adjust this to control the severity
-//         const penaltyBase = Math.log1p(dribbledPastPer90); // Use log1p for smoother curve near 0
-//         const penaltyCap = 50; // Maximum penalty for excessive dribbling
-
-//         dribbledPastPenalty = Math.min(penaltyBase * scalingFactor, penaltyCap);
-//         defensiveScore -= dribbledPastPenalty;
-//     }
-
-//     defense = defensiveScore.toFixed(2);
-// }  
-
-
-
-
 
 async function getPlayerStats(id){
         try {
