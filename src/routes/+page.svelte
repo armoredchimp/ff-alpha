@@ -5,40 +5,22 @@
 	import DraftPlayer from "$lib/DraftPlayer.svelte";
     import PlayerTeam from "$lib/PlayerTeam.svelte";
 	import { countryMap, getCountry } from '$lib/data/countries';
+    import { supabase } from "$lib/supabase/supaClient";
+	
+    async function getPlayerById(id){
+        let { data: row, error } = await supabase
+        .from('prem_stats_2425')
+        .select('*')
+        .eq('id', id)
+        .single()
 
-	// let teamIds = $state([])
+        if(error){
+            console.error(error)
+        }else{
+            console.log(row)
+        }
+    }
 
-    // async function getTeamsList(){
-    //     try {
-    //         const premRes = await axios.get('/api/teams/seasons/23614')
-    //         let data = premRes.data.data
-    //         for (const team of data){
-    //             teamIds.push(team.id)
-    //         }
-    //         console.log(teamIds)
-    //         for (let i = 0; i < teamIds.length; i++){
-    //             getPlayersByTeam(teamIds[i])
-    //         }
-    //     }catch(err){
-    //         console.error(err)
-    //     }
-    // }
-
-    // async function getPlayersByTeam(id){
-    //     try {
-    //         const team = await axios.get(`/api/squads/seasons/23614/teams/${id}`,
-    //             {
-    //                 params: {
-    //                     include: 'player.statistics.details'
-    //                 }
-    //             }
-    //         )
-    //         const teamData = team.data.data
-    //         console.log(teamData)
-    //     }catch(err){
-    //         console.error(err)
-    //     }
-    // }
 
 
 	async function getPremPlayers() {
@@ -77,7 +59,8 @@
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
-<h4><a href='/dbUpload'>To Upload Page</a></h4>
+<!-- <h4><a href='/dbUpload'>To Upload Page</a></h4> -->
+<button onclick={getPlayerById(54191)}>getPlayerById</button>
 <button onclick={getPremPlayers}>Get Players</button>
 <div class="page-container">
 	<div class="players-section">
