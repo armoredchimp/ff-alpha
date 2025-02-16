@@ -17,6 +17,7 @@
 
     let isExpanded = $state(false);
     let defense = $state(0)
+    let passing = $state(0)
 
     function toggleExpand() {
         isExpanded = !isExpanded;
@@ -52,9 +53,96 @@
         }else{
             console.log(row)
             getDefensiveScore(row)
+            getPassingScore(row)
         }
     }
 
+    function getPassingScore(row) {
+    const baseWeights = {
+        AccuratePassesPercentage: 25,
+        KeyPassesPer90: 80,
+        AssistsPer90: 90,
+        AccurateCrossesPer90: 15,
+        ThroughBallsPer90: 25,
+        AccuratePassesPer90: 5,
+        BigChancesCreatedPer90: 60
+    };
+
+    const isDefender = player.position === 'Defender';
+    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
+    const weights = { ...baseWeights };
+    if (isDefender) {
+        weights.AccuratePassesPer90 = 1;
+        weights.AccuratePassesPercentage = 15;
+        weights.AccurateCrossesPer90 = 25;
+        weights.KeyPassesPer90 = 90;
+        weights.AssistsPer90 = 100;
+    }
+    if (isFullback) {
+        weights.AccurateCrossesPer90 = 50;
+        weights.BigChancesCreatedPer90 = 190;
+        weights.KeyPassesPer90 = 140;
+        weights.AssistsPer90 = 220;
+        weights.ThroughBallsPer90 = 40;
+    }
+
+    const stats = {
+        AccuratePasses: row['Accurate Passes'] || 0,
+        AccuratePassesPercentage: row['Accurate Passes Percentage'] || 0,
+        BigChancesCreated: row['Big Chances Created'] || 0,
+        KeyPasses: row['Key Passes'] || 0,
+        Assists: row['Assists'] || 0,
+        AccurateCrosses: row['Accurate Crosses'] || 0,
+        ThroughBalls: row['Through Balls'] || 0,
+    };
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        if (key !== 'AccuratePassesPercentage') {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        } else {
+            per90Stats[key] = value;
+        }
+    }
+
+    let passingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        passingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
+    passingScore *= minutesMultiplier;
+
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    passingScore += consistencyBonus;
+
+    const rating = row.Rating || 0;
+
+    if (rating >= 7.2) {
+        passingScore += (rating - 7.1) * 100;
+    } else if (rating >= 7.0) {
+        passingScore += (rating - 6.9) * 75;
+    } else if (rating < 6.5) {
+        passingScore -= (6.5 - rating) * 100;
+    } else if (rating < 6.7) {
+        passingScore -= (6.7 - rating) * 75;
+    }
+
+    // Scaling bonus for Accurate Passes Percentage
+    const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
+    if (accuratePassesPercentage >= 90) {
+        passingScore += 150; // Significant bonus for 90% or higher
+    } else if (accuratePassesPercentage >= 86) {
+        passingScore += 75; // Solid bonus for 86% or higher
+    }
+
+    passing = passingScore.toFixed(2);
+}
 
 function getDefensiveScore(row) {
     const baseWeights = {
@@ -62,12 +150,13 @@ function getDefensiveScore(row) {
         InterceptionsPer90: 25,
         BlockedShotsPer90: 15,
         Cleansheets: 40,
-        GoalsConcededPer90: -180,
+        GoalsConcededPer90: -150,
         ClearancesPer90: 15,
         AerialsWonPercentage: 30,
-        DuelsWonPercentage: 40,
-        DribbledPastPer90: -70,  // Base penalty
+        DuelsWonPercentage: 50,
+        DribbledPastPer90: -70,  
         ErrorLeadToGoal: -30,
+        LongBallsWonPer90: 20,
     };
 
     const isDefender = player.position === 'Defender'
@@ -75,6 +164,7 @@ function getDefensiveScore(row) {
     if (!isDefender) {
         weights.Cleansheets = 10;
         weights.GoalsConcededPer90 = -5;
+        weights.LongBallsWonPer90 = 5
     }
 
     const stats = {
@@ -90,6 +180,7 @@ function getDefensiveScore(row) {
         TotalDuels: row['Total Duels'] || 0,
         ErrorLeadToGoal: row['Error Lead To Goal'] || 0,
         DribbledPast: row['Dribbled Past'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
     };
 
     const minutesPlayed = row['Minutes Played'] || 0;
@@ -213,7 +304,6 @@ async function getPlayerStats(id){
         }
     }
 </script>
-
 <div 
     role="button"
     tabindex="0"
@@ -237,15 +327,22 @@ async function getPlayerStats(id){
 
         {#if isExpanded}
             <div class="expanded-content">
-                <div class="image-section">
-                    {#if player.image_path}
-                        <img src={player.image_path} alt={player.display_name} class="player-photo" />
-                    {/if}
-                    {#if player.nation_image}
-                        <img src={player.nation_image} alt={player.nationality} class="nation-image" />
-                    {/if}
-                    <span>{player.detailedPosition}</span>
-                    <span>Defensive Score: {defense}</span>
+                <div class="top-section">
+                    <div class="image-section">
+                        {#if player.image_path}
+                            <img src={player.image_path} alt={player.display_name} class="player-photo" />
+                        {/if}
+                        {#if player.nation_image}
+                            <img src={player.nation_image} alt={player.nationality} class="nation-image" />
+                        {/if}
+                        <span class="detailed-position">{player.detailedPosition}</span>
+                    </div>
+                </div>
+                <div class="stats-section">
+                    <div class="score">
+                        <span>Defensive Score: {defense}</span>
+                        <span>Passing Score: {passing}</span>
+                    </div>
                 </div>
                 <div class="expanded-info">
                     <!-- Additional expanded info can go here -->
@@ -311,8 +408,14 @@ async function getPlayerStats(id){
         padding-top: 1.5rem;
         border-top: 1px solid #e2e8f0;
         display: flex;
-        gap: 2rem;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .top-section {
+        display: flex;
         align-items: center;
+        gap: 1.5rem;
     }
 
     .image-section {
@@ -335,6 +438,26 @@ async function getPlayerStats(id){
         object-fit: cover;
         border-radius: 50%;
         border: 2px solid #e2e8f0;
+    }
+
+    .detailed-position {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .stats-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .score {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        color: #334155;
     }
 
     .expanded-info {
