@@ -32,13 +32,17 @@
                 }
         });
             lads = premRes.data.data;
-
+            console.log(lads)
+            console.log(`Lads total: ${lads.length}`)
             for (const team of lads) {
                 if (team.players && team.players.length > 0) {
                     for (const player of team.players) {
                         if (player.player.date_of_birth !== null) {
                             const position = player.player.position.name;
-                            const dPosition = player.player.detailedposition.name
+                            let dPosition = null;
+                            if(player.player.detailedposition && player.player.detailedposition.name){
+                                dPosition = player.player.detailedposition.name
+                            }
                             const nation = await getCountry(player.player.country_id);	
                             allPlayers.push({
                                 ...player.player,
@@ -64,7 +68,7 @@
 <button onclick={getPremPlayers}>Get Players</button>
 <div class="page-container">
 	<div class="players-section">
-		<h3>Prem Players: {allPlayers.length + 1}</h3>
+		<h3>Prem Players: {allPlayers.length}</h3>
 		<div class="player-list">
 			{#each allPlayers as player}
 				<DraftPlayer player={player} />
