@@ -63,7 +63,7 @@
     const baseWeights = {
         AccuratePassesPercentage: 40, 
         AccuratePassesPer90: 15,      
-        SuccessfulDribblesPer90: 100,  
+        SuccessfulDribblesPer90: 140,  
         LongBallsWonPer90: 80,         
         DispossessedPer90: -120,      
         FoulsPer90: -40,
@@ -142,29 +142,30 @@
     function getPassingScore(row) {
     const baseWeights = {
         AccuratePassesPercentage: 25,
-        KeyPassesPer90: 80,
-        AssistsPer90: 90,
-        AccurateCrossesPer90: 15,
+        KeyPassesPer90: 180,
+        AssistsPer90: 500,
+        AccurateCrossesPer90: 25,
         ThroughBallsPer90: 25,
-        AccuratePassesPer90: 5,
-        BigChancesCreatedPer90: 60
+        AccuratePassesPer90: 10,
+        BigChancesCreatedPer90: 340
     };
 
     const isDefender = player.position === 'Defender';
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     if (isDefender) {
-        weights.AccuratePassesPer90 = 1;
+        weights.AccuratePassesPer90 = 2;
         weights.AccuratePassesPercentage = 15;
         weights.AccurateCrossesPer90 = 25;
         weights.KeyPassesPer90 = 90;
-        weights.AssistsPer90 = 100;
+        weights.AssistsPer90 = 300;
     }
     if (isFullback) {
-        weights.AccurateCrossesPer90 = 50;
-        weights.BigChancesCreatedPer90 = 190;
-        weights.KeyPassesPer90 = 140;
-        weights.AssistsPer90 = 220;
+        weights.AccuratePassesPer90 = 5
+        weights.AccurateCrossesPer90 = 100;
+        weights.BigChancesCreatedPer90 = 380;
+        weights.KeyPassesPer90 = 220;
+        weights.AssistsPer90 = 590;
         weights.ThroughBallsPer90 = 40;
     }
 
@@ -231,28 +232,30 @@ function getDefensiveScore(row) {
     const baseWeights = {
         TacklesPer90: 20,
         InterceptionsPer90: 25,
-        BlockedShotsPer90: 15,
-        Cleansheets: 50,
-        GoalsConcededPer90: -150,
-        ClearancesPer90: 15,
+        BlockedShotsPer90: 60,
+        Cleansheets: 200,
+        GoalsConcededPer90: -160,
+        ClearancesPer90: 20,
+        CrossesBlockedPer90: 180,
         AerialsWonPercentage: 30,
         DuelsWonPercentage: 50,
         DribbledPastPer90: -70,  
-        ErrorLeadToGoal: -30,
-        LongBallsWonPer90: 20,
+        ErrorLeadToGoal: -200,
+        LongBallsWonPer90: 80
     };
 
     const isDefender = player.position === 'Defender'
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     if (!isDefender) {
-        weights.Cleansheets = 10;
-        weights.GoalsConcededPer90 = -10;
+        weights.Cleansheets = 20;
+        weights.GoalsConcededPer90 = -40;
         weights.LongBallsWonPer90 = 5
     }
     if (isFullback){
-        weights.Cleansheets = 30;
-        weights.GoalsConcededPer90 = -140;
+        weights.Cleansheets = 60;
+        weights.GoalsConcededPer90 = -80;
+        weights.CrossesBlockedPer90 = 240;
     }
 
     const stats = {
