@@ -19,6 +19,7 @@
     let defense = $state(0)
     let passing = $state(0)
     let possession = $state(0)
+    let attacking = $state(0)
 
     function toggleExpand() {
         isExpanded = !isExpanded;
@@ -61,15 +62,14 @@
 
     function getPossessionScore(row) {
     const baseWeights = {
-        AccuratePassesPercentage: 40, 
-        AccuratePassesPer90: 15,      
-        SuccessfulDribblesPer90: 100,  
-        LongBallsWonPer90: 80,         
-        DispossessedPer90: -120,      
-        FoulsPer90: -40,
-        FoulsDrawnPer90: 160,              
-        KeyPassesPer90: 40,           
-        ThroughBallsWonPer90: 70         
+        AccuratePassesPercentage: 80, // Higher weight for maintaining possession
+        AccuratePassesPer90: 15,      // Volume of accurate passes
+        SuccessfulDribblesPer90: 240,  // Dribbles that retain possession
+        LongBallsWonPer90: 10,         // Winning long balls can help retain possession
+        DispossessedPer90: -100,      // Penalty for losing possession (reduced slightly)
+        FoulsPer90: -10,              // Fouls can disrupt possession
+        KeyPassesPer90: 80,           // Higher weight for key passes (effective use of possession)
+        ThroughBallsPer90: 40         // Higher weight for through balls (creativity with possession)
     };
 
     const isDefender = player.position === 'Defender';
@@ -83,9 +83,9 @@
         // weights.ThroughBallsPer90 = 20;
     }
     if (isFullback) {
-        weights.AccuratePassesPer90 = 10;
-        weights.AccuratePassesPercentage = 40;
-        weights.KeyPassesPer90 = 40;
+        weights.AccuratePassesPer90 = 5;
+        // weights.AccuratePassesPercentage = 40;
+        // weights.KeyPassesPer90 = 50;
     }
 
     const stats = {
@@ -97,7 +97,7 @@
         Fouls: row['Fouls'] || 0,
         FoulsDrawn: row['Fouls Drawn'] || 0,
         KeyPasses: row['Key Passes'] || 0,
-        ThroughBallsWon: row['Through Balls Won'] || 0
+        ThroughBalls: row['Through Balls'] || 0
     };
 
     const minutesPlayed = row['Minutes Played'] || 0;
@@ -112,6 +112,7 @@
     }
 
     let possessionScore = 0;
+
     for (const [key, weight] of Object.entries(weights)) {
         possessionScore += (per90Stats[key] || 0) * weight;
     }
@@ -120,12 +121,24 @@
     const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
     possessionScore *= minutesMultiplier;
 
-    // Consistency bonus for players with significant minutes
-    let consistencyBonus = 0;
-    if (minutesPlayed > 1000) {
-        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    const rating = row.Rating || 0;
+
+    if (rating >= 7.2) {
+        possessionScore += (rating - 7.1) * 100;
+    } else if (rating >= 7.0) {
+        possessionScore += (rating - 6.9) * 75;
+    } else if (rating < 6.5) {
+        possessionScore -= (6.5 - rating) * 100;
+    } else if (rating < 6.7) {
+        possessionScore -= (6.7 - rating) * 75;
     }
-    possessionScore += consistencyBonus;
+
+    // Consistency bonus for players with significant minutes
+    // let consistencyBonus = 0;
+    // if (minutesPlayed > 1000) {
+    //     consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 2;
+    // }
+    // possessionScore += consistencyBonus;
 
     // Rapidly scaling bonus for Accurate Passes Percentage above 90%
     const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
@@ -140,29 +153,30 @@
     function getPassingScore(row) {
     const baseWeights = {
         AccuratePassesPercentage: 25,
-        KeyPassesPer90: 80,
-        AssistsPer90: 90,
-        AccurateCrossesPer90: 15,
+        KeyPassesPer90: 180,
+        AssistsPer90: 500,
+        AccurateCrossesPer90: 25,
         ThroughBallsPer90: 25,
-        AccuratePassesPer90: 5,
-        BigChancesCreatedPer90: 60
+        AccuratePassesPer90: 10,
+        BigChancesCreatedPer90: 340
     };
 
     const isDefender = player.position === 'Defender';
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     if (isDefender) {
-        weights.AccuratePassesPer90 = 1;
+        weights.AccuratePassesPer90 = 2;
         weights.AccuratePassesPercentage = 15;
         weights.AccurateCrossesPer90 = 25;
         weights.KeyPassesPer90 = 90;
-        weights.AssistsPer90 = 100;
+        weights.AssistsPer90 = 300;
     }
     if (isFullback) {
-        weights.AccurateCrossesPer90 = 50;
-        weights.BigChancesCreatedPer90 = 190;
-        weights.KeyPassesPer90 = 140;
-        weights.AssistsPer90 = 220;
+        weights.AccuratePassesPer90 = 5
+        weights.AccurateCrossesPer90 = 100;
+        weights.BigChancesCreatedPer90 = 380;
+        weights.KeyPassesPer90 = 220;
+        weights.AssistsPer90 = 590;
         weights.ThroughBallsPer90 = 40;
     }
 
@@ -195,11 +209,11 @@
     const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
     passingScore *= minutesMultiplier;
 
-    let consistencyBonus = 0;
-    if (minutesPlayed > 1000) {
-        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
-    }
-    passingScore += consistencyBonus;
+    // let consistencyBonus = 0;
+    // if (minutesPlayed > 1000) {
+    //     consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 2;
+    // }
+    // passingScore += consistencyBonus;
 
     const rating = row.Rating || 0;
 
@@ -229,14 +243,15 @@ function getDefensiveScore(row) {
     const baseWeights = {
         TacklesPer90: 20,
         InterceptionsPer90: 25,
-        BlockedShotsPer90: 15,
-        Cleansheets: 50,
-        GoalsConcededPer90: -150,
-        ClearancesPer90: 15,
+        BlockedShotsPer90: 60,
+        Cleansheets: 100,
+        GoalsConcededPer90: -160,
+        ClearancesPer90: 20,
+        CrossesBlockedPer90: 180,
         AerialsWonPercentage: 30,
         DuelsWonPercentage: 50,
         DribbledPastPer90: -70,  
-        ErrorLeadToGoal: -30,
+        ErrorLeadToGoal: -200,
         LongBallsWonPer90: 20,
     };
 
@@ -245,12 +260,12 @@ function getDefensiveScore(row) {
     const weights = { ...baseWeights };
     if (!isDefender) {
         weights.Cleansheets = 10;
-        weights.GoalsConcededPer90 = -10;
+        weights.GoalsConcededPer90 = -40;
         weights.LongBallsWonPer90 = 5
     }
     if (isFullback){
         weights.Cleansheets = 30;
-        weights.GoalsConcededPer90 = -140;
+        weights.GoalsConcededPer90 = -80;
     }
 
     const stats = {
@@ -260,6 +275,7 @@ function getDefensiveScore(row) {
         Cleansheets: row.Cleansheets || 0,
         GoalsConceded: row['Goals Conceded'] || 0,
         Clearances: row.Clearances || 0,
+        CrossesBlocked: row['Crosses Blocked'] || 0,
         AerialsWon: row['Aerials Won'] || 0,
         TotalAerials: row['Total Aerials'] || 0,
         DuelsWon: row['Duels Won'] || 0,
@@ -294,11 +310,11 @@ function getDefensiveScore(row) {
     const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
     defensiveScore *= minutesMultiplier;
 
-    let consistencyBonus = 0;
-    if (minutesPlayed > 1000) {
-        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
-    }
-    defensiveScore += consistencyBonus;
+    // let consistencyBonus = 0;
+    // if (minutesPlayed > 1000) {
+    //     consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 2;
+    // }
+    // defensiveScore += consistencyBonus;
 
     const rating = row.Rating || 0;
 
