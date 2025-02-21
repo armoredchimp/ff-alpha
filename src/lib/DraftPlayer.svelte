@@ -61,29 +61,31 @@
 
     function getPossessionScore(row) {
     const baseWeights = {
-        AccuratePassesPercentage: 80, // Higher weight for maintaining possession
-        AccuratePassesPer90: 15,      // Volume of accurate passes
-        SuccessfulDribblesPer90: 240,  // Dribbles that retain possession
-        LongBallsWonPer90: 10,         // Winning long balls can help retain possession
-        DispossessedPer90: -100,      // Penalty for losing possession (reduced slightly)
-        FoulsPer90: -10,              // Fouls can disrupt possession
-        KeyPassesPer90: 80,           // Higher weight for key passes (effective use of possession)
-        ThroughBallsPer90: 40         // Higher weight for through balls (creativity with possession)
+        AccuratePassesPercentage: 40, 
+        AccuratePassesPer90: 15,      
+        SuccessfulDribblesPer90: 100,  
+        LongBallsWonPer90: 80,         
+        DispossessedPer90: -120,      
+        FoulsPer90: -40,
+        FoulsDrawnPer90: 160,              
+        KeyPassesPer90: 40,           
+        ThroughBallsWonPer90: 70         
     };
 
     const isDefender = player.position === 'Defender';
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     if (isDefender) {
-        weights.AccuratePassesPer90 = 2;
-        // weights.AccuratePassesPercentage = 30;
-        weights.KeyPassesPer90 = 40;
+        weights.AccuratePassesPer90 = 3;
+        weights.AccuratePassesPercentage = 30;
+        weights.KeyPassesPer90 = 30;
+        weights.FoulsPer90 = -30;
         // weights.ThroughBallsPer90 = 20;
     }
     if (isFullback) {
-        weights.AccuratePassesPer90 = 5;
-        // weights.AccuratePassesPercentage = 40;
-        // weights.KeyPassesPer90 = 50;
+        weights.AccuratePassesPer90 = 10;
+        weights.AccuratePassesPercentage = 40;
+        weights.KeyPassesPer90 = 40;
     }
 
     const stats = {
@@ -93,8 +95,9 @@
         LongBallsWon: row['Long Balls Won'] || 0,
         Dispossessed: row['Dispossessed'] || 0,
         Fouls: row['Fouls'] || 0,
+        FoulsDrawn: row['Fouls Drawn'] || 0,
         KeyPasses: row['Key Passes'] || 0,
-        ThroughBalls: row['Through Balls'] || 0
+        ThroughBallsWon: row['Through Balls Won'] || 0
     };
 
     const minutesPlayed = row['Minutes Played'] || 0;
@@ -131,7 +134,7 @@
         possessionScore += 150 + (bonusMultiplier * 15); // Higher base bonus + scaled bonus
     } 
 
-    possession = (possessionScore / 2.5).toFixed(2);
+    possession = (possessionScore / 1.5).toFixed(2);
 }
 
     function getPassingScore(row) {
