@@ -70,7 +70,7 @@
         FoulsDrawnPer90: 160,              
         KeyPassesPer90: 40,           
         ThroughBallsWonPer90: 70,
-        OffsidesPer90: -620         
+        OffsidesPer90: -520         
     };
 
     const isDefender = player.position === 'Defender';
@@ -253,7 +253,7 @@ function getDefensiveScore(row) {
         weights.LongBallsWonPer90 = 5
     }
     if (isFullback){
-        weights.Cleansheets = 60;
+        weights.Cleansheets = 140;
         weights.GoalsConcededPer90 = -80;
         weights.CrossesBlockedPer90 = 240;
     }
@@ -332,7 +332,7 @@ function getDefensiveScore(row) {
         defensiveScore -= dribbledPastPenalty;
     }
 
-    defense = defensiveScore.toFixed(2);
+    defense = (defensiveScore * 0.8).toFixed(2);
 }
 
 async function getPlayerStats(id){
