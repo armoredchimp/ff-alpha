@@ -19,6 +19,8 @@
     let defense = $state(0)
     let passing = $state(0)
     let possession = $state(0)
+    let attacking = $state(0)
+    let total = $state(0)
 
     function toggleExpand() {
         isExpanded = !isExpanded;
@@ -54,10 +56,85 @@
         }else{
             console.log(row)
             getDefensiveScore(row)
+            total += parseFloat(defense)
             getPassingScore(row)
+            total += parseFloat(passing)
             getPossessionScore(row)
+            total += parseFloat(possession)
+            getAttackingScore(row)
+            total += parseFloat(attacking)
+
+            total = (total / 4).toFixed(2)
+      
+    }}
+
+    function getAttackingScore(row) {
+        const baseWeights = {
+            AccurateCrossesPer90: 40,
+            AssistsPer90: 400,
+            BigChancesCreatedPer90: 100,
+            BigChancesMissedPer90: -50,
+            GoalsPer90: 1000,
+            KeyPassesPer90: 80,
+            HitWoodworkPer90: 100,
+            LongBallsWonPer90: 40,
+            OffsidesPer90: -140,
+            OwnGoalsPer90: -500,
+            ShotsBlockedPer90: 80,
+            ShotsOffTargetPer90: 20,
+            ShotsOnTargetPer90: 200,
+            SuccessfulDribblesPer90: 140
         }
+
+        const isDefender = player.position === 'Defender';
+        const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
+        const weights = { ...baseWeights };
+    if (isDefender) {
+        
     }
+    if (isFullback) {
+       
+    }
+        
+    
+    const stats = {
+        AccuratePasses: row['Accurate Passes'] || 0,
+        Assists: row.Assists || 0,
+        BigChancesCreated: row['Big Chances Created'] || 0,
+        BigChancesMissed: row['Big Chances Missed'] || 0,
+        Goals: row['Goals'] || 0,
+        HitWoodwork: row['Hit Woodwork'] || 0,
+        ShotsBlocked: row['Shots Blocked'] || 0,
+        ShotsOffTarget: row['Shots Off Target'] || 0,
+        ShotsOnTarget: row['Shots On Target'] || 0,
+        SuccessfulDribbles: row['Successful Dribbles'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+        KeyPasses: row['Key Passes'] || 0,
+        ThroughBallsWon: row['Through Balls Won'] || 0,
+        Offsides: row['Offsides'] || 0
+    };
+    
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90; 
+    }
+
+    let attackingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        attackingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    attackingScore += consistencyBonus;
+
+    attacking = (attackingScore * 2).toFixed(2)
+}
 
     function getPossessionScore(row) {
     const baseWeights = {
@@ -434,6 +511,8 @@ async function getPlayerStats(id){
                         <span>Defensive Score: {defense}</span>
                         <span>Passing Score: {passing}</span>
                         <span>Possession Score: {possession}</span>
+                        <span>Attacking Score: {attacking}</span>
+                        <span>Overall Rating: {total}</span>
                     </div>
                 </div>
                 <div class="expanded-info">
