@@ -1,7 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
-	import Page from "../routes/+page.svelte";
+    import Page from "../routes/+page.svelte";
     let {
         player = {
             id: 0,
@@ -23,6 +23,11 @@
     let attacking = $state(0)
     let total = $state(0)
 
+    function capScore(score) {
+        return Math.min(score, 5000);
+    }
+
+    
     function toggleExpand() {
         isExpanded = !isExpanded;
         if (isExpanded){
@@ -44,59 +49,70 @@
         return age;
     }
 
-    	
-    async function getCalcScores(id){
-        let { data: row, error } = await supabase
+        
+    async function getCalcScores(id) {
+    let { data: row, error } = await supabase
         .from('prem_stats_2425')
         .select('*')
         .eq('id', id)
-        .single()
+        .single();
 
-        if(error){
-            console.error(error)
-        }else{
-            console.log(row)
-            getDefensiveScore(row)
-            total += parseFloat(defense)
-            getPassingScore(row)
-            total += parseFloat(passing)
-            getPossessionScore(row)
-            total += parseFloat(possession)
-            getAttackingScore(row)
-            total += parseFloat(attacking)
+    if (error) {
+        console.error(error);
+    } else {
+        console.log(row);
 
-            total = (total / 4).toFixed(2)
-      
-    }}
+        getDefensiveScore(row);
+        defense = capScore(defense);
+        total = parseFloat(defense);
 
-    function getAttackingScore(row) {
-        const baseWeights = {
-            AccurateCrossesPer90: 40,
-            AssistsPer90: 500,
-            BigChancesCreatedPer90: 100,
-            BigChancesMissedPer90: -50,
-            GoalsPer90: 1400,
-            KeyPassesPer90: 80,
-            HitWoodworkPer90: 100,
-            LongBallsWonPer90: 40,
-            OffsidesPer90: -140,
-            OwnGoalsPer90: -500,
-            ShotsBlockedPer90: 80,
-            ShotsOffTargetPer90: 20,
-            ShotsOnTargetPer90: 200,
-            SuccessfulDribblesPer90: 140
-        }
+        getPassingScore(row);
+        passing = capScore(passing);
+        total += parseFloat(passing);
 
-        const isDefender = player.position === 'Defender';
-        const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
-        const weights = { ...baseWeights };
+        getPossessionScore(row);
+        possession = capScore(possession); 
+        total += parseFloat(possession);
+
+        getAttackingScore(row);
+        attacking = capScore(attacking);
+        total += parseFloat(attacking);
+
+        total = (total / 4).toFixed(2);
+    }
+}
+
+
+function getAttackingScore(row) {
+    const baseWeights = {
+        AccurateCrossesPer90: 60,
+        AssistsPer90: 500,
+        BigChancesCreatedPer90: 200,
+        BigChancesMissedPer90: -300,
+        GoalsPer90: 1400,
+        KeyPassesPer90: 120,
+        HitWoodworkPer90: 100,
+        LongBallsWonPer90: 40,
+        OffsidesPer90: -140,
+        OwnGoalsPer90: -500,
+        ShotsBlockedPer90: 30,
+        ShotsOffTargetPer90: -100,
+        ShotsOnTargetPer90: 80,
+        SuccessfulDribblesPer90: 200
+    }
+
+    const isDefender = player.position === 'Defender';
+    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
+    const weights = { ...baseWeights };
+    
     if (isDefender) {
-        
+        weights.GoalsPer90 = 2000
+        weights.KeyPassesPer90 = 200
     }
     if (isFullback) {
-       
+        weights.AccurateCrossesPer90 = 120
+        weights.AssistsPer90 = 600
     }
-        
     
     const stats = {
         AccuratePasses: row['Accurate Passes'] || 0,
@@ -115,65 +131,62 @@
         Offsides: row['Offsides'] || 0
     };
     
-
     const minutesPlayed = row['Minutes Played'] || 0;
 
+    // Simple per90 calculation without scaling
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
-            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90; 
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
     }
-
-    // let goalsWeight = 700
-
-    // if (minutesPlayed < 1000 && minutesPlayed > 0) {
-    //     goalsWeight = 700 + Math.min(700, (minutesPlayed / 1000) * 700)
-    //     weights.GoalsPer90 = goalsWeight
-    // }
 
     let attackingScore = 0;
     for (const [key, weight] of Object.entries(weights)) {
         attackingScore += (per90Stats[key] || 0) * weight;
     }
 
-    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
-    attackingScore *= minutesMultiplier;
-
+    // Apply consistency bonus if applicable
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
         consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
     }
     attackingScore += consistencyBonus;
 
-    attacking = (attackingScore * 2).toFixed(2)
-}
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        attackingScore = attackingScore * minutesPercentage;
+    }
 
-    function getPossessionScore(row) {
+    attacking = (attackingScore * 2).toFixed(2);
+}
+function getPossessionScore(row) {
     const baseWeights = {
-        AccuratePassesPercentage: 40, 
-        AccuratePassesPer90: 15,      
-        SuccessfulDribblesPer90: 140,  
-        LongBallsWonPer90: 80,         
-        DispossessedPer90: -120,      
-        FoulsPer90: -40,
-        FoulsDrawnPer90: 160,              
-        KeyPassesPer90: 40,           
+        AccuratePassesPercentage: 20, 
+        AccuratePassesPer90: 5, 
+        SuccessfulDribblesPer90: 160, 
+        LongBallsWonPer90: 80, 
+        DispossessedPer90: -200, 
+        FoulsPer90: -80,
+        FoulsDrawnPer90: 160, 
+        ShotsOffTargetPer90: -80, 
+        KeyPassesPer90: 50, 
         ThroughBallsWonPer90: 70,
-        OffsidesPer90: -520         
+        OffsidesPer90: -520 
     };
 
     const isDefender = player.position === 'Defender';
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
+    
     if (isDefender) {
         weights.AccuratePassesPer90 = 3;
-        weights.AccuratePassesPercentage = 30;
+        weights.AccuratePassesPercentage = 10;
         weights.KeyPassesPer90 = 30;
         weights.FoulsPer90 = -30;
-        // weights.ThroughBallsPer90 = 20;
     }
     if (isFullback) {
         weights.AccuratePassesPer90 = 10;
-        weights.AccuratePassesPercentage = 40;
+        weights.AccuratePassesPercentage = 30;
         weights.KeyPassesPer90 = 40;
     }
 
@@ -185,6 +198,7 @@
         Dispossessed: row['Dispossessed'] || 0,
         Fouls: row['Fouls'] || 0,
         FoulsDrawn: row['Fouls Drawn'] || 0,
+        ShotsOnTarget: row['Shots Off Target'] || 0,
         KeyPasses: row['Key Passes'] || 0,
         ThroughBallsWon: row['Through Balls Won'] || 0,
         Offsides: row['Offsides'] || 0
@@ -192,6 +206,7 @@
 
     const minutesPlayed = row['Minutes Played'] || 0;
 
+    // Calculate regular per90 stats
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
         if (key !== 'AccuratePassesPercentage') {
@@ -206,60 +221,55 @@
         possessionScore += (per90Stats[key] || 0) * weight;
     }
 
-    // Minutes played multiplier to reward players with more playing time
-    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
-    possessionScore *= minutesMultiplier;
-
-    // Consistency bonus for players with significant minutes
+    // Add consistency bonus if applicable
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
         consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
     }
     possessionScore += consistencyBonus;
 
-    // Rapidly scaling bonus for Accurate Passes Percentage above 90%
+    // Add bonus for high passing accuracy
     const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
     if (accuratePassesPercentage >= 90) {
-        const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2); // Quadratic scaling
-        possessionScore += 150 + (bonusMultiplier * 15); // Higher base bonus + scaled bonus
-    } 
+        const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2);
+        possessionScore += 150 + (bonusMultiplier * 15);
+    }
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        possessionScore = possessionScore * minutesPercentage;
+    }
 
     possession = (possessionScore / 1.5).toFixed(2);
 }
 
-    function getPassingScore(row) {
+function getPassingScore(row) {
     const baseWeights = {
-        AccuratePassesPercentage: 25,
-        KeyPassesPer90: 180,
-        AssistsPer90: 500,
+        KeyPassesPer90: 400,
+        AssistsPer90: 1300,
         AccurateCrossesPer90: 25,
         ThroughBallsPer90: 25,
-        AccuratePassesPer90: 10,
-        BigChancesCreatedPer90: 340
+        BigChancesCreatedPer90: 700
     };
 
     const isDefender = player.position === 'Defender';
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
+    
     if (isDefender) {
-        weights.AccuratePassesPer90 = 2;
-        weights.AccuratePassesPercentage = 15;
-        weights.AccurateCrossesPer90 = 25;
-        weights.KeyPassesPer90 = 90;
-        weights.AssistsPer90 = 300;
+        weights.AssistsPer90 = 1300;
+        weights.BigChancesCreatedPer90 = 900
     }
     if (isFullback) {
-        weights.AccuratePassesPer90 = 5
-        weights.AccurateCrossesPer90 = 100;
-        weights.BigChancesCreatedPer90 = 380;
-        weights.KeyPassesPer90 = 220;
-        weights.AssistsPer90 = 590;
+        weights.AccurateCrossesPer90 = 85;
+        weights.BigChancesCreatedPer90 = 1080;
+        weights.KeyPassesPer90 = 520;
+        weights.AssistsPer90 = 1490;
         weights.ThroughBallsPer90 = 40;
     }
 
     const stats = {
-        AccuratePasses: row['Accurate Passes'] || 0,
-        AccuratePassesPercentage: row['Accurate Passes Percentage'] || 0,
         BigChancesCreated: row['Big Chances Created'] || 0,
         KeyPasses: row['Key Passes'] || 0,
         Assists: row['Assists'] || 0,
@@ -269,13 +279,10 @@
 
     const minutesPlayed = row['Minutes Played'] || 0;
 
+    // Calculate regular per90 stats
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
-        if (key !== 'AccuratePassesPercentage') {
-            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
-        } else {
-            per90Stats[key] = value;
-        }
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
     }
 
     let passingScore = 0;
@@ -283,17 +290,15 @@
         passingScore += (per90Stats[key] || 0) * weight;
     }
 
-    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
-    passingScore *= minutesMultiplier;
-
+    // Add consistency bonus if applicable
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
         consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
     }
     passingScore += consistencyBonus;
 
+    // Apply rating adjustments
     const rating = row.Rating || 0;
-
     if (rating >= 7.2) {
         passingScore += (rating - 7.1) * 100;
     } else if (rating >= 7.0) {
@@ -304,13 +309,19 @@
         passingScore -= (6.7 - rating) * 75;
     }
 
-    // Rapidly scaling bonus for Accurate Passes Percentage above 90%
+    // Add bonus for high passing accuracy
     const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
     if (accuratePassesPercentage >= 90) {
-        const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2); // Quadratic scaling
-        passingScore += 150 + (bonusMultiplier * 10); // Base bonus + scaled bonus
+        const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2);
+        passingScore += 35 + (bonusMultiplier * 10);
     } else if (accuratePassesPercentage >= 86) {
-        passingScore += 75; // Solid bonus for 86% or higher
+        passingScore += 25;
+    }
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        passingScore = passingScore * minutesPercentage;
     }
 
     passing = passingScore.toFixed(2);
@@ -319,35 +330,43 @@
 function getDefensiveScore(row) {
     const baseWeights = {
         TacklesPer90: 20,
+        FoulsPer90: -30,
         InterceptionsPer90: 25,
         BlockedShotsPer90: 60,
         Cleansheets: 200,
-        GoalsConcededPer90: -160,
+        GoalsConcededPer90: -200,
         ClearancesPer90: 20,
         CrossesBlockedPer90: 180,
         AerialsWonPercentage: 30,
         DuelsWonPercentage: 50,
-        DribbledPastPer90: -70,  
-        ErrorLeadToGoal: -200,
+        DribbledPastPer90: -100, 
+        ErrorLeadToGoal: -500,
         LongBallsWonPer90: 80
     };
 
+    const isAttacker = player.position === 'Attacker'
     const isDefender = player.position === 'Defender'
     const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
+    if (isAttacker){
+        weights.TacklesPer90 = 60
+        weights.InterceptionsPer90 = 45
+    }
     if (!isDefender) {
         weights.Cleansheets = 20;
-        weights.GoalsConcededPer90 = -40;
+        weights.GoalsConcededPer90 = -100;
         weights.LongBallsWonPer90 = 5
+        weights.ErrorLeadToGoal = -700
     }
     if (isFullback){
         weights.Cleansheets = 140;
-        weights.GoalsConcededPer90 = -80;
+        weights.GoalsConcededPer90 = -150;
         weights.CrossesBlockedPer90 = 240;
     }
 
     const stats = {
         Tackles: row.Tackles || 0,
+        Fouls: row.Fouls || 0,
         Interceptions: row.Interceptions || 0,
         BlockedShots: row['Shots Blocked'] || 0,
         Cleansheets: row.Cleansheets || 0,
@@ -384,9 +403,6 @@ function getDefensiveScore(row) {
         defensiveScore += (per90Stats[key] || 0) * weight;
     }
 
-    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
-    defensiveScore *= minutesMultiplier;
-
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
         consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
@@ -413,12 +429,18 @@ function getDefensiveScore(row) {
     if (dribbledPast > 0) {
         const basePenalty = 20; // Penalty for even being dribbled past once
         const scaleFactor = 30;  // Adjust steepness of the curve
-        const exponent = 2;       // Adjust the shape of the curve (higher = faster increase)
+        const exponent = 2;      // Adjust the shape of the curve (higher = faster increase)
         const maxPenalty = 250;    // Cap on the penalty
 
         dribbledPastPenalty = Math.min(basePenalty + scaleFactor * Math.pow(dribbledPast, exponent), maxPenalty);
         defensiveScore -= dribbledPastPenalty;
     }
+
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        defensiveScore = defensiveScore * minutesPercentage;
+    }
+
 
     defense = (defensiveScore * 0.8).toFixed(2);
 }
@@ -447,11 +469,11 @@ async function getPlayerStats(id){
                         } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
                             statValue = value.average;    
                         } else if (statName === 'Crosses Blocked') {
-                           statValue = value.crosses_blocked;
+                            statValue = value.crosses_blocked;
                         } else if (value && value.total) { 
-                          statValue = value.total;
+                            statValue = value.total;
                         } else if (typeof value === 'object' && Object.keys(value).length > 0) {
-                          statValue = value; 
+                            statValue = value; 
                         } else {
                             statValue = null; 
                         }
@@ -483,6 +505,7 @@ async function getPlayerStats(id){
         }
     }
 </script>
+
 <div 
     role="button"
     tabindex="0"
@@ -505,36 +528,115 @@ async function getPlayerStats(id){
         </div>
 
         {#if isExpanded}
-            <div class="expanded-content">
-                <div class="top-section">
-                    <div class="image-section">
-                        {#if player.image_path}
-                            <img src={player.image_path} alt={player.display_name} class="player-photo" />
-                        {/if}
-                        {#if player.nation_image}
-                            <img src={player.nation_image} alt={player.nationality} class="nation-image" />
-                        {/if}
-                        <span class="detailed-position">{player.detailedPosition}</span>
-                    </div>
-                </div>
-                <div class="stats-section">
-                    <div class="score">
-                        <span>Defensive Score: {defense}</span>
-                        <span>Passing Score: {passing}</span>
-                        <span>Possession Score: {possession}</span>
-                        <span>Attacking Score: {attacking}</span>
-                        <span>Overall Rating: {total}</span>
-                    </div>
-                </div>
-                <div class="expanded-info">
-                    <!-- Additional expanded info can go here -->
+        <div class="expanded-content">
+            <div class="top-section">
+                <div class="image-section">
+                    {#if player.image_path}
+                        <img src={player.image_path} alt={player.display_name} class="player-photo" />
+                    {/if}
+                    {#if player.nation_image}
+                        <img src={player.nation_image} alt={player.nationality} class="nation-image" />
+                    {/if}
+                    <span class="detailed-position">{player.detailedPosition}</span>
                 </div>
             </div>
-        {/if}
-    </div>
+            <div class="stats-section">
+                <div class="score">
+                    <span>Defensive Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(defense / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{defense}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Passing Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(passing / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{passing}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Possession Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(possession / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{possession}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Attacking Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(attacking / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{attacking}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Overall Rating:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(total / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{total}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="expanded-info">
+                </div>
+        </div>
+    {/if}
+</div>
 </div>
 
 <style>
+   .progress-bar-container {
+        position: relative;
+        display: inline-block; /* Important for proper width calculation */
+    }
+
+    .progress-bar {
+        width: 100%;
+        background-color: #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        height: 10px;
+        margin-top: 0.5rem;
+        cursor: pointer;
+    }
+
+    .progress {
+        height: 100%;
+        background-color: #4caf50;
+        border-radius: 8px;
+        transition: width 0.3s ease;
+    }
+
+    .popup {
+        display: none;
+        position: absolute;
+        left: 0; /* Shift the popup to the left edge of the container */
+        top: 100%; /* Position it below the progress bar */
+        transform: translateY(5px); /* Add a slight offset below the bar */
+        padding: 5px 10px;
+        background-color: #333;
+        color: #fff;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1; /* Ensure it's above the progress bar */
+    }
+
+    .progress-bar-container:hover .popup {
+        display: block;
+    }
+
     .player-card {
         width: 100%;
         text-align: left;
