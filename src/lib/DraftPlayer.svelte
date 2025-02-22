@@ -1,6 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
+	import Page from "../routes/+page.svelte";
     let {
         player = {
             id: 0,
@@ -71,10 +72,10 @@
     function getAttackingScore(row) {
         const baseWeights = {
             AccurateCrossesPer90: 40,
-            AssistsPer90: 400,
+            AssistsPer90: 500,
             BigChancesCreatedPer90: 100,
             BigChancesMissedPer90: -50,
-            GoalsPer90: 1000,
+            GoalsPer90: 1400,
             KeyPassesPer90: 80,
             HitWoodworkPer90: 100,
             LongBallsWonPer90: 40,
@@ -122,10 +123,20 @@
             per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90; 
     }
 
+    // let goalsWeight = 700
+
+    // if (minutesPlayed < 1000 && minutesPlayed > 0) {
+    //     goalsWeight = 700 + Math.min(700, (minutesPlayed / 1000) * 700)
+    //     weights.GoalsPer90 = goalsWeight
+    // }
+
     let attackingScore = 0;
     for (const [key, weight] of Object.entries(weights)) {
         attackingScore += (per90Stats[key] || 0) * weight;
     }
+
+    const minutesMultiplier = Math.min(1, minutesPlayed / 1000);
+    attackingScore *= minutesMultiplier;
 
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
