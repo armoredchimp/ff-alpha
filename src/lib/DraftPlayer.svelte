@@ -17,11 +17,20 @@
     } = $props()
 
     let isExpanded = $state(false);
+    let keeping = $state(0)
     let defense = $state(0)
     let passing = $state(0)
     let possession = $state(0)
     let attacking = $state(0)
     let total = $state(0)
+
+    const isKeeper = player.position === 'Goalkeeper';
+    const isDefender = player.position === 'Defender';
+    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
+    const isMidfielder = player.position === 'Midfielder';
+    const isAttacker = player.position === 'Attacker';
+    const isACM = player.detailedPosition === 'Attacking Midfield';
+    const isCB = player.detailedPosition === 'Centre Back';
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -51,54 +60,122 @@
 
         
     async function getCalcScores(id) {
-    let { data: row, error } = await supabase
-        .from('prem_stats_2425')
-        .select('*')
-        .eq('id', id)
-        .single();
+        let { data: row, error } = await supabase
+            .from('prem_stats_2425')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    if (error) {
-        console.error(error);
-    } else {
-        console.log(row);
+        if (error) {
+            console.error(error);
+        } else {
+            console.log(row);
 
-        getDefensiveScore(row);
-        defense = capScore(defense);
-        total = parseFloat(defense);
+        if(!isKeeper){
+            getDefensiveScore(row);
+            defense = capScore(defense);
+            total = parseFloat(defense);
 
-        getPassingScore(row);
-        passing = capScore(passing);
-        total += parseFloat(passing);
+            getPassingScore(row);
+            passing = capScore(passing);
+            total += parseFloat(passing);
 
-        getPossessionScore(row);
-        possession = capScore(possession); 
-        total += parseFloat(possession);
+            getPossessionScore(row);
+            possession = capScore(possession); 
+            total += parseFloat(possession);
 
-        getAttackingScore(row);
-        attacking = capScore(attacking);
-        total += parseFloat(attacking);
+            getAttackingScore(row);
+            attacking = capScore(attacking);
+            total += parseFloat(attacking);
+            
+            if (isMidfielder){
+                total *= 1.2
+            }
+            else if (isAttacker){
+                total *= 1.3
+            }
+            else if (isCB) {
+                total *= 1.4
+            }
+            else if (isFullback){
+                total *= 0.95
+            }
+            total = (total / 4).toFixed(2);
+        }else {
+            getKeeperScore(row);
+            keeping = capScore(keeping)
+            total += parseFloat(keeping)
 
-        const isMidfielder = player.position === 'Midfielder';
-        const isAttacker = player.position === 'Attacker'
-        const isCB = player.detailedPosition === 'Centre Back';
-        const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
-        
-        if (isMidfielder){
-            total *= 1.2
+            getPassingScore(row);
+            passing = capScore(passing);
+            total += parseFloat(passing);
+
+            total = (total / 2).toFixed(2)
         }
-        else if (isAttacker){
-            total *= 1.3
-        }
-        else if (isCB) {
-            total *= 1.4
-        }
-        else if (isFullback){
-            total *= 0.95
-        }
-        total = (total / 4).toFixed(2);
     }
 }
 
+function getKeeperScore(row){
+    const weights = {
+        AerialsWonPer90: 120,
+        Cleansheets: 3000,
+        ClearancesPer90: 160,
+        DuelsWonPercentage: 200,
+        GoalsConcededPer90: -1800,
+        ErrorLeadToGoal: -3000,
+        FoulsDrawnPer90: 240,
+        FoulsPer90: -240,
+        LongBallsWonPer90: 40,
+        SavesPer90: 260,
+        SavesInsideBoxPer90: 280
+    }
+
+    const stats = {
+        AerialsWon: row['Aerials Won'] || 0,
+        Cleansheets: row['Cleansheets'] || 0,
+        Clearances: row['Clearances'] || 0,
+        GoalsConceded: row['Goals Conceded'] || 0,
+        ErrorLeadToGoal: row['Error Lead To Goal'] || 0,
+        FoulsDrawn: row['Fouls Drawn'] || 0,
+        Fouls: row['Fouls'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+        DuelsWon: row['Duels Won'] || 0,
+        TotalDuels: row['Total Duels'] || 0,
+        Saves: row['Saves'] || 0,
+        SavesInsideBox: row['Saves Insidebox'] || 0
+    }
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
+
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+    }
+
+    per90Stats.DuelsWonPercentage = duelsWonPercentage;
+
+    let keepingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        keepingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    keepingScore += consistencyBonus;
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        keepingScore = keepingScore * minutesPercentage;
+    }
+    console.log(keepingScore)
+    keeping = (keepingScore / 5).toFixed(2)
+}
 
 function getAttackingScore(row) {
     const baseWeights = {
@@ -118,8 +195,6 @@ function getAttackingScore(row) {
         SuccessfulDribblesPer90: 120
     }
 
-    const isDefender = player.position === 'Defender';
-    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     
     if (isDefender) {
@@ -194,11 +269,6 @@ function getPossessionScore(row) {
         OffsidesPer90: -300 
     };
 
-    const isDefender = player.position === 'Defender';
-    const isMidfielder = player.position === 'Midfielder';
-    const isAttacker = player.position === 'Attacker';
-    const isACM = player.detailedPosition === 'Attacking Midfield';
-    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     
     if (isMidfielder){
@@ -312,12 +382,14 @@ function getPassingScore(row) {
         BigChancesCreatedPer90: 900
     };
 
-    const isDefender = player.position === 'Defender';
-    const isMidfielder = player.position === 'Midfielder';
-    const isACM = player.detailedPosition === 'Attacking Midfield';
-    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     
+    if (isKeeper) {
+        weights.KeyPassesPer90 = 1200,
+        weights.AssistsPer90 = 2200,
+        weights.BigChancesCreatedPer90 = 1700,
+        weights.ThroughBallsPer90 = 80
+    }
     if (isMidfielder) {
         weights.AssistsPer90 = 1600;
         weights.BigChancesCreatedPer90 = 1100;
@@ -396,7 +468,9 @@ function getPassingScore(row) {
         const minutesPercentage = minutesPlayed / 1000;
         passingScore = passingScore * minutesPercentage;
     }
-
+    if(isKeeper){
+        passingScore *= 4
+    }
     passing = passingScore.toFixed(2);
 }
 
@@ -417,10 +491,6 @@ function getDefensiveScore(row) {
         LongBallsWonPer90: 20
     };
 
-    const isAttacker = player.position === 'Attacker';
-    const isMidfielder = player.position === 'Midfielder';
-    const isDefender = player.position === 'Defender';
-    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
     const weights = { ...baseWeights };
     if (isAttacker){
         weights.TacklesPer90 = 100
@@ -618,6 +688,7 @@ async function getPlayerStats(id){
                 </div>
             </div>
             <div class="stats-section">
+                {#if !isKeeper}
                 <div class="score">
                     <span>Defensive Score:</span>
                     <div class="progress-bar-container">
@@ -663,6 +734,35 @@ async function getPlayerStats(id){
                         <div class="popup">{total}</div>
                     </div>
                 </div>
+                {:else}
+                <div class="score">
+                    <span>Keeping Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(keeping / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{keeping}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Passing Score:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(passing / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{passing}</div>
+                    </div>
+                </div>
+                <div class="score">
+                    <span>Overall Rating:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress" style={`width: ${(total / 5000) * 100}%;`}></div>
+                        </div>
+                        <div class="popup">{total}</div>
+                    </div>
+                </div>
+                {/if}
             </div>
             <div class="expanded-info">
                 </div>
