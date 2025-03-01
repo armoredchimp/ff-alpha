@@ -79,11 +79,15 @@
         total += parseFloat(attacking);
 
         const isMidfielder = player.position === 'Midfielder';
+        const isAttacker = player.position === 'Attacker'
         const isCB = player.detailedPosition === 'Centre Back';
         const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
         
         if (isMidfielder){
             total *= 1.2
+        }
+        else if (isAttacker){
+            total *= 1.3
         }
         else if (isCB) {
             total *= 1.4
@@ -100,10 +104,10 @@ function getAttackingScore(row) {
     const baseWeights = {
         AccurateCrossesPer90: 60,
         AssistsPer90: 500,
-        BigChancesCreatedPer90: 300,
-        BigChancesMissedPer90: -300,
+        BigChancesCreatedPer90: 250,
+        BigChancesMissedPer90: -250,
         GoalsPer90: 1500,
-        KeyPassesPer90: 100,
+        KeyPassesPer90: 60,
         HitWoodworkPer90: 100,
         LongBallsWonPer90: 30,
         OffsidesPer90: -140,
@@ -111,7 +115,7 @@ function getAttackingScore(row) {
         ShotsBlockedPer90: 30,
         ShotsOffTargetPer90: -40,
         ShotsOnTargetPer90: 70,
-        SuccessfulDribblesPer90: 90
+        SuccessfulDribblesPer90: 120
     }
 
     const isDefender = player.position === 'Defender';
@@ -121,6 +125,7 @@ function getAttackingScore(row) {
     if (isDefender) {
         weights.GoalsPer90 = 2000
         weights.KeyPassesPer90 = 200
+        weights.BigChancesCreatedPer90 = 400;
     }
     if (isFullback) {
         weights.AccurateCrossesPer90 = 120
@@ -201,20 +206,22 @@ function getPossessionScore(row) {
         weights.FoulsDrawnPer90 = 120;
         weights.AccuratePassesPer90 = 10;
         weights.PassesPer90 = 2;
-        weights.OffsidesPer90 = -120
+        weights.OffsidesPer90 = -180
+        weights.BigChancesCreatedPer90 = 320;
         weights.FoulsDrawnPer90 = 120
     }
     if (isACM) {
-        weights.DispossessedPer90 = -110;
+        weights.DispossessedPer90 = -170;
         weights.FoulsDrawnPer90 = 130;
         weights.AccuratePassesPer90 = 12;
-        weights.PassesPer90 = 2.2;
+        weights.PassesPer90 = 2;
+        weights.KeyPassesPer90 = 180;
     }
     else if (isAttacker) {
         weights.PassesPer90 = 5;
         weights.AccuratePassesPer90 = 20;
-        weights.KeyPassesPer90 = 440;
-        weights.BigChancesCreatedPer90 = 560;
+        weights.KeyPassesPer90 = 360;
+        weights.BigChancesCreatedPer90 = 460;
         weights.OffsidesPer90 = -80;
         weights.FoulsDrawnPer90 = 150
     }
@@ -225,9 +232,9 @@ function getPossessionScore(row) {
         weights.FoulsPer90 = -30;
     }
     else if (isFullback) {
-        weights.AccuratePassesPer90 = 12;
+        weights.AccuratePassesPer90 = 10;
         // weights.AccuratePassesPercentage = 30;
-        weights.KeyPassesPer90 = 240;
+        // weights.KeyPassesPer90 = 240;
     }
 
     const stats = {
@@ -323,7 +330,7 @@ function getPassingScore(row) {
         weights.ThroughBallsPer90 = 40;
     }
     if (isACM) {
-        weights.AssistsPer90 = 1700;
+        // weights.AssistsPer90 = 1700;
         weights.KeyPassesPer90 = 950;
         weights.BigChancesCreatedPer90 = 1200;
     }
