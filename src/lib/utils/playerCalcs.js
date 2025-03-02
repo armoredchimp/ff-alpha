@@ -139,30 +139,30 @@ function getAttackingScore(row, position, detailedPosition) {
 function getPossessionScore(row, position, detailedPosition) {
     const baseWeights = {
         // AccuratePassesPercentage: 20, 
-        AccuratePassesPer90: 8,
+        AccuratePassesPer90: 6,
         PassesPer90: 1, 
         SuccessfulDribblesPer90: 70, 
         LongBallsWonPer90: 60, 
-        DispossessedPer90: -220, 
+        DispossessedPer90: -300, 
         FoulsPer90: -220,
         FoulsDrawnPer90: 100, 
         ShotsOffTargetPer90: -60, 
-        KeyPassesPer90: 140,
+        KeyPassesPer90: 120,
         BigChancesCreatedPer90: 200, 
         ThroughBallsWonPer90: 70,
-        OffsidesPer90: -300 
+        OffsidesPer90: -320 
     };
 
     const weights = { ...baseWeights };
     
     if (position === 'Midfielder'){
-        weights.DispossessedPer90 = -180;
+        weights.DispossessedPer90 = -260;
         weights.FoulsDrawnPer90 = 120;
-        weights.AccuratePassesPer90 = 10;
-        weights.PassesPer90 = 2;
+        // weights.AccuratePassesPer90 = 10;
+        weights.PassesPer90 = 1.5;
         weights.OffsidesPer90 = -180
-        weights.BigChancesCreatedPer90 = 320;
-        weights.FoulsDrawnPer90 = 120
+        weights.BigChancesCreatedPer90 = 280;
+        weights.FoulsDrawnPer90 = 140
     }
     // if (detailedPosition === 'Attacking Midfield') {
     //     weights.DispossessedPer90 = -170;
@@ -172,12 +172,13 @@ function getPossessionScore(row, position, detailedPosition) {
     //     weights.KeyPassesPer90 = 180;
     // }
     else if (position === 'Attacker') {
-        weights.PassesPer90 = 5;
-        weights.AccuratePassesPer90 = 20;
-        weights.KeyPassesPer90 = 360;
-        weights.BigChancesCreatedPer90 = 460;
-        weights.OffsidesPer90 = -80;
-        weights.FoulsDrawnPer90 = 150
+        weights.DispossessedPer90 = -220;
+        // weights.PassesPer90 = 2;
+        weights.AccuratePassesPer90 = 10;
+        weights.KeyPassesPer90 = 160;
+        weights.BigChancesCreatedPer90 = 260;
+        weights.OffsidesPer90 = -120;
+        weights.FoulsDrawnPer90 = 180
     }
     else if (position === 'Defender') {
         weights.AccuratePassesPer90 = 5;
@@ -185,10 +186,19 @@ function getPossessionScore(row, position, detailedPosition) {
         weights.KeyPassesPer90 = 230;
         weights.FoulsPer90 = -30;
     }
-    else if (detailedPosition === 'Right Back' || detailedPosition === 'Left Back') {
-        weights.AccuratePassesPer90 = 10;
+
+    if (detailedPosition === 'Right Back' || detailedPosition === 'Left Back') {
+        weights.AccuratePassesPer90 = 8;
         // weights.AccuratePassesPercentage = 30;
         // weights.KeyPassesPer90 = 240;
+    } else if (detailedPosition === 'Centre Forward'){
+        weights.DispossessedPer90 = -220;
+        weights.PassesPer90 = 3;
+        weights.AccuratePassesPer90 = 15;
+        weights.KeyPassesPer90 = 180;
+        weights.BigChancesCreatedPer90 = 300;
+        weights.OffsidesPer90 = -60;
+        weights.FoulsDrawnPer90 = 300
     }
 
     const stats = {
