@@ -164,13 +164,13 @@ function getPossessionScore(row, position, detailedPosition) {
         weights.BigChancesCreatedPer90 = 320;
         weights.FoulsDrawnPer90 = 120
     }
-    if (detailedPosition === 'Attacking Midfield') {
-        weights.DispossessedPer90 = -170;
-        weights.FoulsDrawnPer90 = 130;
-        weights.AccuratePassesPer90 = 12;
-        weights.PassesPer90 = 2;
-        weights.KeyPassesPer90 = 180;
-    }
+    // if (detailedPosition === 'Attacking Midfield') {
+    //     weights.DispossessedPer90 = -170;
+    //     weights.FoulsDrawnPer90 = 130;
+    //     weights.AccuratePassesPer90 = 12;
+    //     weights.PassesPer90 = 2;
+    //     weights.KeyPassesPer90 = 180;
+    // }
     else if (position === 'Attacker') {
         weights.PassesPer90 = 5;
         weights.AccuratePassesPer90 = 20;
@@ -285,11 +285,11 @@ function getPassingScore(row, position, detailedPosition) {
         weights.BigChancesCreatedPer90 = 1200
         weights.ThroughBallsPer90 = 40;
     }
-    if (position === 'Attacking Midfield') {
-        // weights.AssistsPer90 = 1700;
-        weights.KeyPassesPer90 = 950;
-        weights.BigChancesCreatedPer90 = 1200;
-    }
+    // if (position === 'Attacking Midfield') {
+    //     // weights.AssistsPer90 = 1700;
+    //     weights.KeyPassesPer90 = 950;
+    //     weights.BigChancesCreatedPer90 = 1200;
+    // }
     if (detailedPosition === 'Right Back' || detailedPosition === 'Left Back') {
         weights.AccurateCrossesPer90 = 90;
         weights.BigChancesCreatedPer90 = 1000;
