@@ -11,6 +11,10 @@
 
     const extraIds = [37317015,27067062,26803,37543248,34053,154421,28912747,25217662]
 
+    function capScore(score) {
+        return Math.min(score, 5000);
+    }
+
     async function addExtraPlayers(ids){
         for(let i = 0; i < ids.length; i++){
             getPlayerStatsAndUpload(ids[i])
@@ -47,13 +51,120 @@
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+async function getPlayersThenScore() {
+    try {
+        let { data: players, error } = await supabase
+            .from('prem_stats_2425')
+            .select('*');
 
-async function getPlayersThenScore(){
-    let { data: row, error } = await supabase
-        .from('prem_stats_2425')
-        .select('*')
+        if (error) {
+            console.error('Error fetching players:', error);
+            return;
+        }
 
-    
+        console.log(`Fetched ${players.length} players.`);
+
+        for (const player of players) {
+            console.log(`Processing player: ${player["Player Name"]}`);
+
+            await delay(2500);
+
+            const playerData = {
+                id: player.id,
+                player_name: player["Player Name"],
+                position: player.Position,
+                detailed_position: player["Detailed Position"],
+                keeper_score: null,
+                defensive_score: null,
+                passing_score: null,
+                possession_score: null,
+                attacking_score: null,
+                total_score: null,
+                transfer_value: null
+            };
+            
+            let attacking = null;
+            let keeping = null;
+            let passing = null;
+            let defense = null;
+            let possession = null;
+            let total = 0; // Initialize total score
+
+            const isKeeper = player.Position === 'Goalkeeper';
+            const isMidfielder = player.Position === 'Midfielder';
+            const isAttacker = player.Position === 'Attacker';
+            const isCB = player["Detailed Position"] === 'Centre-Back';
+            const isFullback = player["Detailed Position"] === 'Left-Back' || player["Detailed Position"] === 'Right-Back';
+
+            if (!isKeeper) {
+                defense = getDefensiveScore(player, player.Position, player["Detailed Position"]);
+                defense = capScore(defense); 
+                total += parseFloat(defense);
+
+                passing = getPassingScore(player, player.Position, player["Detailed Position"]);
+                passing = capScore(passing);
+                total += parseFloat(passing);
+
+                possession = getPossessionScore(player, player.Position, player["Detailed Position"]);
+                possession = capScore(possession);
+                total += parseFloat(possession);
+
+                attacking = getAttackingScore(player, player.Position, player["Detailed Position"]);
+                attacking = capScore(attacking);
+                total += parseFloat(attacking);
+
+                if (isMidfielder) {
+                    total *= 1.2;
+                } else if (isAttacker) {
+                    total *= 1.3;
+                } else if (isCB) {
+                    total *= 1.4;
+                } else if (isFullback) {
+                    total *= 0.95;
+                }
+
+                total = (total / 4).toFixed(2);
+                console.log('total:  ', total)
+            } else {
+                keeping = getKeeperScore(player);
+                keeping = capScore(keeping);
+                total += parseFloat(keeping);
+
+                passing = getPassingScore(player, player.Position, player["Detailed Position"]);
+                passing = capScore(passing);
+                total += parseFloat(passing);
+
+                total = (total / 2).toFixed(2);
+            }
+            playerData.total_score = total;
+            playerData.transfer_value = (total * 20).toFixed(2);
+
+            if (!isKeeper) {
+                playerData.defensive_score = parseFloat(defense)
+                playerData.passing_score = parseFloat(passing)
+                playerData.possession_score = parseFloat(possession)
+                playerData.attacking_score = parseFloat(attacking)
+            } else {
+                playerData.keeper_score = parseFloat(keeping)
+                playerData.passing_score = parseFloat(passing)
+
+            }
+
+            const { error: uploadError } = await supabase
+                .from('prem_mini_2425')
+                .upsert([playerData]);
+
+            if (uploadError) {
+                console.error(`Error uploading scores for player ${player["Player Name"]}:`, uploadError);
+            } else {
+                console.log(`Successfully uploaded scores for player ${player["Player Name"]}`);
+            }
+        }
+
+        console.log('All players processed and scores uploaded.');
+    } catch (err) {
+        console.error('Error in getPlayersThenScore:', err);
+    }
 }
 
 async function getPlayerStatsAndUpload(id) {
@@ -171,6 +282,7 @@ async function getPremPlayersAndUpload() {
                         await getPlayerStatsAndUpload(player.player.id); // Process each player one at a time
                     }
                 }
+                console.log('Operation Great Success!')
             }
         }
     } catch (err) {
@@ -184,4 +296,10 @@ async function getPremPlayersAndUpload() {
 
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
 <button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
-<button></button>
+<button onclick={getPlayersThenScore}>Upload Scores to Mini</button>
+
+<style>
+    button {
+        margin-right: 2rem;
+    }
+</style>

@@ -254,8 +254,6 @@ function getPossessionScore(row, position, detailedPosition) {
         possessionScore = possessionScore * minutesPercentage;
     }
 
-    console.log(possessionScore)
-    console.log(AccuratePassesPercentage)
     possessionScore = (possessionScore / 30) * AccuratePassesPercentage
 
     if(possessionScore <= 100){
