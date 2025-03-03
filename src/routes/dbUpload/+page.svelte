@@ -2,6 +2,7 @@
     import axios from "axios";
     import { allPlayers } from "$lib/stores/stores.svelte";
     import { createClient } from "@supabase/supabase-js";
+    import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "$lib/utils/playerCalcs";
 
     const supabaseURL = import.meta.env.VITE_DB_URL
     const supabaseKey = import.meta.env.VITE_DB_API_KEY
@@ -47,6 +48,14 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function getPlayersThenScore(){
+    let { data: row, error } = await supabase
+        .from('prem_stats_2425')
+        .select('*')
+
+    
+}
+
 async function getPlayerStatsAndUpload(id) {
     try {
         // Fetch player data
@@ -60,7 +69,7 @@ async function getPlayerStatsAndUpload(id) {
         const playerData = response.data.data;
         console.log("Player Data:", playerData);
 
-        await delay(5000); // Add a delay after each request
+        await delay(2500); // Add a delay after each request
 
         if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             const seasonStats = playerData.statistics[0];
@@ -69,6 +78,8 @@ async function getPlayerStatsAndUpload(id) {
                 // Initialize the stats object with common player data
                 const statsToInsert = {
                     id: playerData.id,
+                    Position: playerData.position.name,
+                    "Detailed Position": playerData.detailedposition.name,
                     "Player Name": playerData.display_name,
                 };
 
@@ -121,7 +132,7 @@ async function getPlayerStatsAndUpload(id) {
                 // Perform a single insert operation with the complete stats object
                 const { error } = await supabase
                     .from('prem_stats_2425') 
-                    .insert([statsToInsert]);
+                    .upsert([statsToInsert]);
 
                 if (error) {
                     console.error(`Error inserting stats for player ${playerData.display_name}:`, error);
@@ -173,3 +184,4 @@ async function getPremPlayersAndUpload() {
 
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
 <button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
+<button></button>

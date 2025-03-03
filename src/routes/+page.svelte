@@ -63,7 +63,7 @@
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
-<!-- <h4><a href='/dbUpload'>To Upload Page</a></h4> -->
+<h4><a href='/dbUpload'>To Upload Page</a></h4>
 <button onclick={getPlayerById(54191)}>getPlayerById</button>
 <button onclick={getPremPlayers}>Get Players</button>
 <div class="page-container">
