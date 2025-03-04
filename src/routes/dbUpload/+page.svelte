@@ -82,7 +82,7 @@ async function getPlayersThenScore() {
         for (const player of players) {
             console.log(`Processing player: ${player["Player Name"]}`);
 
-            await delay(1000);
+            await delay(500);
 
             const playerData = {
                 id: player.id,
@@ -186,6 +186,8 @@ async function getPlayersThenScore() {
     }
 }
 
+
+
 async function getPlayerStatsAndUpload(id, teamName) {
     try {
         // Fetch player data
@@ -199,7 +201,7 @@ async function getPlayerStatsAndUpload(id, teamName) {
         const playerData = response.data.data;
         console.log("Player Data:", playerData);
 
-        await delay(900); // Add a delay after each request
+        await delay(500); // Add a delay after each request
 
         if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             const seasonStats = playerData.statistics[0];
@@ -213,7 +215,7 @@ async function getPlayerStatsAndUpload(id, teamName) {
                     "Player Name": playerData.display_name,
                     "Player Team": teamName,
                     Age: calculateAge(playerData.date_of_birth),
-                    Nation: getCountry(playerData.country_id)
+                    Nation: getCountry(playerData.nationality_id)
                 };
 
                 // Flatten the stats and add them to the object
@@ -304,9 +306,10 @@ async function getPremPlayersAndUpload() {
                         await getPlayerStatsAndUpload(player.player.id, team.name); // Process each player one at a time
                     }
                 }
-                console.log('Operation Great Success!')
             }
         }
+        console.log('Operation Success!')
+        getPlayersThenScore()
     } catch (err) {
         console.error("Error fetching Premier League players:", err);
     }
@@ -315,7 +318,7 @@ async function getPremPlayersAndUpload() {
 
 </script>
 
-
+<button><a href="../">Home</a></button>
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
 <button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
 <button onclick={getPlayersThenScore}>Upload Scores to Mini</button>
