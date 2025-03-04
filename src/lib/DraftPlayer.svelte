@@ -52,6 +52,7 @@
             console.log(player.id)
             // getCalcScores(player.id)
             getPlayerStats(player.id)
+            
         }
     }
 
@@ -135,6 +136,7 @@ async function getPlayerStats(id){
             const playerData = lad.data.data; 
             console.log(playerData)
             player.image_path = playerData.image_path
+            getNation(playerData.nationality_id)
             if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             playerData.statistics.forEach(seasonStats => {
                 if (seasonStats.details) {
