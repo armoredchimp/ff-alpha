@@ -22,6 +22,24 @@
     }
 
 
+    async function getPremPlayersFromMini(){
+        let { data: players, error } = await supabase
+            .from('prem_mini_2425')
+            .select('*')
+            .order('transfer_value', { ascending: false });
+
+        if (error){
+            console.error(error)
+        }
+
+        for(const player of players){
+            // console.log(`Processing player ${player.player_name}`)
+            allPlayers.push(player)
+        }
+    
+        console.log(allPlayers)
+    }
+
 
 	async function getPremPlayers() {
         let lads = []
@@ -65,7 +83,8 @@
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <h4><a href='/dbUpload'>To Upload Page</a></h4>
 <button onclick={getPlayerById(54191)}>getPlayerById</button>
-<button onclick={getPremPlayers}>Get Players</button>
+<button onclick={getPremPlayersFromMini}>Get Players</button>
+<button onclick={getPremPlayers}>Get Players From API</button>
 <div class="page-container">
 	<div class="players-section">
 		<h3>Prem Players: {allPlayers.length}</h3>

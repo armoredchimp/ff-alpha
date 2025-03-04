@@ -6,33 +6,40 @@
     let {
         player = {
             id: 0,
-            display_name: '',
-            team_name: '',
+            player_name: '',
+            transfer_value: '',
+            player_team: '',
             position: '',
-            detailedPosition: '',
-            date_of_birth: 0,
-            nationality_id: '',
+            detailed_position: '',
+            player_age: '',
             nationality: '',
             nation_image: '',
+            defensive_score: '',
+            passing_score: '',
+            possession_score: '',
+            attacking_score: '',
+            total_score: '',
+            keeper_score: ''
+            
         }
     } = $props()
 
-    let garbage = 0
+    
     let isExpanded = $state(false);
-    let keeping = $state(0)
-    let defense = $state(0)
-    let passing = $state(0)
-    let possession = $state(0)
-    let attacking = $state(0)
-    let total = $state(0)
+    // let keeping = $state(0)
+    // let defense = $state(0)
+    // let passing = $state(0)
+    // let possession = $state(0)
+    // let attacking = $state(0)
+    // let total = $state(0)
 
     const isKeeper = player.position === 'Goalkeeper';
     const isDefender = player.position === 'Defender';
-    const isFullback = player.detailedPosition === 'Right Back' || player.detailedPosition === 'Left Back';
+    const isFullback = player.detailed_position === 'Right Back' || player.detailed_position === 'Left Back';
     const isMidfielder = player.position === 'Midfielder';
     const isAttacker = player.position === 'Attacker';
-    const isACM = player.detailedPosition === 'Attacking Midfield';
-    const isCB = player.detailedPosition === 'Centre Back';
+    const isACM = player.detailed_position === 'Attacking Midfield';
+    const isCB = player.detailed_position === 'Centre Back';
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -42,10 +49,9 @@
     function toggleExpand() {
         isExpanded = !isExpanded;
         if (isExpanded){
-            getNation(player.nationality_id)
             console.log(player.id)
-            getCalcScores(player.id)
-            // getPlayerStats(player.id)
+            // getCalcScores(player.id)
+            getPlayerStats(player.id)
         }
     }
 
@@ -61,73 +67,74 @@
     }
 
         
-    async function getCalcScores(id) {
-        let { data: row, error } = await supabase
-            .from('prem_stats_2425')
-            .select('*')
-            .eq('id', id)
-            .single();
+//     async function getCalcScores(id) {
+//         let { data: row, error } = await supabase
+//             .from('prem_stats_2425')
+//             .select('*')
+//             .eq('id', id)
+//             .single();
 
-        if (error) {
-            console.error(error);
-        } else {
-            console.log(row);
+//         if (error) {
+//             console.error(error);
+//         } else {
+//             console.log(row);
 
-        if(!isKeeper){
-            defense = getDefensiveScore(row, player.position, player.detailedPosition);
-            defense = capScore(defense);
-            total = parseFloat(defense);
+//         if(!isKeeper){
+//             defense = getDefensiveScore(row, player.position, player.detailedPosition);
+//             defense = capScore(defense);
+//             total = parseFloat(defense);
 
-            passing = getPassingScore(row, player.position, player.detailedPosition);
-            passing = capScore(passing);
-            total += parseFloat(passing);
+//             passing = getPassingScore(row, player.position, player.detailedPosition);
+//             passing = capScore(passing);
+//             total += parseFloat(passing);
 
-            possession = getPossessionScore(row, player.position, player.detailedPosition);
-            possession = capScore(possession); 
-            total += parseFloat(possession);
+//             possession = getPossessionScore(row, player.position, player.detailedPosition);
+//             possession = capScore(possession); 
+//             total += parseFloat(possession);
 
-            attacking = getAttackingScore(row, player.position, player.detailedPosition);
-            attacking = capScore(attacking);
-            total += parseFloat(attacking);
+//             attacking = getAttackingScore(row, player.position, player.detailedPosition);
+//             attacking = capScore(attacking);
+//             total += parseFloat(attacking);
             
-            if (isMidfielder){
-                total *= 1.2
-            }
-            else if (isAttacker){
-                total *= 1.3
-            }
-            else if (isCB) {
-                total *= 1.4
-            }
-            else if (isFullback){
-                total *= 0.95
-            }
-            total = (total / 4).toFixed(2);
-        }else {
-            keeping = getKeeperScore(row);
-            keeping = capScore(keeping)
-            total += parseFloat(keeping)
+//             if (isMidfielder){
+//                 total *= 1.2
+//             }
+//             else if (isAttacker){
+//                 total *= 1.3
+//             }
+//             else if (isCB) {
+//                 total *= 1.4
+//             }
+//             else if (isFullback){
+//                 total *= 0.95
+//             }
+//             total = (total / 4).toFixed(2);
+//         }else {
+//             keeping = getKeeperScore(row);
+//             keeping = capScore(keeping)
+//             total += parseFloat(keeping)
 
-            passing = getPassingScore(row, player.position, player.detailedPosition);
-            passing = capScore(passing);
-            total += parseFloat(passing);
+//             passing = getPassingScore(row, player.position, player.detailedPosition);
+//             passing = capScore(passing);
+//             total += parseFloat(passing);
 
-            total = (total / 2).toFixed(2)
-        }
-    }
-}
+//             total = (total / 2).toFixed(2)
+//         }
+//     }
+// }
 
 async function getPlayerStats(id){
         try {
             const lad = await axios.get(`/api/players/${id}`,{
                 params: {
-                    include: 'statistics.details.type;position;detailedPosition',
+                    include: 'statistics.details.type',
                     filter: 'playerStatisticSeasons:23614'
                 }
             })
 
             const playerData = lad.data.data; 
             console.log(playerData)
+            player.image_path = playerData.image_path
             if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             playerData.statistics.forEach(seasonStats => {
                 if (seasonStats.details) {
@@ -190,12 +197,13 @@ async function getPlayerStats(id){
 >
     <div class="info">
         <div class="name-value">
-            <h3>{player.display_name}</h3>
+            <h3>{player.player_name}</h3>
+            <h2>€{player.transfer_value.toFixed(0)}</h2>
         </div>
         <div class="details">
-            <span>{calculateAge(player.date_of_birth)} yrs</span>
+            <span>{player.player_age} yrs</span>
             <span>{player.nationality}</span>
-            <span>{player.team_name}</span>
+            <span>{player.player_team}</span>
             <span>{player.position}</span>
         </div>
 
@@ -209,7 +217,7 @@ async function getPlayerStats(id){
                     {#if player.nation_image}
                         <img src={player.nation_image} alt={player.nationality} class="nation-image" />
                     {/if}
-                    <span class="detailed-position">{player.detailedPosition}</span>
+                    <span class="detailed-position">{player.detailed_position}</span>
                 </div>
             </div>
             <div class="stats-section">
@@ -218,45 +226,45 @@ async function getPlayerStats(id){
                     <span>Defensive Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(defense / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.defensive_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{defense}</div>
+                        <div class="popup">{player.defensive_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Passing Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(passing / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{passing}</div>
+                        <div class="popup">{player.passing_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Possession Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(possession / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.possession_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{possession}</div>
+                        <div class="popup">{player.possession_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Attacking Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(attacking / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.attacking_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{attacking}</div>
+                        <div class="popup">{player.attacking_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Overall Rating:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(total / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{total}</div>
+                        <div class="popup">{player.total_score}</div>
                     </div>
                 </div>
                 {:else}
@@ -264,27 +272,27 @@ async function getPlayerStats(id){
                     <span>Keeping Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(keeping / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.keeper_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{keeping}</div>
+                        <div class="popup">{player.keeper_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Passing Score:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(passing / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{passing}</div>
+                        <div class="popup">{player.passing_score}</div>
                     </div>
                 </div>
                 <div class="score">
                     <span>Overall Rating:</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
-                            <div class="progress" style={`width: ${(total / 5000) * 100}%;`}></div>
+                            <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
                         </div>
-                        <div class="popup">{total}</div>
+                        <div class="popup">{player.total_score}</div>
                     </div>
                 </div>
                 {/if}

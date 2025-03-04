@@ -2,6 +2,7 @@
     import axios from "axios";
     import { allPlayers } from "$lib/stores/stores.svelte";
     import { createClient } from "@supabase/supabase-js";
+    import { countryMap, getCountry } from '$lib/data/countries';
     import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "$lib/utils/playerCalcs";
 
     const supabaseURL = import.meta.env.VITE_DB_URL
@@ -51,6 +52,20 @@
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+function calculateAge(date_of_birth) {
+    const dob = new Date(date_of_birth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDifference = today.getMonth() - dob.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+
+
 async function getPlayersThenScore() {
     try {
         let { data: players, error } = await supabase
@@ -67,7 +82,7 @@ async function getPlayersThenScore() {
         for (const player of players) {
             console.log(`Processing player: ${player["Player Name"]}`);
 
-            await delay(2500);
+            await delay(1000);
 
             const playerData = {
                 id: player.id,
@@ -80,7 +95,8 @@ async function getPlayersThenScore() {
                 possession_score: null,
                 attacking_score: null,
                 total_score: null,
-                transfer_value: null
+                transfer_value: null,
+                player_age: null
             };
             
             let attacking = null;
@@ -138,6 +154,9 @@ async function getPlayersThenScore() {
             }
             playerData.total_score = total;
             playerData.transfer_value = (total * 20).toFixed(2);
+            playerData.player_age = player.Age;
+            playerData.player_team = player["Player Team"];
+            playerData.nationality = player.Nation;
 
             if (!isKeeper) {
                 playerData.defensive_score = parseFloat(defense)
@@ -167,7 +186,7 @@ async function getPlayersThenScore() {
     }
 }
 
-async function getPlayerStatsAndUpload(id) {
+async function getPlayerStatsAndUpload(id, teamName) {
     try {
         // Fetch player data
         const response = await axios.get(`/api/players/${id}`, { 
@@ -180,7 +199,7 @@ async function getPlayerStatsAndUpload(id) {
         const playerData = response.data.data;
         console.log("Player Data:", playerData);
 
-        await delay(2500); // Add a delay after each request
+        await delay(900); // Add a delay after each request
 
         if (playerData && playerData.statistics && playerData.statistics.length > 0) {
             const seasonStats = playerData.statistics[0];
@@ -192,6 +211,9 @@ async function getPlayerStatsAndUpload(id) {
                     Position: playerData.position.name,
                     "Detailed Position": playerData.detailedposition.name,
                     "Player Name": playerData.display_name,
+                    "Player Team": teamName,
+                    Age: calculateAge(playerData.date_of_birth),
+                    Nation: getCountry(playerData.country_id)
                 };
 
                 // Flatten the stats and add them to the object
@@ -279,7 +301,7 @@ async function getPremPlayersAndUpload() {
                 for (const player of team.players) {
                     if (player.player.date_of_birth !== null) {
                         console.log(`Fetching stats for player ${player.player.id}...`);
-                        await getPlayerStatsAndUpload(player.player.id); // Process each player one at a time
+                        await getPlayerStatsAndUpload(player.player.id, team.name); // Process each player one at a time
                     }
                 }
                 console.log('Operation Great Success!')
