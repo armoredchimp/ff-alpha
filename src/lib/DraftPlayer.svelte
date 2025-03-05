@@ -21,7 +21,33 @@
             total_score: '',
             keeper_score: '',
             tackles: '',
-            minutes: ''
+            minutes: '',
+            shotsOff: '',
+            shots: '',
+            offsides: '',
+            goals: '',
+            shotsBlocked: '',
+            hitWood: '',
+            assists: '',
+            passes: '',
+            goalsConc: '',
+            disposs: '',
+            fouls: '',
+            foulsDr: '',
+            blockedShots: '',
+            accCrosses: '',
+            intercept: '',
+            clear: '',
+            duelsPerc: '',
+            dribPerc: '',
+            keyP: '',
+            rating: '',
+            lbWon: '',
+            clean: '',
+            bigCr: '',
+            bigMis: '',
+            accPPerc: '',
+            cBlocked: ''
             
         }
     } = $props()
@@ -132,54 +158,205 @@
 //             total = (total / 2).toFixed(2)
 //         }
 //     }
-// }
+// 
+    // Function to calculate per 90 values
+    function calculatePer90(statValue, minutes) {
+        return minutes > 0 ? ((statValue / minutes) * 90).toFixed(2) : 0;
+    }
 
-async function getPlayerStats(id){
-        try {
-            const lad = await axios.get(`/api/players/${id}`,{
-                params: {
-                    include: 'statistics.details.type',
-                    filter: 'playerStatisticSeasons:23614'
+   
+    // Function to process and assign stats
+    function processStat(statName, statValue, minutes) {
+        switch (statName) {
+            case 'Tackles':
+                player.tackles = calculatePer90(statValue, minutes);
+                break;
+            case 'Shots Off Target':
+                player.shotsOff = calculatePer90(statValue, minutes);
+                break;
+            case 'Shots Total':
+                player.shots = calculatePer90(statValue, minutes);
+                break;
+            case 'Offsides':
+                player.offsides = calculatePer90(statValue, minutes);
+                break;
+            case 'Goals':
+                player.goals = calculatePer90(statValue, minutes);
+                break;
+            case 'Shots Blocked':
+                player.shotsBlocked = calculatePer90(statValue, minutes);
+                break;
+            case 'Hit Woodwork':
+                player.hitWood = calculatePer90(statValue, minutes);
+                break;
+            case 'Assists':
+                player.assists = calculatePer90(statValue, minutes);
+                break;
+            case 'Passes':
+                player.passes = calculatePer90(statValue, minutes);
+                break;
+            case 'Goals Conceded':
+                player.goalsConc = calculatePer90(statValue, minutes);
+                break;
+            case 'Dispossessed':
+                player.disposs = calculatePer90(statValue, minutes);
+                break;
+            case 'Fouls':
+                player.fouls = calculatePer90(statValue, minutes)
+            case 'Fouls Drawn':
+                player.foulsDr = calculatePer90(statValue, minutes);
+                break;
+            case 'Blocked Shots':
+                player.blockedShots = calculatePer90(statValue, minutes);
+                break;
+            case 'Accurate Crosses':
+                player.accCrosses = calculatePer90(statValue, minutes);
+                break;
+            case 'Interceptions':
+                player.intercept = calculatePer90(statValue, minutes);
+                break;
+            case 'Clearances':
+                player.clear = calculatePer90(statValue, minutes);
+                break;
+            case 'Duels Won %':
+                player.duelsPerc = statValue; // Percentage, no per 90
+                break;
+            case 'Dribble Success %':
+                player.dribPerc = statValue; // Percentage, no per 90
+                break;
+            case 'Key Passes':
+                player.keyP = calculatePer90(statValue, minutes);
+                break;
+            case 'Rating':
+                player.rating = statValue; // No per 90
+                break;
+            case 'Long Balls Won':
+                player.lbWon = calculatePer90(statValue, minutes);
+                break;
+            case 'Cleansheets':
+                player.clean = statValue; // No per 90
+                break;
+            case 'Big Chances Created':
+                player.bigCr = calculatePer90(statValue, minutes);
+                break;
+            case 'Big Chances Missed':
+                player.bigMis = calculatePer90(statValue, minutes);
+                break;
+            case 'Accurate Passes Percentage':
+                player.accPPerc = statValue; // Percentage, no per 90
+                break;
+            case 'Crosses Blocked':
+                player.cBlocked = calculatePer90(statValue, minutes);
+                break;
+            default:
+                // Ignore stats not in the player props
+                break;
+        }
+    }
+
+    async function getPlayerStats(id) {
+    try {
+        const lad = await axios.get(`/api/players/${id}`, {
+            params: {
+                include: 'statistics.details.type',
+                filter: 'playerStatisticSeasons:23614'
+            }
+        });
+
+        const playerData = lad.data.data;
+        console.log(playerData);
+        player.image_path = playerData.image_path;
+        getNation(playerData.nationality_id);
+
+        if (playerData && playerData.statistics && playerData.statistics.length > 0) {
+            let minutes = 0; // Initialize minutes outside the loop
+
+            // First, find the "Minutes Played" stat
+            playerData.statistics[0].details.forEach(seasonStats => {
+                if (seasonStats.type.name === "Minutes Played") {
+                    minutes = seasonStats.value.total || 0; // Ensure minutes is a number
+                    console.log(`Minutes: ${minutes}`);
                 }
-            })
+            });
 
-            const playerData = lad.data.data; 
-            console.log(playerData)
-            player.image_path = playerData.image_path
-            getNation(playerData.nationality_id)
-            if (playerData && playerData.statistics && playerData.statistics.length > 0) {
-            playerData.statistics.forEach(seasonStats => {
-                if (seasonStats.details) {
-                    seasonStats.details.forEach(stat => {
-                        const { type, value } = stat;
-                        const statName = type.name;
-                        let statValue;
+            // Then, process all other stats
+            playerData.statistics[0].details.forEach(seasonStats => {
+                const { type, value } = seasonStats;
+                const statName = type.name;
+                let statValue;
 
-                        if (statName === 'Substitutions') {
-                            statValue = value.in; 
-                        } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
-                            statValue = value.average;    
-                        } else if (statName === 'Crosses Blocked') {
-                            statValue = value.crosses_blocked;
-                        } else if (value && value.total) { 
-                            statValue = value.total;
-                        } else if (typeof value === 'object' && Object.keys(value).length > 0) {
-                            statValue = value; 
-                        } else {
-                            statValue = null; 
-                        }
+                if (statName === 'Substitutions') {
+                    statValue = value.in;
+                } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
+                    statValue = value.average;
+                } else if (statName === 'Crosses Blocked') {
+                    statValue = value.crosses_blocked;
+                } else if (value && value.total) {
+                    statValue = value.total;
+                } else if (typeof value === 'object' && Object.keys(value).length > 0) {
+                    statValue = value;
+                } else {
+                    statValue = null;
+                }
 
-                        console.log(`${statName}: ${statValue}`);
-                    });
+                if (statValue !== null && statName !== "Minutes Played") {
+                    console.log(`${statName}: ${statValue}`);
+                    processStat(statName, statValue, minutes);
                 }
             });
         } else {
             console.log("No statistics found for this player.");
         }
-                } catch(err){
-                    console.error(err)
-                }
+    } catch (err) {
+        console.error(err);
     }
+}
+// async function getPlayerStats(id){
+//         try {
+//             const lad = await axios.get(`/api/players/${id}`,{
+//                 params: {
+//                     include: 'statistics.details.type',
+//                     filter: 'playerStatisticSeasons:23614'
+//                 }
+//             })
+
+//             const playerData = lad.data.data; 
+//             console.log(playerData)
+//             player.image_path = playerData.image_path
+//             getNation(playerData.nationality_id)
+//             if (playerData && playerData.statistics && playerData.statistics.length > 0) {
+//             playerData.statistics.forEach(seasonStats => {
+//                 if (seasonStats.details) {
+//                     seasonStats.details.forEach(stat => {
+//                         const { type, value } = stat;
+//                         const statName = type.name;
+//                         let statValue;
+
+//                         if (statName === 'Substitutions') {
+//                             statValue = value.in; 
+//                         } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
+//                             statValue = value.average;    
+//                         } else if (statName === 'Crosses Blocked') {
+//                             statValue = value.crosses_blocked;
+//                         } else if (value && value.total) { 
+//                             statValue = value.total;
+//                         } else if (typeof value === 'object' && Object.keys(value).length > 0) {
+//                             statValue = value; 
+//                         } else {
+//                             statValue = null; 
+//                         }
+
+//                         console.log(`${statName}: ${statValue}`);
+//                     });
+//                 }
+//             });
+//         } else {
+//             console.log("No statistics found for this player.");
+//         }
+//                 } catch(err){
+//                     console.error(err)
+//                 }
+//     }
 
 
     //playerStatisticsSeasons:23614 playerStatisticDetailTypes:117'
@@ -255,15 +432,37 @@ async function getPlayerStats(id){
                 </div>
                 {#if expandedSection === 'defensive'}
                     <div class="expandable-section">
-                        <div class="stat-item">
-                            <span>Tackles/90:</span>
-                            <span>4</span>
-                            <span>++</span>
-                        </div>
-                        <div class="stat-item">
-                            <span>Interceptions/90:</span>
-                            <span></span>
-                            <span>++</span>
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <span class="stat-name">Tackles/90:</span>
+                                <span class="stat-value">{player.tackles}</span>
+                                <span class="stat-importance">+</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Interceptions/90:</span>
+                                <span class="stat-value">{player.intercept}</span>
+                                <span class="stat-importance">+</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Fouls/90:</span>
+                                <span class="stat-value">{player.fouls}</span>
+                                <span class="stat-importance-neg">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Blocked Shots/90:</span>
+                                <span class="stat-value">{player.shotsBlocked}</span>
+                                <span class="stat-importance">+</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Cleansheets:</span>
+                                <span class="stat-value">{player.clean}</span>
+                                <span class="stat-importance">+++</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Goals Conceded/90:</span>
+                                <span class="stat-value">{player.goalsConc}</span>
+                                <span class="stat-importance-neg">---</span>
+                            </div>
                         </div>
                     </div>
                 {/if}    
@@ -419,6 +618,13 @@ async function getPlayerStats(id){
         align-items: center;
     }
 
+    h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #706c6cb6;
+    }
+
     h3 {
         margin: 0;
         font-size: 1.25rem;
@@ -426,6 +632,7 @@ async function getPlayerStats(id){
         color: #1e293b;
     }
 
+    
     .details {
         display: flex;
         gap: 1rem;
@@ -498,5 +705,48 @@ async function getPlayerStats(id){
         display: flex;
         flex-direction: column;
         gap: 1rem;
+    }
+
+    .expandable-section {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background-color: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr auto auto; /* Three columns: stat name, value, importance */
+        gap: 0.5rem; 
+        align-items: center; /* Vertically align items */
+    }
+
+    .stat-item {
+        display: contents; /* Make the children part of the grid */
+    }
+
+    .stat-name {
+        font-weight: 500;
+        color: #334155;
+        text-align: left; 
+    }
+
+    .stat-value {
+        text-align: center; 
+        color: #475569;
+        padding: 0 1rem; 
+    }
+
+    .stat-importance {
+        text-align: right; 
+        color: #4caf50;
+        font-weight: bold;
+    }
+
+    .stat-importance-neg {
+        text-align: right; 
+        color: #e00a0a;
+        font-weight: bold;
     }
 </style>
