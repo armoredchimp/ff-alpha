@@ -19,13 +19,16 @@
             possession_score: '',
             attacking_score: '',
             total_score: '',
-            keeper_score: ''
+            keeper_score: '',
+            tackles: '',
+            minutes: ''
             
         }
     } = $props()
 
     
     let isExpanded = $state(false);
+    let expandedSection = $state(null)
     // let keeping = $state(0)
     // let defense = $state(0)
     // let passing = $state(0)
@@ -45,7 +48,14 @@
         return Math.min(score, 5000);
     }
 
-    
+    function toggleSection(section){
+        if (expandedSection === section){
+            expandedSection = null;
+        } else {
+            expandedSection = section
+        }
+    }
+
     function toggleExpand() {
         isExpanded = !isExpanded;
         if (isExpanded){
@@ -225,7 +235,17 @@ async function getPlayerStats(id){
             <div class="stats-section">
                 {#if !isKeeper}
                 <div class="score">
-                    <span>Defensive Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('defensive')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('defensive')}}>
+                        <span>Defensive Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'defensive' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.defensive_score / 5000) * 100}%;`}></div>
@@ -233,6 +253,20 @@ async function getPlayerStats(id){
                         <div class="popup">{player.defensive_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'defensive'}
+                    <div class="expandable-section">
+                        <div class="stat-item">
+                            <span>Tackles/90:</span>
+                            <span>4</span>
+                            <span>++</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Interceptions/90:</span>
+                            <span></span>
+                            <span>++</span>
+                        </div>
+                    </div>
+                {/if}    
                 <div class="score">
                     <span>Passing Score:</span>
                     <div class="progress-bar-container">
@@ -456,6 +490,9 @@ async function getPlayerStats(id){
         color: #334155;
     }
 
+    .score-label {
+        display: flex;
+    }
     .expanded-info {
         flex-grow: 1;
         display: flex;
