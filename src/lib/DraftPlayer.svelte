@@ -3,6 +3,7 @@
     import { supabase } from "./supabase/supaClient";
     import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs";
     import Page from "../routes/+page.svelte";
+	import { error } from "@sveltejs/kit";
     let {
         player = {
             id: 0,
@@ -22,6 +23,7 @@
             keeper_score: '',
             tackles: '',
             minutes: '',
+            aerial: '',
             shotsOff: '',
             shots: '',
             offsides: '',
@@ -40,6 +42,8 @@
             clear: '',
             duelsPerc: '',
             dribPerc: '',
+            dribPastPerc: '',
+            errorToGoal: 0,
             keyP: '',
             rating: '',
             lbWon: '',
@@ -55,12 +59,7 @@
     
     let isExpanded = $state(false);
     let expandedSection = $state(null)
-    // let keeping = $state(0)
-    // let defense = $state(0)
-    // let passing = $state(0)
-    // let possession = $state(0)
-    // let attacking = $state(0)
-    // let total = $state(0)
+
 
     const isKeeper = player.position === 'Goalkeeper';
     const isDefender = player.position === 'Defender';
@@ -69,6 +68,18 @@
     const isAttacker = player.position === 'Attacker';
     const isACM = player.detailed_position === 'Attacking Midfield';
     const isCB = player.detailed_position === 'Centre Back';
+
+
+
+    // function getImportanceSymbols(statName, position){
+    //     const impValue = positionImportance[position]?.[statName] || 0;
+    //     if (impValue > 0) {
+    //         return '+'.repeat(impValue)
+    //     } else if (impValue < 0) {
+    //         return '-'.repeat(Math.abs(impValue))
+    //     }
+    //     return
+    // }
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -103,62 +114,7 @@
         return age;
     }
 
-        
-//     async function getCalcScores(id) {
-//         let { data: row, error } = await supabase
-//             .from('prem_stats_2425')
-//             .select('*')
-//             .eq('id', id)
-//             .single();
 
-//         if (error) {
-//             console.error(error);
-//         } else {
-//             console.log(row);
-
-//         if(!isKeeper){
-//             defense = getDefensiveScore(row, player.position, player.detailedPosition);
-//             defense = capScore(defense);
-//             total = parseFloat(defense);
-
-//             passing = getPassingScore(row, player.position, player.detailedPosition);
-//             passing = capScore(passing);
-//             total += parseFloat(passing);
-
-//             possession = getPossessionScore(row, player.position, player.detailedPosition);
-//             possession = capScore(possession); 
-//             total += parseFloat(possession);
-
-//             attacking = getAttackingScore(row, player.position, player.detailedPosition);
-//             attacking = capScore(attacking);
-//             total += parseFloat(attacking);
-            
-//             if (isMidfielder){
-//                 total *= 1.2
-//             }
-//             else if (isAttacker){
-//                 total *= 1.3
-//             }
-//             else if (isCB) {
-//                 total *= 1.4
-//             }
-//             else if (isFullback){
-//                 total *= 0.95
-//             }
-//             total = (total / 4).toFixed(2);
-//         }else {
-//             keeping = getKeeperScore(row);
-//             keeping = capScore(keeping)
-//             total += parseFloat(keeping)
-
-//             passing = getPassingScore(row, player.position, player.detailedPosition);
-//             passing = capScore(passing);
-//             total += parseFloat(passing);
-
-//             total = (total / 2).toFixed(2)
-//         }
-//     }
-// 
     // Function to calculate per 90 values
     function calculatePer90(statValue, minutes) {
         return minutes > 0 ? ((statValue / minutes) * 90).toFixed(2) : 0;
@@ -171,6 +127,8 @@
             case 'Tackles':
                 player.tackles = calculatePer90(statValue, minutes);
                 break;
+            case 'Aerials Won':
+                player.aerial = calculatePer90(statValue, minutes)    
             case 'Shots Off Target':
                 player.shotsOff = calculatePer90(statValue, minutes);
                 break;
@@ -219,10 +177,16 @@
                 player.clear = calculatePer90(statValue, minutes);
                 break;
             case 'Duels Won %':
-                player.duelsPerc = statValue; // Percentage, no per 90
+                player.duelsPerc = statValue; 
                 break;
             case 'Dribble Success %':
-                player.dribPerc = statValue; // Percentage, no per 90
+                player.dribPerc = statValue; 
+                break;
+            case 'Dribbled Past %':
+                player.dribPastPerc = statValue;
+                break;
+            case 'Error Lead To Goal':
+                player.errorToGoal = statValue;
                 break;
             case 'Key Passes':
                 player.keyP = calculatePer90(statValue, minutes);
@@ -243,7 +207,7 @@
                 player.bigMis = calculatePer90(statValue, minutes);
                 break;
             case 'Accurate Passes Percentage':
-                player.accPPerc = statValue; // Percentage, no per 90
+                player.accPPerc = statValue; 
                 break;
             case 'Crosses Blocked':
                 player.cBlocked = calculatePer90(statValue, minutes);
@@ -269,12 +233,12 @@
         getNation(playerData.nationality_id);
 
         if (playerData && playerData.statistics && playerData.statistics.length > 0) {
-            let minutes = 0; // Initialize minutes outside the loop
+            let minutes = 0; 
 
             // First, find the "Minutes Played" stat
             playerData.statistics[0].details.forEach(seasonStats => {
                 if (seasonStats.type.name === "Minutes Played") {
-                    minutes = seasonStats.value.total || 0; // Ensure minutes is a number
+                    minutes = seasonStats.value.total || 0; 
                     console.log(`Minutes: ${minutes}`);
                 }
             });
@@ -358,8 +322,6 @@
 //                 }
 //     }
 
-
-    //playerStatisticsSeasons:23614 playerStatisticDetailTypes:117'
     async function getNation(id) {
         try {
             const nationRes = await axios.get(`/core/countries/${id}`);
@@ -433,35 +395,83 @@
                 {#if expandedSection === 'defensive'}
                     <div class="expandable-section">
                         <div class="stat-grid">
+                            <!-- {#each Object.entries({
+                                'Tackles/90': player.tackles,
+                                'Interceptions/90': player.intercept,
+                                'Fouls/90': player.fouls,
+                                'Blocked Shots/90': player.shotsBlocked,
+                                'Cleansheets': player.clean,
+                                'Goals Conceded/90': player.goalsConc,
+                                'Clearances/90': player.clear,
+                                'Crosses Blocked/90': player.cBlocked,
+                                'Aerials Won/90': player.aerial,
+                                'Duels Won Percentage': player.duelsPerc,
+                                'Dribbled Past Per 90': player.dribPerc,
+                                'Error Lead to Goal': player.errorToGoal,
+                                'Long Balls Won/90': player.lbWon
+                            }) as [statName, statValue]}
+                                <div class='stat-item'>
+                                    <span class='stat-name'>{statName}</span>
+                                    <span class="stat-value">{statValue}</span>
+                                    <span class:stat-importance={importanceValue > 0} class:stat-importance-neg={importanceValue < 0}>
+                                        {getImportanceSymbols(statName, player.detailed_position)}
+                                    </span>
+                                </div>
+                            {/each} -->
                             <div class="stat-item">
-                                <span class="stat-name">Tackles/90:</span>
-                                <span class="stat-value">{player.tackles}</span>
-                                <span class="stat-importance">+</span>
+                                <span class="stat-name">Cleansheets:</span>
+                                <span class="stat-value">{player.clean}</span>
+                                <span class="stat-importance">{isDefender? '++++':'+'}</span>
+                            </div>
+                            <div class='stat-item'>
+                                <span class="stat-name">Error Lead to Goal:</span>
+                                <span class="stat-value">{player.errorToGoal? player.errorToGoal : 0}</span>
+                                <span class="stat-importance-neg">{!isDefender? '----':'---'}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Goals Conceded/90:</span>
+                                <span class="stat-value">{player.goalsConc}</span>
+                                <span class="stat-importance-neg">{isDefender? '----':'--'}</span>
+                            </div>
+                            <div class='stat-item'>
+                                <span class="stat-name">Crosses Blocked/90:</span>
+                                <span class="stat-value">{player.cBlocked}</span>
+                                <span class="stat-importance">{isFullback? '+++':'++'}</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-name">Interceptions/90:</span>
                                 <span class="stat-value">{player.intercept}</span>
-                                <span class="stat-importance">+</span>
+                                <span class="stat-importance">{isDefender? '+':'++'}</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-name">Fouls/90:</span>
                                 <span class="stat-value">{player.fouls}</span>
                                 <span class="stat-importance-neg">--</span>
                             </div>
+                            <div class='stat-item'>
+                                <span class="stat-name">Clearances/90:</span>
+                                <span class="stat-value">{player.clear}</span>
+                                <span class="stat-importance">{isMidfielder? '++':'+'}</span>
+                            </div>
+                            <div class='stat-item'>
+                                <span class="stat-name">Aerials Won/90:</span>
+                                <span class="stat-value">{player.aerial}</span>
+                                <span class="stat-importance">{isMidfielder? '++':'+'}</span>
+                            </div>
+                            <div class='stat-item'>
+                                <span class="stat-name">Long Balls Won/90:</span>
+                                <span class="stat-value">{player.lbWon}</span>
+                                <span class="stat-importance">{!isDefender? '+':'++'}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-name">Tackles/90:</span>
+                                <span class="stat-value">{player.tackles}</span>
+                                <span class="stat-importance">{isDefender? '+':'++'}</span>
+                            </div>
                             <div class="stat-item">
                                 <span class="stat-name">Blocked Shots/90:</span>
                                 <span class="stat-value">{player.shotsBlocked}</span>
                                 <span class="stat-importance">+</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Cleansheets:</span>
-                                <span class="stat-value">{player.clean}</span>
-                                <span class="stat-importance">+++</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Goals Conceded/90:</span>
-                                <span class="stat-value">{player.goalsConc}</span>
-                                <span class="stat-importance-neg">---</span>
                             </div>
                         </div>
                     </div>
