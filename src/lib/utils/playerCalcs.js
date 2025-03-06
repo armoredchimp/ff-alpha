@@ -1,4 +1,3 @@
-
 function getKeeperScore(row){
     const weights = {
         AerialsWonPer90: 120,
@@ -367,44 +366,15 @@ function getPassingScore(row, position, detailedPosition) {
     return passingScore.toFixed(2);
 }
 
-function getDefensiveScore(row, position, detailedPosition) {
-    const baseWeights = {
-        TacklesPer90: 20,
-        FoulsPer90: -120,
-        InterceptionsPer90: 30,
-        BlockedShotsPer90: 60,
-        Cleansheets: 320,
-        GoalsConcededPer90: -430,
-        ClearancesPer90: 35,
-        CrossesBlockedPer90: 140,
-        AerialsWonPer90: 70,
-        DuelsWonPercentage: 50,
-        DribbledPastPer90: -120, 
-        ErrorLeadToGoal: -500,
-        LongBallsWonPer90: 20
-    };
 
-    const weights = { ...baseWeights };
-    if (position === 'Attacker'){
-        weights.TacklesPer90 = 100
-        weights.InterceptionsPer90 = 105
-    }
-    if (position === 'Midfielder'){
-        weights.TacklesPer90 = 60;
-        weights.InterceptionsPer90 = 70
-        weights.AerialsWonPer90 = 110
-        weights.ClearancesPer90 = 120
-    }
-    if (position !== 'Defender') {
-        weights.Cleansheets = 40;
-        weights.GoalsConcededPer90 = -140;
-        weights.LongBallsWonPer90 = 5
-        weights.ErrorLeadToGoal = -700
-    }
-    if (detailedPosition === 'Right Back' || detailedPosition === 'Left Back'){
-        weights.Cleansheets = 200;
-        weights.GoalsConcededPer90 = -280;
-        weights.CrossesBlockedPer90 = 260;
+function getDefensiveScore(row, detailedPosition, weightMap) {
+    
+
+    const weights = weightMap[detailedPosition];
+
+    console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
     }
 
     const stats = {
@@ -433,6 +403,8 @@ function getDefensiveScore(row, position, detailedPosition) {
             per90Stats[key] = value;
         }
     }
+
+    // console.log('Per 90 Stats:', per90Stats);
 
     const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
 
@@ -481,8 +453,9 @@ function getDefensiveScore(row, position, detailedPosition) {
         defensiveScore = defensiveScore * minutesPercentage;
     }
 
-
-    return (defensiveScore * 0.8).toFixed(2);
+    defensiveScore = (defensiveScore * 0.8).toFixed(2)
+    return defensiveScore
 }
+
 
 export { getAttackingScore, getDefensiveScore, getKeeperScore, getPassingScore, getPossessionScore }

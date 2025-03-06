@@ -1,2 +1,8 @@
 export let allPlayers = $state([])
 export let playerCall = $state(false)
+export let defenseWeightMap = $state({})
+export let passingWeightMap = $state({})
+export let possessionWeightMap = $state({})
+export let attackingWeightMap = $state({})
+export let keepingWeightMap = $state({})
+export let weightsFetched = $state(false)

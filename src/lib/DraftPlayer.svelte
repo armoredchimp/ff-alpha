@@ -1,7 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
-    import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs";
+    import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs.svelte";
     import Page from "../routes/+page.svelte";
 	import { error } from "@sveltejs/kit";
     let {
