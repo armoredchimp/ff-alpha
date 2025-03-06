@@ -2,15 +2,20 @@
     import axios from "axios";
     import { allPlayers } from "$lib/stores/stores.svelte";
     import { createClient } from "@supabase/supabase-js";
+    import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "$lib/utils/playerCalcs";
 
-    const supabaseURL = import.meta.env.VITE_DB_URL
-    const supabaseKey = import.meta.env.VITE_DB_API_KEY
-    const supabase = createClient(supabaseURL, supabaseKey)
+   
    
 
     const extraIds = [37317015,27067062,26803,37543248,34053,154421,28912747,25217662]
+
+    let defenseWeightMap = $state({})
+    let passingWeightMap = $state({})
+    let possessionWeightMap = $state({})
+    let attackingWeightMap = $state({})
+    let keepingWeightMap = $state({})
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -20,6 +25,28 @@
         for(let i = 0; i < ids.length; i++){
             getPlayerStatsAndUpload(ids[i])
         }
+    }
+
+    async function getWeightsFromTable(tableName, weightMap){
+        const { data, error } = await supabase
+            .from(tableName)
+            .select('*');
+
+        if (error) {
+            console.error(`Error fetching weights from ${tableName}`)
+            return null;
+        }
+        
+        data.forEach(row => {
+            weightMap[row.Position] = row;
+        });
+
+        console.log(`Weight Map returned: `, weightMap)
+    }
+
+    async function fetchAllWeights(){
+        getWeightsFromTable('getDefensiveScore', defenseWeightMap)
+        getWeightsFromTable('getKeeperScore', keepingWeightMap)
     }
 
     async function testSupabaseConnection() {
@@ -322,6 +349,7 @@ async function getPremPlayersAndUpload() {
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
 <button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
 <button onclick={getPlayersThenScore}>Upload Scores to Mini</button>
+<button onclick={fetchAllWeights}>Weights</button>
 
 <style>
     button {
