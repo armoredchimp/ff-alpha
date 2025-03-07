@@ -4,7 +4,7 @@
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
-    import { getKeeperScore, getAttackingScore, getPassingScore, getPossessionScore, getDefensiveScore } from "$lib/utils/playerCalcs.js";
+    // import { getKeeperScore, getAttackingScore, getPassingScore, getPossessionScore, getDefensiveScore } from "$lib/utils/playerCalcs.js";
 
    
     let defenseWeightMap = $state({})
@@ -55,7 +55,10 @@
 
         await Promise.all([
             getWeightsFromTable('getDefensiveScore', defenseWeightMap),
-            getWeightsFromTable('getKeeperScore', keepingWeightMap)
+            getWeightsFromTable('getKeeperScore', keepingWeightMap),
+            getWeightsFromTable('getPossessionScore', possessionWeightMap),
+            getWeightsFromTable('getPassingScore', passingWeightMap),
+            getWeightsFromTable('getAttackingScore', attackingWeightMap)
         ])
 
         weightsFetched = true
@@ -78,7 +81,7 @@
 
 
 
-    async function getPlayersThenScore() {
+    async function getPlayersThenScore(miniDB) {
 
         await fetchAllWeights()
 
@@ -133,15 +136,15 @@
                     defense = capScore(defense); 
                     total += parseFloat(defense);
 
-                    passing = getPassingScore(player, player.Position, player["Detailed Position"]);
+                    passing = getPassingScore(player, player["Detailed Position"]);
                     passing = capScore(passing);
                     total += parseFloat(passing);
 
-                    possession = getPossessionScore(player, player.Position, player["Detailed Position"]);
+                    possession = getPossessionScore(player, player["Detailed Position"]);
                     possession = capScore(possession);
                     total += parseFloat(possession);
 
-                    attacking = getAttackingScore(player, player.Position, player["Detailed Position"]);
+                    attacking = getAttackingScore(player, player["Detailed Position"]);
                     attacking = capScore(attacking);
                     total += parseFloat(attacking);
 
@@ -158,11 +161,11 @@
                     total = (total / 4).toFixed(2);
                     console.log('total:  ', total)
                 } else {
-                    keeping = getKeeperScore(player);
+                    keeping = getKeeperScore(player, player["Detailed Position"]);
                     keeping = capScore(keeping);
                     total += parseFloat(keeping);
 
-                    passing = getPassingScore(player, player.Position, player["Detailed Position"]);
+                    passing = getPassingScore(player, player["Detailed Position"]);
                     passing = capScore(passing);
                     total += parseFloat(passing);
 
@@ -186,7 +189,7 @@
                 }
 
                 const { error: uploadError } = await supabase
-                    .from('prem_mini_2425')
+                    .from(miniDB)
                     .upsert([playerData]);
 
                 if (uploadError) {
@@ -266,6 +269,15 @@
                         Nation: getCountry(playerData.nationality_id)
                     };
 
+                    if ((statsToInsert['Detailed Position']) === 'Right Midfield'){
+                        (statsToInsert['Detailed Position']) = 'Right Wing'
+                    }
+                    if ((statsToInsert['Detailed Position']) === 'Left Midfield'){
+                        (statsToInsert['Detailed Position']) = 'Left Wing'
+                    }
+                    if ((statsToInsert['Detailed Position']) === 'Secondary Striker'){
+                        (statsToInsert['Detailed Position']) = 'Centre Forward'
+                    }
                     // Flatten the stats and add them to the object
                     seasonStats.details.forEach(stat => {
                         const { type, value } = stat;
@@ -334,6 +346,9 @@
 
 //End of API to Main Stat DB //
 //////////////////////////////
+
+//////////////////////////////
+//Testing Section ////////////
     async function testWeightMap(){
         await fetchAllWeights()
 
@@ -349,12 +364,356 @@
         }
 
         }
+
+////////////////////////////
+//Player Calculations /////    
+function getKeeperScore(row, detailedPosition){
+    const weights = keepingWeightMap[detailedPosition];
+    // console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+
+    const stats = {
+        AerialsWon: row['Aerials Won'] || 0,
+        Cleansheets: row['Cleansheets'] || 0,
+        Clearances: row['Clearances'] || 0,
+        GoalsConceded: row['Goals Conceded'] || 0,
+        ErrorLeadToGoal: row['Error Lead To Goal'] || 0,
+        FoulsDrawn: row['Fouls Drawn'] || 0,
+        Fouls: row['Fouls'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+        DuelsWon: row['Duels Won'] || 0,
+        TotalDuels: row['Total Duels'] || 0,
+        Saves: row['Saves'] || 0,
+        SavesInsideBox: row['Saves Insidebox'] || 0
+    }
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
+
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+    }
+
+    per90Stats.DuelsWonPercentage = duelsWonPercentage;
+
+    let keepingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        keepingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    keepingScore += consistencyBonus;
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        keepingScore = keepingScore * minutesPercentage;
+    }
+
+    return (keepingScore / 5).toFixed(2)
+}
+
+function getAttackingScore(row, detailedPosition) {
+    const weights = attackingWeightMap[detailedPosition];
+    // console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+    const stats = {
+        AccuratePasses: row['Accurate Passes'] || 0,
+        Assists: row.Assists || 0,
+        BigChancesCreated: row['Big Chances Created'] || 0,
+        BigChancesMissed: row['Big Chances Missed'] || 0,
+        Goals: row['Goals'] || 0,
+        HitWoodwork: row['Hit Woodwork'] || 0,
+        ShotsBlocked: row['Shots Blocked'] || 0,
+        ShotsOffTarget: row['Shots Off Target'] || 0,
+        ShotsOnTarget: row['Shots On Target'] || 0,
+        SuccessfulDribbles: row['Successful Dribbles'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+        KeyPasses: row['Key Passes'] || 0,
+        ThroughBallsWon: row['Through Balls Won'] || 0,
+        Offsides: row['Offsides'] || 0
+    };
+    
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    // Simple per90 calculation without scaling
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+    }
+
+    let attackingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        attackingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    // Apply consistency bonus if applicable
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    attackingScore += consistencyBonus;
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        attackingScore = attackingScore * minutesPercentage;
+    }
+
+    return (attackingScore * 2).toFixed(2);
+}
+
+function getPossessionScore(row, detailedPosition) {
+    const weights = possessionWeightMap[detailedPosition];
+    // console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+    const stats = {
+        AccuratePasses: row['Accurate Passes'] || 0,
+        // AccuratePassesPercentage: row['Accurate Passes Percentage'] || 0,
+        Passes: row['Passes'] || 0,
+        SuccessfulDribbles: row['Successful Dribbles'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+        Dispossessed: row['Dispossessed'] || 0,
+        Fouls: row['Fouls'] || 0,
+        FoulsDrawn: row['Fouls Drawn'] || 0,
+        ShotsOnTarget: row['Shots Off Target'] || 0,
+        KeyPasses: row['Key Passes'] || 0,
+        ThroughBallsWon: row['Through Balls Won'] || 0,
+        Offsides: row['Offsides'] || 0
+    };
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+    const AccuratePassesPercentage = row['Accurate Passes Percentage'] || 0;
+
+    // Calculate regular per90 stats
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        if (key !== 'AccuratePassesPercentage') {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        } else {
+            per90Stats[key] = value;
+        }
+    }
+
+    let possessionScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        possessionScore += (per90Stats[key] || 0) * weight;
+    }
+
+    // Add consistency bonus if applicable
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    possessionScore += consistencyBonus;
+
+    // Add bonus for high passing accuracy
+    // const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
+    // if (accuratePassesPercentage >= 90) {
+    //     const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2);
+    //     possessionScore += 150 + (bonusMultiplier * 15);
+    // }
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        possessionScore = possessionScore * minutesPercentage;
+    }
+
+    possessionScore = (possessionScore / 30) * AccuratePassesPercentage
+
+    if(possessionScore <= 100){
+        possessionScore = AccuratePassesPercentage
+    }
+
+    possessionScore = (possessionScore).toFixed(2);
+    // console.log(possessionScore)
+    return possessionScore
+}
+
+function getPassingScore(row, detailedPosition) {
+    const weights = passingWeightMap[detailedPosition];
+    // console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+
+    const stats = {
+        BigChancesCreated: row['Big Chances Created'] || 0,
+        KeyPasses: row['Key Passes'] || 0,
+        AccuratePassesPercentage: row['Accurate Passes Percentage'] || 0,
+        Passes: row['Passes'] || 0,
+        Assists: row['Assists'] || 0,
+        AccurateCrosses: row['Accurate Crosses'] || 0,
+        ThroughBalls: row['Through Balls'] || 0,
+    };
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    // Calculate regular per90 stats
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+    }
+
+    let passingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        passingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    // Add consistency bonus if applicable
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    passingScore += consistencyBonus;
+
+    // Apply rating adjustments
+    const rating = row.Rating || 0;
+    if (rating >= 7.2) {
+        passingScore += (rating - 7.1) * 100;
+    } else if (rating >= 7.0) {
+        passingScore += (rating - 6.9) * 75;
+    } else if (rating < 6.5) {
+        passingScore -= (6.5 - rating) * 100;
+    } else if (rating < 6.7) {
+        passingScore -= (6.7 - rating) * 75;
+    }
+
+    // Add bonus for high passing accuracy
+    // const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
+    // if (accuratePassesPercentage >= 90) {
+    //     const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2);
+    //     passingScore += 35 + (bonusMultiplier * 10);
+    // } else if (accuratePassesPercentage >= 86) {
+    //     passingScore += 25;
+    // }
+
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        passingScore = passingScore * minutesPercentage;
+    }
+    if(detailedPosition === 'Goalkeeper'){
+        passingScore *= 4
+    }
+
+    passingScore = passingScore.toFixed(2)
+    // console.log(passingScore)
+    return passingScore
+}
+
+        
+function getDefensiveScore(row, detailedPosition) {
+    const weights = defenseWeightMap[detailedPosition];
+    console.log(`weights: `, weights)
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+
+    const stats = {
+        Tackles: row.Tackles || 0,
+        Fouls: row.Fouls || 0,
+        Interceptions: row.Interceptions || 0,
+        BlockedShots: row['Shots Blocked'] || 0,
+        Cleansheets: row.Cleansheets || 0,
+        GoalsConceded: row['Goals Conceded'] || 0,
+        Clearances: row.Clearances || 0,
+        AerialsWon: row['Aerials Won'] || 0,
+        DuelsWon: row['Duels Won'] || 0,
+        TotalDuels: row['Total Duels'] || 0,
+        ErrorLeadToGoal: row['Error Lead To Goal'] || 0,
+        DribbledPast: row['Dribbled Past'] || 0,
+        LongBallsWon: row['Long Balls Won'] || 0,
+    };
+
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        if (key !== 'Cleansheets' && key !== 'ErrorLeadToGoal') {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        } else {
+            per90Stats[key] = value;
+        }
+    }
+
+    // console.log('Per 90 Stats:', per90Stats);
+
+    const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
+
+    per90Stats.DuelsWonPercentage = duelsWonPercentage;
+
+    let defensiveScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        defensiveScore += (per90Stats[key] || 0) * weight;
+    }
+
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    defensiveScore += consistencyBonus;
+
+    const rating = row.Rating || 0;
+
+    if (rating >= 7.2) {
+        defensiveScore += (rating - 7.1) * 100;
+    } else if (rating >= 7.0) {
+        defensiveScore += (rating - 6.9) * 75;
+    } else if (rating < 6.5) {
+        defensiveScore -= (6.5 - rating) * 100;
+    } else if (rating < 6.7) {
+        defensiveScore -= (6.7 - rating) * 75;
+    }
+
+    // Dribbled Past Adjustment (Non-linear penalty)
+    const dribbledPast = per90Stats.DribbledPastPer90 || 0;
+    let dribbledPastPenalty = 0;
+
+    
+    if (dribbledPast > 0) {
+        const basePenalty = 20; // Penalty for even being dribbled past once
+        const scaleFactor = 30;  // Adjust steepness of the curve
+        const exponent = 2;      // Adjust the shape of the curve (higher = faster increase)
+        const maxPenalty = 250;    // Cap on the penalty
+
+        dribbledPastPenalty = Math.min(basePenalty + scaleFactor * Math.pow(dribbledPast, exponent), maxPenalty);
+        defensiveScore -= dribbledPastPenalty;
+    }
+
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        defensiveScore = defensiveScore * minutesPercentage;
+    }
+
+    defensiveScore = (defensiveScore * 0.8).toFixed(2)
+    return defensiveScore
+}
+
+
+
+
+
+
 </script>
 
 <button><a href="../">Home</a></button>
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
 <button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
-<button onclick={getPlayersThenScore}>Upload Scores to Mini</button>
+<button onclick={getPlayersThenScore('prem_mini_2425')}>Upload Scores to Mini</button>
+<button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
 <button onclick={fetchAllWeights}>Weights</button>
 <button onclick={testWeightMap}>Test Weight to Defense</button>
 
