@@ -4,6 +4,7 @@
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
+    import { defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
     // import { getKeeperScore, getAttackingScore, getPassingScore, getPossessionScore, getDefensiveScore } from "$lib/utils/playerCalcs.js";
 
    
@@ -25,7 +26,23 @@
         }
     }
 
-    async function getWeightsFromTable(tableName, weightMap){
+    function calculateImportance(weight) {
+        if (weight >= 0) {
+            if (weight < 100) return 1;
+            if (weight < 200) return 2;
+            if (weight < 300) return 3;
+            if (weight < 500) return 4;
+            return 5;
+        } else {
+            if (weight > -100) return -1;
+            if (weight > -200) return -2;
+            if (weight > -300) return -3;
+            if (weight > -500) return -4;
+            return -5;
+        }
+    }
+
+    async function getWeightsFromTable(tableName, weightMap, impMap){
         const { data, error } = await supabase
             .from(tableName)
             .select('*');
@@ -36,29 +53,35 @@
         }
         
         data.forEach(row => {
-        // Create a new object without the 'Position' field
-        const weights = Object.keys(row).reduce((acc, key) => {
-            if (key !== 'Position') {
-                acc[key] = row[key];
-            }
-            return acc;
-        }, {});
+            const weights = Object.keys(row).reduce((acc, key) => {
+                if (key !== 'Position') {
+                    acc[key] = row[key];
+                }
+                return acc;
+            }, {});
 
-        // Add the weights to the weight map using the position as the key
-        weightMap[row.Position] = weights;
-    });
+            weightMap[row.Position] = weights;
 
-        console.log(`Weight Map returned: `, weightMap)
+            // Calculate and add importance to the impMap
+            const importances = {};
+            Object.keys(weights).forEach(stat => {
+                importances[stat] = calculateImportance(weights[stat]);
+            });
+            impMap[row.Position] = importances;
+        });
+
+        console.log(`Weight Map returned: `, weightMap);
+        console.log(`Importance Map returned: `, impMap);
     }
 
     async function fetchAllWeights(){
 
         await Promise.all([
-            getWeightsFromTable('getDefensiveScore', defenseWeightMap),
-            getWeightsFromTable('getKeeperScore', keepingWeightMap),
-            getWeightsFromTable('getPossessionScore', possessionWeightMap),
-            getWeightsFromTable('getPassingScore', passingWeightMap),
-            getWeightsFromTable('getAttackingScore', attackingWeightMap)
+            getWeightsFromTable('getDefensiveScore', defenseWeightMap, defenseImpMap),
+            getWeightsFromTable('getKeeperScore', keepingWeightMap, keepingImpMap),
+            getWeightsFromTable('getPossessionScore', possessionWeightMap, possessionImpMap),
+            getWeightsFromTable('getPassingScore', passingWeightMap, passingImpMap),
+            getWeightsFromTable('getAttackingScore', attackingWeightMap, attackingImpMap)
         ])
 
         weightsFetched = true

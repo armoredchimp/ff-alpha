@@ -1,7 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
-    import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs.svelte";
+    // import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs.svelte";
     import Page from "../routes/+page.svelte";
 	import { error } from "@sveltejs/kit";
     let {
@@ -275,52 +275,6 @@
         console.error(err);
     }
 }
-// async function getPlayerStats(id){
-//         try {
-//             const lad = await axios.get(`/api/players/${id}`,{
-//                 params: {
-//                     include: 'statistics.details.type',
-//                     filter: 'playerStatisticSeasons:23614'
-//                 }
-//             })
-
-//             const playerData = lad.data.data; 
-//             console.log(playerData)
-//             player.image_path = playerData.image_path
-//             getNation(playerData.nationality_id)
-//             if (playerData && playerData.statistics && playerData.statistics.length > 0) {
-//             playerData.statistics.forEach(seasonStats => {
-//                 if (seasonStats.details) {
-//                     seasonStats.details.forEach(stat => {
-//                         const { type, value } = stat;
-//                         const statName = type.name;
-//                         let statValue;
-
-//                         if (statName === 'Substitutions') {
-//                             statValue = value.in; 
-//                         } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
-//                             statValue = value.average;    
-//                         } else if (statName === 'Crosses Blocked') {
-//                             statValue = value.crosses_blocked;
-//                         } else if (value && value.total) { 
-//                             statValue = value.total;
-//                         } else if (typeof value === 'object' && Object.keys(value).length > 0) {
-//                             statValue = value; 
-//                         } else {
-//                             statValue = null; 
-//                         }
-
-//                         console.log(`${statName}: ${statValue}`);
-//                     });
-//                 }
-//             });
-//         } else {
-//             console.log("No statistics found for this player.");
-//         }
-//                 } catch(err){
-//                     console.error(err)
-//                 }
-//     }
 
     async function getNation(id) {
         try {
