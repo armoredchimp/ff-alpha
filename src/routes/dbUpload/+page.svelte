@@ -232,7 +232,7 @@
                 }
             }
             console.log('Operation Success!')
-            getPlayersThenScore()
+            getPlayersThenScore('prem_mini_2425_testing')
         } catch (err) {
             console.error("Error fetching Premier League players:", err);
         }
@@ -270,10 +270,10 @@
                     };
 
                     if ((statsToInsert['Detailed Position']) === 'Right Midfield'){
-                        (statsToInsert['Detailed Position']) = 'Right Wing'
+                        (statsToInsert['Detailed Position']) = 'Central Midfield'
                     }
                     if ((statsToInsert['Detailed Position']) === 'Left Midfield'){
-                        (statsToInsert['Detailed Position']) = 'Left Wing'
+                        (statsToInsert['Detailed Position']) = 'Central Midfield'
                     }
                     if ((statsToInsert['Detailed Position']) === 'Secondary Striker'){
                         (statsToInsert['Detailed Position']) = 'Centre Forward'
