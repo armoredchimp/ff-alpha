@@ -1,9 +1,10 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
-    // import { getKeeperScore, getAttackingScore, getDefensiveScore, getPassingScore, getPossessionScore } from "./utils/playerCalcs.svelte";
+    import { keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
     import Page from "../routes/+page.svelte";
 	import { error } from "@sveltejs/kit";
+
     let {
         player = {
             id: 0,
@@ -41,8 +42,8 @@
             intercept: '',
             clear: '',
             duelsPerc: '',
-            dribPerc: '',
-            dribPastPerc: '',
+            succDrib: '',
+            dribPast: '',
             errorToGoal: 0,
             keyP: '',
             rating: '',
@@ -59,6 +60,13 @@
     
     let isExpanded = $state(false);
     let expandedSection = $state(null)
+    let totalDuels = $state(0)
+    let duelsWon = $state(0)
+    let sortedDefStats = $state([])
+    let sortedPossStats = $state([])
+    let sortedPassStats = $state([])
+    let sortedAttStats = $state([])
+    let sortedKprStats = $state([])
 
 
     const isKeeper = player.position === 'Goalkeeper';
@@ -69,17 +77,13 @@
     const isACM = player.detailed_position === 'Attacking Midfield';
     const isCB = player.detailed_position === 'Centre Back';
 
+    const nonPer90Stats = new Set([
+        'Error Lead To Goal',
+        'Rating',
+        'Cleansheets',
+        'Accurate Passes Percentage'
+    ]);
 
-
-    // function getImportanceSymbols(statName, position){
-    //     const impValue = positionImportance[position]?.[statName] || 0;
-    //     if (impValue > 0) {
-    //         return '+'.repeat(impValue)
-    //     } else if (impValue < 0) {
-    //         return '-'.repeat(Math.abs(impValue))
-    //     }
-    //     return
-    // }
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -114,108 +118,144 @@
         return age;
     }
 
+    function condenseString(str) {
+        return str.replace(/\s/g, '');
+    }
 
     // Function to calculate per 90 values
     function calculatePer90(statValue, minutes) {
         return minutes > 0 ? ((statValue / minutes) * 90).toFixed(2) : 0;
     }
 
+
+    function assignImportances(statName, statValue, detailedPosition, impMap, sortedArray) {
+        const importanceValue = impMap[detailedPosition]?.[stat] || 0
+
+        sortedArray.push({
+            name: statName,
+            importanceValue: importanceValue,
+            value: statValue
+        })
+    }
    
     // Function to process and assign stats
-    function processStat(statName, statValue, minutes) {
+    function processStat(statName, statValue, minutes ) {
+        let displayValue;
+         // Check if the stat should be converted to per 90
+        if (nonPer90Stats.has(statName)) {
+            displayValue = statValue; // Use the raw value
+            statName = condenseString(statName)
+        } else {
+            displayValue = calculatePer90(statValue, minutes); // Convert to per 90
+            statName = condenseString(statName) + 'Per90'
+        }
+
+            // Assign the value to the corresponding player property
         switch (statName) {
-            case 'Tackles':
-                player.tackles = calculatePer90(statValue, minutes);
+            case 'TacklesPer90':
+                player.tackles = displayValue;
+                assignImportances(statName, displayValue, player.detailed_position, defenseImpMap, sortedDefStats)
+                if(isKeeper){
+                    assignImportances(statName, player.detailed_position, keepingImpMap, sortedKprStats)
+                }
                 break;
-            case 'Aerials Won':
-                player.aerial = calculatePer90(statValue, minutes)    
-            case 'Shots Off Target':
-                player.shotsOff = calculatePer90(statValue, minutes);
+            case 'AerialsWonPer90':
+                player.aerial = displayValue;
+                assignImportances(statName, displayValue, player.detailed_position, defenseImpMap, sortedDefStats)
                 break;
-            case 'Shots Total':
-                player.shots = calculatePer90(statValue, minutes);
+            case 'ShotsOffTargetPer90':
+                player.shotsOff = displayValue;
+                assignImportances(statName, displayValue, player.detailed_position, attackingImpMap, sortedAtkStats)
+                assignImportances(statName, displayValue, player.detailed_position, possessionImpMap, sortedPossStats)
                 break;
-            case 'Offsides':
-                player.offsides = calculatePer90(statValue, minutes);
+            case 'ShotsTotal':
+                player.shots = displayValue;
                 break;
-            case 'Goals':
-                player.goals = calculatePer90(statValue, minutes);
+            case 'OffsidesPer90':
+                player.offsides = displayValue;
                 break;
-            case 'Shots Blocked':
-                player.shotsBlocked = calculatePer90(statValue, minutes);
+            case 'GoalsPer90':
+                player.goals = displayValue;
                 break;
-            case 'Hit Woodwork':
-                player.hitWood = calculatePer90(statValue, minutes);
+            case 'ShotsBlockedPer90':
+                player.shotsBlocked = displayValue;
                 break;
-            case 'Assists':
-                player.assists = calculatePer90(statValue, minutes);
+            case 'HitWoodworkPer90':
+                player.hitWood = displayValue;
                 break;
-            case 'Passes':
-                player.passes = calculatePer90(statValue, minutes);
+            case 'AssistsPer90':
+                player.assists = displayValue;
                 break;
-            case 'Goals Conceded':
-                player.goalsConc = calculatePer90(statValue, minutes);
+            case 'PassesPer90':
+                player.passes = displayValue;
                 break;
-            case 'Dispossessed':
-                player.disposs = calculatePer90(statValue, minutes);
+            case 'GoalsConcededPer90':
+                player.goalsConc = displayValue;
                 break;
-            case 'Fouls':
-                player.fouls = calculatePer90(statValue, minutes)
-            case 'Fouls Drawn':
-                player.foulsDr = calculatePer90(statValue, minutes);
+            case 'DispossessedPer90':
+                player.disposs = displayValue;
                 break;
-            case 'Blocked Shots':
-                player.blockedShots = calculatePer90(statValue, minutes);
+            case 'FoulsPer90':
+                player.fouls = displayValue;
                 break;
-            case 'Accurate Crosses':
-                player.accCrosses = calculatePer90(statValue, minutes);
+            case 'FoulsDrawnPer90':
+                player.foulsDr = displayValue;
                 break;
-            case 'Interceptions':
-                player.intercept = calculatePer90(statValue, minutes);
+            case 'BlockedShotsPer90':
+                player.blockedShots = displayValue;
                 break;
-            case 'Clearances':
-                player.clear = calculatePer90(statValue, minutes);
+            case 'AccurateCrossesPer90':
+                player.accCrosses = displayValue;
                 break;
-            case 'Duels Won %':
-                player.duelsPerc = statValue; 
+            case 'InterceptionsPer90':
+                player.intercept = displayValue;
                 break;
-            case 'Dribble Success %':
-                player.dribPerc = statValue; 
+            case 'ClearancesPer90':
+                player.clear = displayValue;
                 break;
-            case 'Dribbled Past %':
-                player.dribPastPerc = statValue;
+            case 'SuccessfulDribblesPer90':
+                player.succDrib = displayValue;
                 break;
-            case 'Error Lead To Goal':
-                player.errorToGoal = statValue;
+            case 'DribbledPastPer90':
+                player.dribPast = displayValue;
                 break;
-            case 'Key Passes':
-                player.keyP = calculatePer90(statValue, minutes);
+            case 'ErrorLeadToGoal':
+                player.errorToGoal = displayValue;
+                break;
+            case 'KeyPassesPer90':
+                player.keyP = displayValue;
                 break;
             case 'Rating':
-                player.rating = statValue; // No per 90
+                player.rating = displayValue;
                 break;
-            case 'Long Balls Won':
-                player.lbWon = calculatePer90(statValue, minutes);
+            case 'LongBallsWonPer90':
+                player.lbWon = displayValue;
                 break;
             case 'Cleansheets':
-                player.clean = statValue; // No per 90
+                player.clean = displayValue;
                 break;
-            case 'Big Chances Created':
-                player.bigCr = calculatePer90(statValue, minutes);
+            case 'BigChancesCreatedPer90':
+                player.bigCr = displayValue;
                 break;
-            case 'Big Chances Missed':
-                player.bigMis = calculatePer90(statValue, minutes);
+            case 'BigChancesMissedPer90':
+                player.bigMis = displayValue;
                 break;
-            case 'Accurate Passes Percentage':
-                player.accPPerc = statValue; 
+            case 'AccuratePassesPercentagePer90':
+                player.accPPerc = displayValue;
                 break;
-            case 'Crosses Blocked':
-                player.cBlocked = calculatePer90(statValue, minutes);
+            case 'CrossesBlockedPer90':
+                player.cBlocked = displayValue;
                 break;
             default:
-                // Ignore stats not in the player props
                 break;
         }
+
+    }
+
+
+    function sortStatsByImportance(statArray) {
+        statArray.sort((a, b) => Math.abs(b.importanceValue) - Math.abs(a.importanceValue));
+        console.log(statArray)
     }
 
     async function getPlayerStats(id) {
@@ -263,11 +303,21 @@
                     statValue = null;
                 }
 
-                if (statValue !== null && statName !== "Minutes Played") {
+                if (statValue !== null && statName !== "Minutes Played" && statName !== "Total Duels" && statName !== "Duels Won") {
                     console.log(`${statName}: ${statValue}`);
                     processStat(statName, statValue, minutes);
+                }else if (statName === "Total Duels"){
+                    totalDuels = statValue
+                }else if (statName === "Duels Won"){
+                    duelsWon = statValue
                 }
             });
+                if(!isKeeper && duelsWon !== 0 && totalDuels !== 0){
+                    player.duelsPerc = ((duelsWon / totalDuels) * 100).toFixed(2)
+                }
+                if(!isKeeper && duelsWon !== 0 && totalDuels !== 0){
+                    player.duelsPerc = ((duelsWon / totalDuels) * 100).toFixed(2)
+                }
         } else {
             console.log("No statistics found for this player.");
         }
@@ -349,29 +399,17 @@
                 {#if expandedSection === 'defensive'}
                     <div class="expandable-section">
                         <div class="stat-grid">
-                            <!-- {#each Object.entries({
-                                'Tackles/90': player.tackles,
-                                'Interceptions/90': player.intercept,
-                                'Fouls/90': player.fouls,
-                                'Blocked Shots/90': player.shotsBlocked,
-                                'Cleansheets': player.clean,
-                                'Goals Conceded/90': player.goalsConc,
-                                'Clearances/90': player.clear,
-                                'Crosses Blocked/90': player.cBlocked,
-                                'Aerials Won/90': player.aerial,
-                                'Duels Won Percentage': player.duelsPerc,
-                                'Dribbled Past Per 90': player.dribPerc,
-                                'Error Lead to Goal': player.errorToGoal,
-                                'Long Balls Won/90': player.lbWon
-                            }) as [statName, statValue]}
-                                <div class='stat-item'>
-                                    <span class='stat-name'>{statName}</span>
+                            {#each sortedDisplayStats as { statName, statValue, importanceValue }}
+                                <div class="stat-item">
+                                    <span class="stat-name">{statName}:</span>
                                     <span class="stat-value">{statValue}</span>
                                     <span class:stat-importance={importanceValue > 0} class:stat-importance-neg={importanceValue < 0}>
-                                        {getImportanceSymbols(statName, player.detailed_position)}
+                                        {importanceValue > 0 ? '+'.repeat(importanceValue) : '-'.repeat(Math.abs(importanceValue))}
                                     </span>
                                 </div>
-                            {/each} -->
+                            {/each}
+                        </div>
+                        <!-- <div class="stat-grid">
                             <div class="stat-item">
                                 <span class="stat-name">Cleansheets:</span>
                                 <span class="stat-value">{player.clean}</span>
@@ -427,7 +465,7 @@
                                 <span class="stat-value">{player.shotsBlocked}</span>
                                 <span class="stat-importance">+</span>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 {/if}    
                 <div class="score">
