@@ -3,7 +3,7 @@
     import { supabase } from "./supabase/supaClient";
     import { keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
     import Page from "../routes/+page.svelte";
-	import { error } from "@sveltejs/kit";
+    import { error } from "@sveltejs/kit";
 
     let {
         player = {
@@ -53,21 +53,19 @@
             bigMis: '',
             accPPerc: '',
             cBlocked: ''
-            
         }
-    } = $props()
+    } = $props();
 
-    
+    let statted = $state(false)
     let isExpanded = $state(false);
-    let expandedSection = $state(null)
-    let totalDuels = $state(0)
-    let duelsWon = $state(0)
-    let sortedDefStats = $state([])
-    let sortedPossStats = $state([])
-    let sortedPassStats = $state([])
-    let sortedAttStats = $state([])
-    let sortedKprStats = $state([])
-
+    let expandedSection = $state(null);
+    let totalDuels = $state(0);
+    let duelsWon = $state(0);
+    let sortedDefStats = $state([]);
+    let sortedPossStats = $state([]);
+    let sortedPassStats = $state([]);
+    let sortedAttStats = $state([]);
+    let sortedKprStats = $state([]);
 
     const isKeeper = player.position === 'Goalkeeper';
     const isDefender = player.position === 'Defender';
@@ -79,31 +77,62 @@
 
     const nonPer90Stats = new Set([
         'Error Lead To Goal',
+        'Duels Won Percentage',
         'Rating',
         'Cleansheets',
         'Accurate Passes Percentage'
     ]);
+
+    // Configuration mapping for player properties and importance assignments
+    const statConfig = {
+        'TacklesPer90': ['tackles', [defenseImpMap, sortedDefStats]],
+        'AerialsWonPer90': ['aerial', [defenseImpMap, sortedDefStats]],
+        'ShotsOffTargetPer90': ['shotsOff', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
+        'ShotsTotal': ['shots'],
+        'OffsidesPer90': ['offsides', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
+        'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats]],
+        'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats]],
+        'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats]],
+        'AssistsPer90': ['assists', [attackingImpMap, sortedAttStats]],
+        'PassesPer90': ['passes', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
+        'GoalsConcededPer90': ['goalsConc', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
+        'DispossessedPer90': ['disposs', [possessionImpMap, sortedPossStats]],
+        'FoulsPer90': ['fouls', [defenseImpMap, sortedDefStats], [possessionImpMap, sortedPossStats]],
+        'FoulsDrawnPer90': ['foulsDr', [possessionImpMap, sortedPossStats]],
+        'BlockedShotsPer90': ['blockedShots', [defenseImpMap, sortedDefStats]],
+        'AccurateCrossesPer90': ['accCrosses', [passingImpMap, sortedPassStats]],
+        'InterceptionsPer90': ['intercept', [defenseImpMap, sortedDefStats]],
+        'ClearancesPer90': ['clear', [defenseImpMap, sortedDefStats]],
+        'SuccessfulDribblesPer90': ['succDrib', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
+        'DribbledPastPer90': ['dribPast', [defenseImpMap, sortedDefStats]],
+        'ErrorLeadToGoal': ['errorToGoal', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
+        'KeyPassesPer90': ['keyP', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
+        'Rating': ['rating'],
+        'LongBallsWonPer90': ['lbWon', [defenseImpMap, sortedDefStats], [possessionImpMap, sortedPossStats]],
+        'Cleansheets': ['clean', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
+        'BigChancesCreatedPer90': ['bigCr', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
+        'BigChancesMissedPer90': ['bigMis', [attackingImpMap, sortedAttStats]],
+        'AccuratePassesPercentage': ['accPPerc', [possessionImpMap, sortedPossStats]],
+        'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats]],
+    };
 
 
     function capScore(score) {
         return Math.min(score, 5000);
     }
 
-    function toggleSection(section){
-        if (expandedSection === section){
+    function toggleSection(section) {
+        if (expandedSection === section) {
             expandedSection = null;
         } else {
-            expandedSection = section
+            expandedSection = section;
         }
     }
 
     function toggleExpand() {
         isExpanded = !isExpanded;
-        if (isExpanded){
-            console.log(player.id)
-            // getCalcScores(player.id)
-            getPlayerStats(player.id)
-            
+        if (isExpanded && !statted) {
+            getPlayerStats(player.id);
         }
     }
 
@@ -122,209 +151,119 @@
         return str.replace(/\s/g, '');
     }
 
-    // Function to calculate per 90 values
     function calculatePer90(statValue, minutes) {
         return minutes > 0 ? ((statValue / minutes) * 90).toFixed(2) : 0;
     }
 
+    function sortStatsByImportance(statArray) {
+        statArray.sort((a, b) => Math.abs(b.importanceValue) - Math.abs(a.importanceValue));
+        // console.log(`stat array`, statArray);
+    }
 
     function assignImportances(statName, statValue, detailedPosition, impMap, sortedArray) {
-        const importanceValue = impMap[detailedPosition]?.[stat] || 0
+        // console.log(`impMap`, impMap)
+        const importanceValue = impMap[detailedPosition]?.[statName] || 0;
 
         sortedArray.push({
             name: statName,
             importanceValue: importanceValue,
             value: statValue
-        })
+        });
     }
-   
-    // Function to process and assign stats
-    function processStat(statName, statValue, minutes ) {
+
+    function processStat(statName, statValue, minutes) {
         let displayValue;
-         // Check if the stat should be converted to per 90
         if (nonPer90Stats.has(statName)) {
-            displayValue = statValue; // Use the raw value
-            statName = condenseString(statName)
+            displayValue = statValue;
+            statName = condenseString(statName);
         } else {
-            displayValue = calculatePer90(statValue, minutes); // Convert to per 90
-            statName = condenseString(statName) + 'Per90'
+            displayValue = calculatePer90(statValue, minutes);
+            statName = condenseString(statName) + 'Per90';
         }
 
+        const config = statConfig[statName] || [];
+        if (config[0]) {
             // Assign the value to the corresponding player property
-        switch (statName) {
-            case 'TacklesPer90':
-                player.tackles = displayValue;
-                assignImportances(statName, displayValue, player.detailed_position, defenseImpMap, sortedDefStats)
-                if(isKeeper){
-                    assignImportances(statName, player.detailed_position, keepingImpMap, sortedKprStats)
-                }
-                break;
-            case 'AerialsWonPer90':
-                player.aerial = displayValue;
-                assignImportances(statName, displayValue, player.detailed_position, defenseImpMap, sortedDefStats)
-                break;
-            case 'ShotsOffTargetPer90':
-                player.shotsOff = displayValue;
-                assignImportances(statName, displayValue, player.detailed_position, attackingImpMap, sortedAtkStats)
-                assignImportances(statName, displayValue, player.detailed_position, possessionImpMap, sortedPossStats)
-                break;
-            case 'ShotsTotal':
-                player.shots = displayValue;
-                break;
-            case 'OffsidesPer90':
-                player.offsides = displayValue;
-                break;
-            case 'GoalsPer90':
-                player.goals = displayValue;
-                break;
-            case 'ShotsBlockedPer90':
-                player.shotsBlocked = displayValue;
-                break;
-            case 'HitWoodworkPer90':
-                player.hitWood = displayValue;
-                break;
-            case 'AssistsPer90':
-                player.assists = displayValue;
-                break;
-            case 'PassesPer90':
-                player.passes = displayValue;
-                break;
-            case 'GoalsConcededPer90':
-                player.goalsConc = displayValue;
-                break;
-            case 'DispossessedPer90':
-                player.disposs = displayValue;
-                break;
-            case 'FoulsPer90':
-                player.fouls = displayValue;
-                break;
-            case 'FoulsDrawnPer90':
-                player.foulsDr = displayValue;
-                break;
-            case 'BlockedShotsPer90':
-                player.blockedShots = displayValue;
-                break;
-            case 'AccurateCrossesPer90':
-                player.accCrosses = displayValue;
-                break;
-            case 'InterceptionsPer90':
-                player.intercept = displayValue;
-                break;
-            case 'ClearancesPer90':
-                player.clear = displayValue;
-                break;
-            case 'SuccessfulDribblesPer90':
-                player.succDrib = displayValue;
-                break;
-            case 'DribbledPastPer90':
-                player.dribPast = displayValue;
-                break;
-            case 'ErrorLeadToGoal':
-                player.errorToGoal = displayValue;
-                break;
-            case 'KeyPassesPer90':
-                player.keyP = displayValue;
-                break;
-            case 'Rating':
-                player.rating = displayValue;
-                break;
-            case 'LongBallsWonPer90':
-                player.lbWon = displayValue;
-                break;
-            case 'Cleansheets':
-                player.clean = displayValue;
-                break;
-            case 'BigChancesCreatedPer90':
-                player.bigCr = displayValue;
-                break;
-            case 'BigChancesMissedPer90':
-                player.bigMis = displayValue;
-                break;
-            case 'AccuratePassesPercentagePer90':
-                player.accPPerc = displayValue;
-                break;
-            case 'CrossesBlockedPer90':
-                player.cBlocked = displayValue;
-                break;
-            default:
-                break;
+            player[config[0]] = displayValue;
+      
+
+        const maps = config.slice(1);
+
+        maps.forEach(([impMap, sortedArray]) => {
+            assignImportances(statName, displayValue, player.detailed_position, impMap, sortedArray);
+        });
         }
-
-    }
-
-
-    function sortStatsByImportance(statArray) {
-        statArray.sort((a, b) => Math.abs(b.importanceValue) - Math.abs(a.importanceValue));
-        console.log(statArray)
     }
 
     async function getPlayerStats(id) {
-    try {
-        const lad = await axios.get(`/api/players/${id}`, {
-            params: {
-                include: 'statistics.details.type',
-                filter: 'playerStatisticSeasons:23614'
+        try {
+            const lad = await axios.get(`/api/players/${id}`, {
+                params: {
+                    include: 'statistics.details.type',
+                    filter: 'playerStatisticSeasons:23614'
+                }
+            });
+
+            const playerData = lad.data.data;
+            console.log(playerData);
+            player.image_path = playerData.image_path;
+            getNation(playerData.nationality_id);
+
+            if (playerData && playerData.statistics && playerData.statistics.length > 0) {
+                let minutes = 0;
+
+                playerData.statistics[0].details.forEach(seasonStats => {
+                    if (seasonStats.type.name === "Minutes Played") {
+                        minutes = seasonStats.value.total || 0;
+                    }
+                });
+
+                playerData.statistics[0].details.forEach(seasonStats => {
+                    const { type, value } = seasonStats;
+                    const statName = type.name;
+                    let statValue;
+
+                    if (statName === 'Substitutions') {
+                        statValue = value.in;
+                    } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
+                        statValue = value.average;
+                    } else if (statName === 'Crosses Blocked') {
+                        statValue = value.crosses_blocked;
+                    } else if (value && value.total) {
+                        statValue = value.total;
+                    } else if (typeof value === 'object' && Object.keys(value).length > 0) {
+                        statValue = value;
+                    } else {
+                        statValue = null;
+                    }
+
+                    if (statValue !== null && statName !== "Minutes Played" && statName !== "Total Duels" && statName !== "Duels Won") {
+                        processStat(statName, statValue, minutes);
+                    } else if (statName === "Total Duels") {
+                        totalDuels = statValue;
+                    } else if (statName === "Duels Won") {
+                        duelsWon = statValue;
+                    }
+                });
+
+                if (!isKeeper && duelsWon !== 0 && totalDuels !== 0) {
+                    player.duelsPerc = ((duelsWon / totalDuels) * 100).toFixed(2);
+                    processStat('Duels Won Percentage', player.duelsPerc, minutes)
+                }
+                sortStatsByImportance(sortedDefStats)
+                sortStatsByImportance(sortedAttStats)
+                sortStatsByImportance(sortedKprStats)
+                sortStatsByImportance(sortedPassStats)
+                sortStatsByImportance(sortedPossStats)
+                statted = true
+                // console.log(`sorted attack array: `, sortedAttStats)
+            } else {
+                console.log("No statistics found for this player.");
             }
-        });
-
-        const playerData = lad.data.data;
-        console.log(playerData);
-        player.image_path = playerData.image_path;
-        getNation(playerData.nationality_id);
-
-        if (playerData && playerData.statistics && playerData.statistics.length > 0) {
-            let minutes = 0; 
-
-            // First, find the "Minutes Played" stat
-            playerData.statistics[0].details.forEach(seasonStats => {
-                if (seasonStats.type.name === "Minutes Played") {
-                    minutes = seasonStats.value.total || 0; 
-                    console.log(`Minutes: ${minutes}`);
-                }
-            });
-
-            // Then, process all other stats
-            playerData.statistics[0].details.forEach(seasonStats => {
-                const { type, value } = seasonStats;
-                const statName = type.name;
-                let statValue;
-
-                if (statName === 'Substitutions') {
-                    statValue = value.in;
-                } else if (statName === 'Rating' || statName === 'Average Points Per Game') {
-                    statValue = value.average;
-                } else if (statName === 'Crosses Blocked') {
-                    statValue = value.crosses_blocked;
-                } else if (value && value.total) {
-                    statValue = value.total;
-                } else if (typeof value === 'object' && Object.keys(value).length > 0) {
-                    statValue = value;
-                } else {
-                    statValue = null;
-                }
-
-                if (statValue !== null && statName !== "Minutes Played" && statName !== "Total Duels" && statName !== "Duels Won") {
-                    console.log(`${statName}: ${statValue}`);
-                    processStat(statName, statValue, minutes);
-                }else if (statName === "Total Duels"){
-                    totalDuels = statValue
-                }else if (statName === "Duels Won"){
-                    duelsWon = statValue
-                }
-            });
-                if(!isKeeper && duelsWon !== 0 && totalDuels !== 0){
-                    player.duelsPerc = ((duelsWon / totalDuels) * 100).toFixed(2)
-                }
-                if(!isKeeper && duelsWon !== 0 && totalDuels !== 0){
-                    player.duelsPerc = ((duelsWon / totalDuels) * 100).toFixed(2)
-                }
-        } else {
-            console.log("No statistics found for this player.");
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
     }
-}
 
     async function getNation(id) {
         try {
@@ -399,77 +338,30 @@
                 {#if expandedSection === 'defensive'}
                     <div class="expandable-section">
                         <div class="stat-grid">
-                            {#each sortedDisplayStats as { statName, statValue, importanceValue }}
+                            {#each sortedDefStats as stat}
                                 <div class="stat-item">
-                                    <span class="stat-name">{statName}:</span>
-                                    <span class="stat-value">{statValue}</span>
-                                    <span class:stat-importance={importanceValue > 0} class:stat-importance-neg={importanceValue < 0}>
-                                        {importanceValue > 0 ? '+'.repeat(importanceValue) : '-'.repeat(Math.abs(importanceValue))}
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
                                     </span>
                                 </div>
                             {/each}
                         </div>
-                        <!-- <div class="stat-grid">
-                            <div class="stat-item">
-                                <span class="stat-name">Cleansheets:</span>
-                                <span class="stat-value">{player.clean}</span>
-                                <span class="stat-importance">{isDefender? '++++':'+'}</span>
-                            </div>
-                            <div class='stat-item'>
-                                <span class="stat-name">Error Lead to Goal:</span>
-                                <span class="stat-value">{player.errorToGoal? player.errorToGoal : 0}</span>
-                                <span class="stat-importance-neg">{!isDefender? '----':'---'}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Goals Conceded/90:</span>
-                                <span class="stat-value">{player.goalsConc}</span>
-                                <span class="stat-importance-neg">{isDefender? '----':'--'}</span>
-                            </div>
-                            <div class='stat-item'>
-                                <span class="stat-name">Crosses Blocked/90:</span>
-                                <span class="stat-value">{player.cBlocked}</span>
-                                <span class="stat-importance">{isFullback? '+++':'++'}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Interceptions/90:</span>
-                                <span class="stat-value">{player.intercept}</span>
-                                <span class="stat-importance">{isDefender? '+':'++'}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Fouls/90:</span>
-                                <span class="stat-value">{player.fouls}</span>
-                                <span class="stat-importance-neg">--</span>
-                            </div>
-                            <div class='stat-item'>
-                                <span class="stat-name">Clearances/90:</span>
-                                <span class="stat-value">{player.clear}</span>
-                                <span class="stat-importance">{isMidfielder? '++':'+'}</span>
-                            </div>
-                            <div class='stat-item'>
-                                <span class="stat-name">Aerials Won/90:</span>
-                                <span class="stat-value">{player.aerial}</span>
-                                <span class="stat-importance">{isMidfielder? '++':'+'}</span>
-                            </div>
-                            <div class='stat-item'>
-                                <span class="stat-name">Long Balls Won/90:</span>
-                                <span class="stat-value">{player.lbWon}</span>
-                                <span class="stat-importance">{!isDefender? '+':'++'}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Tackles/90:</span>
-                                <span class="stat-value">{player.tackles}</span>
-                                <span class="stat-importance">{isDefender? '+':'++'}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-name">Blocked Shots/90:</span>
-                                <span class="stat-value">{player.shotsBlocked}</span>
-                                <span class="stat-importance">+</span>
-                            </div>
-                        </div> -->
                     </div>
                 {/if}    
                 <div class="score">
-                    <span>Passing Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('passing')}}>
+                        <span>Passing Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
@@ -477,8 +369,33 @@
                         <div class="popup">{player.passing_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'passing'}
+                    <div class="expandable-section">
+                        <div class="stat-grid">
+                            {#each sortedPassStats as stat}
+                                <div class="stat-item">
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}    
                 <div class="score">
-                    <span>Possession Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('possession')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('possession')}}>
+                        <span>Possession Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'possession' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.possession_score / 5000) * 100}%;`}></div>
@@ -486,8 +403,33 @@
                         <div class="popup">{player.possession_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'possession'}
+                    <div class="expandable-section">
+                        <div class="stat-grid">
+                            {#each sortedPossStats as stat}
+                                <div class="stat-item">
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}    
                 <div class="score">
-                    <span>Attacking Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('attacking')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('attacking')}}>
+                        <span>Attacking Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'attacking' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.attacking_score / 5000) * 100}%;`}></div>
@@ -495,6 +437,21 @@
                         <div class="popup">{player.attacking_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'attacking'}
+                    <div class="expandable-section">
+                        <div class="stat-grid">
+                            {#each sortedAttStats as stat}
+                                <div class="stat-item">
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
                 <div class="score">
                     <span>Overall Rating:</span>
                     <div class="progress-bar-container">
@@ -506,7 +463,17 @@
                 </div>
                 {:else}
                 <div class="score">
-                    <span>Keeping Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('keeping')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('keeping')}}>
+                        <span>Keeping Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'keeping' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.keeper_score / 5000) * 100}%;`}></div>
@@ -514,8 +481,33 @@
                         <div class="popup">{player.keeper_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'keeping'}
+                    <div class="expandable-section">
+                        <div class="stat-grid">
+                            {#each sortedKprStats as stat}
+                                <div class="stat-item">
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
                 <div class="score">
-                    <span>Passing Score:</span>
+                    <div 
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
+                        class="score-label" 
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            toggleSection('passing')}}>
+                        <span>Passing Score:</span>
+                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
+                    </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar">
                             <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
@@ -523,6 +515,21 @@
                         <div class="popup">{player.passing_score}</div>
                     </div>
                 </div>
+                {#if expandedSection === 'passing'}
+                    <div class="expandable-section">
+                        <div class="stat-grid">
+                            {#each sortedPassStats as stat}
+                                <div class="stat-item">
+                                    <span class="stat-name">{stat.name}:</span>
+                                    <span class="stat-value">{stat.value}</span>
+                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if} 
                 <div class="score">
                     <span>Overall Rating:</span>
                     <div class="progress-bar-container">

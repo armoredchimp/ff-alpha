@@ -81,7 +81,6 @@
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
-<h4><a href='/dbUpload'>To Upload Page</a></h4>
 <button onclick={getPlayerById(54191)}>getPlayerById</button>
 <button onclick={getPremPlayersFromMini}>Get Players</button>
 <button onclick={getPremPlayers}>Get Players From API</button>
