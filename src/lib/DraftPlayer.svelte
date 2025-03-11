@@ -68,12 +68,6 @@
     let sortedKprStats = $state([]);
 
     const isKeeper = player.position === 'Goalkeeper';
-    const isDefender = player.position === 'Defender';
-    const isFullback = player.detailed_position === 'Right Back' || player.detailed_position === 'Left Back';
-    const isMidfielder = player.position === 'Midfielder';
-    const isAttacker = player.position === 'Attacker';
-    const isACM = player.detailed_position === 'Attacking Midfield';
-    const isCB = player.detailed_position === 'Centre Back';
 
     const nonPer90Stats = new Set([
         'Error Lead To Goal',

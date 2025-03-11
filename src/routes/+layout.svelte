@@ -261,7 +261,7 @@
                 }
             }
             console.log('Operation Success!')
-            getPlayersThenScore('prem_mini_2425_testing')
+            getPlayersThenScore('prem_mini_2425')
         } catch (err) {
             console.error("Error fetching Premier League players:", err);
         }
@@ -397,8 +397,7 @@
 ////////////////////////////
 //Player Calculations /////    
 function getKeeperScore(row, detailedPosition){
-    const weights = keepingWeightMap[detailedPosition];
-    // console.log(`weights: `, weights)
+    const weights = keepingWeightMap[detailedPosition]
     if(!weights){
         console.error('Weight map not found', detailedPosition)
     }
@@ -452,7 +451,6 @@ function getKeeperScore(row, detailedPosition){
 
 function getAttackingScore(row, detailedPosition) {
     const weights = attackingWeightMap[detailedPosition];
-    // console.log(`weights: `, weights)
     if(!weights){
         console.error('Weight map not found', detailedPosition)
     }
@@ -475,7 +473,6 @@ function getAttackingScore(row, detailedPosition) {
     
     const minutesPlayed = row['Minutes Played'] || 0;
 
-    // Simple per90 calculation without scaling
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
         per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
@@ -504,13 +501,12 @@ function getAttackingScore(row, detailedPosition) {
 
 function getPossessionScore(row, detailedPosition) {
     const weights = possessionWeightMap[detailedPosition];
-    // console.log(`weights: `, weights)
     if(!weights){
         console.error('Weight map not found', detailedPosition)
     }
     const stats = {
         AccuratePasses: row['Accurate Passes'] || 0,
-        AccuratePassesPercentage: parseFloat(row['Accurate Passes Percentage']) || 0,
+        AccuratePassesPercentage: row['Accurate Passes Percentage'] || 0,
         Passes: row['Passes'] || 0,
         SuccessfulDribbles: row['Successful Dribbles'] || 0,
         LongBallsWon: row['Long Balls Won'] || 0,
@@ -525,8 +521,6 @@ function getPossessionScore(row, detailedPosition) {
 
     const minutesPlayed = row['Minutes Played'] || 0;
     
-
-    // Calculate regular per90 stats
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
         if (key !== 'AccuratePassesPercentage') {
@@ -541,19 +535,11 @@ function getPossessionScore(row, detailedPosition) {
         possessionScore += (per90Stats[key] || 0) * weight;
     }
 
-    // Add consistency bonus if applicable
     let consistencyBonus = 0;
     if (minutesPlayed > 1000) {
         consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
     }
     possessionScore += consistencyBonus;
-
-    // Add bonus for high passing accuracy
-    // const accuratePassesPercentage = per90Stats.AccuratePassesPercentage || 0;
-    // if (accuratePassesPercentage >= 90) {
-    //     const bonusMultiplier = Math.pow((accuratePassesPercentage - 90), 2);
-    //     possessionScore += 150 + (bonusMultiplier * 15);
-    // }
 
     // Apply the minutes-played penalty for players under 1000 minutes
     if (minutesPlayed < 1000) {
@@ -561,20 +547,19 @@ function getPossessionScore(row, detailedPosition) {
         possessionScore = possessionScore * minutesPercentage;
     }
 
-    possessionScore = (possessionScore / 30) * AccuratePassesPercentage
+    possessionScore = (possessionScore / 30) * stats.AccuratePassesPercentage
 
     if(possessionScore <= 100){
-        possessionScore = AccuratePassesPercentage
+        possessionScore = stats.AccuratePassesPercentage
     }
 
     possessionScore = (possessionScore).toFixed(2);
-    // console.log(possessionScore)
     return possessionScore
 }
 
 function getPassingScore(row, detailedPosition) {
     const weights = passingWeightMap[detailedPosition];
-    // console.log(`weights: `, weights)
+
     if(!weights){
         console.error('Weight map not found', detailedPosition)
     }
