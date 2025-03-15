@@ -178,11 +178,11 @@
                     total += parseFloat(attacking);
 
                     if (isMidfielder) {
-                        total *= 1.2;
+                        total *= 1.05;
                     } else if (isAttacker) {
                         total *= 1.3;
                     } else if (isCB) {
-                        total *= 1.4;
+                        total *= 1.6;
                     } else if (isFullback) {
                         total *= 0.95;
                     }
@@ -530,7 +530,12 @@ function getPossessionScore(row, detailedPosition) {
         }
     }
 
-    let possessionScore = 0;
+	let possessionScore = 0
+	if(detailedPosition === 'Centre Back'){
+		possessionScore = 300;
+	}else {
+		possessionScore = 100;
+	}
     for (const [key, weight] of Object.entries(weights)) {
         possessionScore += (per90Stats[key] || 0) * weight;
     }
