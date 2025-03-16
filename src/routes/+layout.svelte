@@ -6,6 +6,7 @@
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
+	import PlayerTeam from "$lib/PlayerTeam.svelte";
 	
 	onMount(()=>{
 		fetchAllWeights()
@@ -131,7 +132,7 @@
                 console.log(`Processing player: ${player["Player Name"]}`);
 
                 await delay(500);
-
+                
                 const playerData = {
                     id: player.id,
                     player_name: player["Player Name"],
@@ -146,14 +147,13 @@
                     transfer_value: null,
                     player_age: null
                 };
-                
+
                 let attacking = null;
                 let keeping = null;
                 let passing = null;
                 let defense = null;
                 let possession = null;
                 let total = 0;
-
                 const isKeeper = player.Position === 'Goalkeeper';
                 const isMidfielder = player.Position === 'Midfielder';
                 const isAttacker = player.Position === 'Attacker';
@@ -162,20 +162,31 @@
 
                 if (!isKeeper) {
                     defense = getDefensiveScore(player, player["Detailed Position"]);
-                    defense = capScore(defense); 
-                    total += parseFloat(defense);
-
+                    total += parseFloat(defense.score);
+                    console.log(`total1: ${total}`)
                     passing = getPassingScore(player, player["Detailed Position"]);
-                    passing = capScore(passing);
-                    total += parseFloat(passing);
-
+                    total += parseFloat(passing.score);
+                    console.log(`passing score: ${passing.score}`)
+                    console.log(`total2: ${total}`)
                     possession = getPossessionScore(player, player["Detailed Position"]);
-                    possession = capScore(possession);
-                    total += parseFloat(possession);
-
+                    total += parseFloat(possession.score);
+                    console.log(`total3: ${total}`)
                     attacking = getAttackingScore(player, player["Detailed Position"]);
-                    attacking = capScore(attacking);
-                    total += parseFloat(attacking);
+                    total += parseFloat(attacking.score);
+                    console.log(`total4: ${total}`)
+                    const p90s = {
+                        PlayerName: playerData.player_name,
+                        PlayerTeam: player["Player Team"],
+                        Position: playerData.position,
+                        DetailedPosition: playerData.detailed_position,
+                        ...defense.p90s,
+                        ...passing.p90s,
+                        ...possession.p90s,
+                        ...attacking.p90s,
+                    }
+
+                  
+                    await insertPer90s(player.id, p90s)
 
                     if (isMidfielder) {
                         total *= 1.05;
@@ -189,16 +200,34 @@
 
                     total = (total / 4).toFixed(2);
                     console.log('total:  ', total)
+
+                    playerData.attacking_score = attacking.score,
+                    playerData.possession_score = possession.score,
+                    playerData.passing_score = passing.score,
+                    playerData.defensive_score = defense.score
+
                 } else {
                     keeping = getKeeperScore(player, player["Detailed Position"]);
-                    keeping = capScore(keeping);
-                    total += parseFloat(keeping);
+                    total += parseFloat(keeping.score);
 
                     passing = getPassingScore(player, player["Detailed Position"]);
-                    passing = capScore(passing);
-                    total += parseFloat(passing);
+                    total += parseFloat(passing.score);
 
                     total = (total / 2).toFixed(2);
+
+                    playerData.passing_score = passing.score
+                    playerData.keeper_score = keeping.score
+
+                    const p90s = {
+                        PlayerName: playerData.player_name,
+                        PlayerTeam: player["Player Team"],
+                        Position: playerData.position,
+                        DetailedPosition: playerData.detailed_position,
+                        ...keeping.p90s,
+                        ...passing.p90s,
+                    }
+
+                    await insertPer90s(player.id, p90s)
                 }
                 playerData.total_score = total;
                 playerData.transfer_value = (total * 20).toFixed(2);
@@ -233,6 +262,20 @@
             console.error('Error in getPlayersThenScore:', err);
         }
     }}
+
+    async function insertPer90s(id, p90s){
+        const { data, error } = await supabase
+            .from('prem_stats_2425_per90')
+            .upsert({
+                id: id,
+                ...p90s,
+            }, { onConflict: 'id'})
+            console.log(`player id ${id} uploaded`)
+            if(error){
+                console.error(error)
+            }
+    }
+
 
 /////////////////////////
 // API to Main Stat DB //
@@ -421,10 +464,13 @@ function getKeeperScore(row, detailedPosition){
 
     const duelsWonPercentage = stats.TotalDuels > 0 ? (stats.DuelsWon / stats.TotalDuels) * 100 : 0;
 
-
-    const per90Stats = {};
+    const per90Stats = {}
     for (const [key, value] of Object.entries(stats)) {
-        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        if (key !== 'Cleansheets' && key !== 'ErrorLeadToGoal') {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        } else {
+            per90Stats[key] = value;
+        }
     }
 
     per90Stats.DuelsWonPercentage = duelsWonPercentage;
@@ -446,7 +492,12 @@ function getKeeperScore(row, detailedPosition){
         keepingScore = keepingScore * minutesPercentage;
     }
 
-    return (keepingScore / 5).toFixed(2)
+    keepingScore = (keepingScore / 5).toFixed(2)
+    keepingScore = capScore(keepingScore)
+    return {
+        score: keepingScore,
+        p90s: per90Stats
+    }
 }
 
 function getAttackingScore(row, detailedPosition) {
@@ -496,7 +547,12 @@ function getAttackingScore(row, detailedPosition) {
         attackingScore = attackingScore * minutesPercentage;
     }
 
-    return (attackingScore * 2).toFixed(2);
+    attackingScore = (attackingScore * 2).toFixed(2);
+    attackingScore = capScore(attackingScore)
+    return {
+        score: attackingScore,
+        p90s: per90Stats
+    }
 }
 
 function getPossessionScore(row, detailedPosition) {
@@ -530,12 +586,7 @@ function getPossessionScore(row, detailedPosition) {
         }
     }
 
-	let possessionScore = 0
-	if(detailedPosition === 'Centre Back'){
-		possessionScore = 300;
-	}else {
-		possessionScore = 100;
-	}
+    let possessionScore = 0;
     for (const [key, weight] of Object.entries(weights)) {
         possessionScore += (per90Stats[key] || 0) * weight;
     }
@@ -559,7 +610,11 @@ function getPossessionScore(row, detailedPosition) {
     }
 
     possessionScore = (possessionScore).toFixed(2);
-    return possessionScore
+    possessionScore = capScore(possessionScore)
+    return {
+        score: possessionScore,
+        p90s: per90Stats
+    }
 }
 
 function getPassingScore(row, detailedPosition) {
@@ -584,9 +639,12 @@ function getPassingScore(row, detailedPosition) {
     // Calculate regular per90 stats
     const per90Stats = {};
     for (const [key, value] of Object.entries(stats)) {
-        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        if (key !== 'AccuratePassesPercentage') {
+            per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+        } else {
+            per90Stats[key] = value;
+        }
     }
-
     let passingScore = 0;
     for (const [key, weight] of Object.entries(weights)) {
         passingScore += (per90Stats[key] || 0) * weight;
@@ -627,10 +685,13 @@ function getPassingScore(row, detailedPosition) {
     if(detailedPosition === 'Goalkeeper'){
         passingScore *= 4
     }
-
     passingScore = passingScore.toFixed(2)
-    // console.log(passingScore)
-    return passingScore
+    passingScore = capScore(passingScore)
+    console.log(`fadfkjfd ${passingScore}`)
+    return {
+        score: passingScore,
+        p90s: per90Stats
+    }
 }
 
         
@@ -644,6 +705,7 @@ function getDefensiveScore(row, detailedPosition) {
     const stats = {
         Tackles: row.Tackles || 0,
         Fouls: row.Fouls || 0,
+        CrossesBlocked: row['Crosses Blocked'] || 0,
         Interceptions: row.Interceptions || 0,
         BlockedShots: row['Shots Blocked'] || 0,
         Cleansheets: row.Cleansheets || 0,
@@ -718,7 +780,11 @@ function getDefensiveScore(row, detailedPosition) {
     }
 
     defensiveScore = (defensiveScore * 0.8).toFixed(2)
-    return defensiveScore
+    defensiveScore = capScore(defensiveScore)
+    return {
+        score: defensiveScore,
+        p90s: per90Stats
+    }
 }
 
 
