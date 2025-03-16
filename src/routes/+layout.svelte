@@ -82,7 +82,6 @@
     }
 
     async function fetchAllWeights(){
-
         await Promise.all([
             getWeightsFromTable('getDefensiveScore', defenseWeightMap, defenseImpMap),
             getWeightsFromTable('getKeeperScore', keepingWeightMap, keepingImpMap),
@@ -109,10 +108,7 @@
         return age;
     }
 
-
-
     async function getPlayersThenScore(miniDB) {
-
         await fetchAllWeights()
 
         if(weightsFetched){
@@ -163,20 +159,20 @@
                 if (!isKeeper) {
                     defense = getDefensiveScore(player, player["Detailed Position"]);
                     total += parseFloat(defense.score);
-                    console.log(`total1: ${total}`)
+                  
                     passing = getPassingScore(player, player["Detailed Position"]);
                     total += parseFloat(passing.score);
-                    console.log(`passing score: ${passing.score}`)
-                    console.log(`total2: ${total}`)
+                   
                     possession = getPossessionScore(player, player["Detailed Position"]);
                     total += parseFloat(possession.score);
-                    console.log(`total3: ${total}`)
+                    
                     attacking = getAttackingScore(player, player["Detailed Position"]);
                     total += parseFloat(attacking.score);
-                    console.log(`total4: ${total}`)
+                   
                     const p90s = {
                         PlayerName: playerData.player_name,
                         PlayerTeam: player["Player Team"],
+                        MinutesPlayed: player["Minutes Played"],
                         Position: playerData.position,
                         DetailedPosition: playerData.detailed_position,
                         ...defense.p90s,
@@ -200,12 +196,11 @@
 
                     total = (total / 4).toFixed(2);
                     console.log('total:  ', total)
-
-                    playerData.attacking_score = attacking.score,
-                    playerData.possession_score = possession.score,
-                    playerData.passing_score = passing.score,
-                    playerData.defensive_score = defense.score
-
+                    playerData.defensive_score = parseFloat(defense.score)
+                    playerData.passing_score = parseFloat(passing.score)
+                    playerData.possession_score = parseFloat(possession.score)
+                    playerData.attacking_score = parseFloat(attacking.score)
+    
                 } else {
                     keeping = getKeeperScore(player, player["Detailed Position"]);
                     total += parseFloat(keeping.score);
@@ -215,12 +210,13 @@
 
                     total = (total / 2).toFixed(2);
 
-                    playerData.passing_score = passing.score
-                    playerData.keeper_score = keeping.score
+                    playerData.keeper_score = parseFloat(keeping.score)
+                    playerData.passing_score = parseFloat(passing.score)
 
                     const p90s = {
                         PlayerName: playerData.player_name,
                         PlayerTeam: player["Player Team"],
+                        MinutesPlayed: player["Minutes Played"],
                         Position: playerData.position,
                         DetailedPosition: playerData.detailed_position,
                         ...keeping.p90s,
@@ -234,17 +230,6 @@
                 playerData.player_age = player.Age;
                 playerData.player_team = player["Player Team"];
                 playerData.nationality = player.Nation;
-
-                if (!isKeeper) {
-                    playerData.defensive_score = parseFloat(defense)
-                    playerData.passing_score = parseFloat(passing)
-                    playerData.possession_score = parseFloat(possession)
-                    playerData.attacking_score = parseFloat(attacking)
-                } else {
-                    playerData.keeper_score = parseFloat(keeping)
-                    playerData.passing_score = parseFloat(passing)
-
-                }
 
                 const { error: uploadError } = await supabase
                     .from(miniDB)
@@ -492,8 +477,9 @@ function getKeeperScore(row, detailedPosition){
         keepingScore = keepingScore * minutesPercentage;
     }
 
-    keepingScore = (keepingScore / 5).toFixed(2)
+    keepingScore = (keepingScore / 8).toFixed(2)
     keepingScore = capScore(keepingScore)
+    console.log('keeping score', keepingScore)
     return {
         score: keepingScore,
         p90s: per90Stats
@@ -687,7 +673,6 @@ function getPassingScore(row, detailedPosition) {
     }
     passingScore = passingScore.toFixed(2)
     passingScore = capScore(passingScore)
-    console.log(`fadfkjfd ${passingScore}`)
     return {
         score: passingScore,
         p90s: per90Stats
