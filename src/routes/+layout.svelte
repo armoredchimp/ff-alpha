@@ -2,6 +2,7 @@
 	import axios from "axios";
 	import { onMount } from "svelte";
     import { allPlayers } from "$lib/stores/stores.svelte";
+    import { statsToRank } from "$lib/data/statsToRank";
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
@@ -772,7 +773,49 @@ function getDefensiveScore(row, detailedPosition) {
     }
 }
 
+//Stat Rankings//
+/////////////////
+async function statRankings(){
+    const { data, error } = await supabase
+        .from('prem_stats_2425_per90')
+        .select('*');
+    if (error){
+        console.error(error)
+    }
 
+    //Only get rankings for players with significant minutes (half of the maximum or greater)
+    const maxMinutes = Math.max(...data.map(player => player.MinutesPlayed))
+    const minutesThreshold = maxMinutes / 2;
+    const filteredPlayers = data.filter(player => player.MinutesPlayed >= minutesThreshold)
+
+    // console.log(filteredPlayers)
+
+    const rankedData = filteredPlayers.map(player => ({
+        id: player.id,
+        PlayerName: player.PlayerName,
+        ...statsToRank.reduce((acc, stat) => {
+            acc[stat] = 0; 
+            return acc;
+        }, {}) // Initialize accumulator as an empty object
+    }));
+
+    statsToRank.forEach(stat => {
+        const sortedPlayers = [...filteredPlayers].sort((a, b)=>b[stat] - a[stat]);
+
+        sortedPlayers.forEach((player, index)=>{
+            const rank = index + 1;
+            const playerInRankedData = rankedData.find(p => p.id === player.id)
+            if (rank <= 10){
+                playerInRankedData[stat] = rank
+            } else if (rank >= sortedPlayers.length - 9){
+                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1)
+            }else {
+                playerInRankedData[stat] = 0;
+            }
+        })
+    })
+    console.log(rankedData)
+}
 
 
 
@@ -785,6 +828,7 @@ function getDefensiveScore(row, detailedPosition) {
 <button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
 <button onclick={fetchAllWeights}>Weights</button>
 <button onclick={testWeightMap}>Test Weight to Defense</button>
+<button onclick={statRankings}>Stat Rankings</button>
 
 <style>
     button {
