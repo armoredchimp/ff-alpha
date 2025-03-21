@@ -37,9 +37,18 @@ export const statsToRank = [
   ];
 
 export const keeperStatsToRank = [
+    "AerialsWonPer90",
+    "FoulsPer90", 
+    "DuelsWonPercentage",
+    "LongBallsWonPer90", 
+    "Cleansheets",
+    "ClearancesPer90", 
+    "GoalsConcededPer90", 
+    "FoulsDrawnPer90", 
     "SavesPer90",  
     "SavesInsideBoxPer90", 
     "KeyPassesPer90", 
+    "ErrorLeadToGoal",
     "PassesPer90", 
     "AssistsPer90", 
     "AccurateCrossesPer90",
