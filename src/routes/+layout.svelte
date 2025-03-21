@@ -2,7 +2,7 @@
 	import axios from "axios";
 	import { onMount } from "svelte";
     import { allPlayers } from "$lib/stores/stores.svelte";
-    import { statsToRank } from "$lib/data/statsToRank";
+    import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
@@ -775,48 +775,87 @@ function getDefensiveScore(row, detailedPosition) {
 
 //Stat Rankings//
 /////////////////
-async function statRankings(){
+async function statRankings() {
+    const invertedStats = [
+        "ShotsOffTargetPer90",
+        "BigChancesMissedPer90",
+        "FoulsPer90",
+        "GoalsConcededPer90",
+        "DispossessedPer90",
+        "DribbledPastPer90",
+        "ErrorLeadToGoal"
+    ];
+
     const { data, error } = await supabase
         .from('prem_stats_2425_per90')
         .select('*');
-    if (error){
-        console.error(error)
+    if (error) {
+        console.error(error);
+        return;
     }
 
-    //Only get rankings for players with significant minutes (half of the maximum or greater)
-    const maxMinutes = Math.max(...data.map(player => player.MinutesPlayed))
+    // Only get rankings for players with significant minutes (half of the maximum or greater)
+    const maxMinutes = Math.max(...data.map(player => player.MinutesPlayed));
     const minutesThreshold = maxMinutes / 2;
-    const filteredPlayers = data.filter(player => player.MinutesPlayed >= minutesThreshold)
+    const filteredPlayers = data.filter(player => player.MinutesPlayed >= minutesThreshold);
 
-    // console.log(filteredPlayers)
+    // Separate players into keepers and non-keepers
+    const keepers = filteredPlayers.filter(player => player.DetailedPosition === 'Goalkeeper');
+    const nonKeepers = filteredPlayers.filter(player => player.DetailedPosition !== 'Goalkeeper');
 
+    // Initialize rankedData for all players
     const rankedData = filteredPlayers.map(player => ({
         id: player.id,
         PlayerName: player.PlayerName,
+        DetailedPosition: player.DetailedPosition,
         ...statsToRank.reduce((acc, stat) => {
-            acc[stat] = 0; 
+            acc[stat] = 0; // Initialize all stats to 0
             return acc;
-        }, {}) // Initialize accumulator as an empty object
+        }, {}),
+        ...keeperStatsToRank.reduce((acc, stat) => {
+            acc[stat] = 0; // Initialize keeper stats to 0
+            return acc;
+        }, {})
     }));
 
+    // Rank non-keepers using statsToRank
     statsToRank.forEach(stat => {
-        const sortedPlayers = [...filteredPlayers].sort((a, b)=>b[stat] - a[stat]);
+        const sortOrder = invertedStats.includes(stat) ? (a, b) => a[stat] - b[stat] : (a, b) => b[stat] - a[stat];
+        const sortedPlayers = [...nonKeepers].sort(sortOrder);
 
-        sortedPlayers.forEach((player, index)=>{
+        sortedPlayers.forEach((player, index) => {
             const rank = index + 1;
-            const playerInRankedData = rankedData.find(p => p.id === player.id)
-            if (rank <= 10){
-                playerInRankedData[stat] = rank
-            } else if (rank >= sortedPlayers.length - 9){
-                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1)
-            }else {
-                playerInRankedData[stat] = 0;
+            const playerInRankedData = rankedData.find(p => p.id === player.id);
+            if (rank <= 20) {
+                playerInRankedData[stat] = rank; // Top 20
+            } else if (rank >= sortedPlayers.length - 19) {
+                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1); // Bottom 20
+            } else {
+                playerInRankedData[stat] = 0; // Not in top or bottom 20
             }
-        })
-    })
-    console.log(rankedData)
-}
+        });
+    });
 
+    // Rank keepers using keeperStatsToRank
+    keeperStatsToRank.forEach(stat => {
+        const sortOrder = invertedStats.includes(stat) ? (a, b) => a[stat] - b[stat] : (a, b) => b[stat] - a[stat];
+        const sortedPlayers = [...keepers].sort(sortOrder);
+
+        sortedPlayers.forEach((player, index) => {
+            const rank = index + 1;
+            const playerInRankedData = rankedData.find(p => p.id === player.id);
+            if (rank <= 20) {
+                playerInRankedData[stat] = rank; // Top 20
+            } else if (rank >= sortedPlayers.length - 19) {
+                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1); // Bottom 20
+            } else {
+                playerInRankedData[stat] = 0; // Not in top or bottom 20
+            }
+        });
+    });
+
+    console.log(rankedData);
+}
 
 
 
