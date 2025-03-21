@@ -320,7 +320,7 @@
                     const statsToInsert = {
                         id: playerData.id,
                         Position: playerData.position.name,
-                        "Detailed Position": playerData.detailedposition.name,
+                        "Detailed Position": playerData.detailedposition && playerData.detailedposition.name ? playerData.detailedposition.name : null,
                         "Player Name": playerData.display_name,
                         "Player Team": teamName,
                         Age: calculateAge(playerData.date_of_birth),
@@ -336,6 +336,10 @@
                     if ((statsToInsert['Detailed Position']) === 'Secondary Striker'){
                         (statsToInsert['Detailed Position']) = 'Centre Forward'
                     }
+                    if ((statsToInsert['Detailed Position']) === null){
+                        (statsToInsert['Detailed Position']) = 'Central Midfield'
+                    }
+
                     // Flatten the stats and add them to the object
                     seasonStats.details.forEach(stat => {
                         const { type, value } = stat;
@@ -364,11 +368,11 @@
                                 break;
 
                             case 'Average Points Per Game':
-                                // Use the `average` value from the nested object  
+                                // Use the `average` value from the nested object 
                                 if (value && typeof value === 'object' && value.average !== undefined) {
                                     statsToInsert[statName] = value.average;
                                 }
-                                break;  
+                                break; 
                             default:
                                 // For all other stats, use the `total` value if it exists, otherwise use the value as-is
                                 if (value && typeof value === 'object' && value.total !== undefined) {
@@ -401,7 +405,6 @@
             console.error("Error fetching player stats:", error);
         }
     }
-
 //End of API to Main Stat DB //
 //////////////////////////////
 
