@@ -61,6 +61,7 @@
     let expandedSection = $state(null);
     let totalDuels = $state(0);
     let duelsWon = $state(0);
+    let sentences = $state([])
     let sortedDefStats = $state([]);
     let sortedPossStats = $state([]);
     let sortedPassStats = $state([]);
@@ -87,7 +88,7 @@
         'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats]],
         'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats]],
         'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats]],
-        'AssistsPer90': ['assists', [attackingImpMap, sortedAttStats]],
+        'AssistsPer90': ['assists', [passingImpMap, sortedPassStats], [attackingImpMap, sortedAttStats]],
         'PassesPer90': ['passes', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
         'GoalsConcededPer90': ['goalsConc', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
         'DispossessedPer90': ['disposs', [possessionImpMap, sortedPossStats]],
@@ -205,6 +206,7 @@
         }
         }
         potentialSelections.sort((a, b)=> a[1] - b[1])
+        negativeSelections.sort((a, b)=> b[1] - a[1])
         console.log(`pot: `, potentialSelections)
         const potSelects = potentialSelections.slice(0, 3)
         const negSelects = negativeSelections.slice(-3)
@@ -212,12 +214,50 @@
         console.log(`neg: `, negSelects)
         finalSelections = finalSelections.concat(potSelects, negSelects)
         console.log(finalSelections)
-        // createStatTexts(finalSelections)
+        createStatTexts(finalSelections)
     }
 
-    // function createStatTexts(array){
+    function createStatTexts(array, playerName) {
+        array.forEach(([stat, rank]) => {
+            const formattedStat = stat.replace(/([A-Z])/g, ' $1').trim(); // Format stat name
 
-    // }
+            let description, color;
+
+      
+            if (rank === 1) {
+                description = "Leads the league";
+                color = "#800080"; // Dark Purple
+            } else if (rank >= 2 && rank <= 5) {
+                description = "Elite";
+                color = "#0000FF"; // Blue
+            } else if (rank >= 6 && rank <= 10) {
+                description = "Excellent";
+                color = "#008000"; // Green
+            } else if (rank >= 11 && rank <= 20) {
+                description = "Very good";
+                color = "#335026"; // Dark Green
+            } else if (rank === -1) {
+                description = "League bottom";
+                color = "#8B4513"; // Brown
+            } else if (rank >= -5 && rank <= -2) {
+                description = "Bottom of the league";
+                color = "#FF0000"; // Red
+            } else if (rank >= -10 && rank <= -6) {
+                description = "Very poor";
+                color = "#8B0000"; // Dark Red
+            } else if (rank >= -20 && rank <= -11) {
+                description = "Poor";
+                color = "#FFA500"; // Orange
+            } 
+            // Create the sentence with the colored description
+            const sentence = {
+                text: `${description} - ${formattedStat}`,
+                color: color
+            };
+
+            sentences.push(sentence); 
+        });
+    }
 
     // async function getPlayerStatsDB(id) {
     //     try {
@@ -393,6 +433,19 @@
                     {/if}
                     <span class="detailed-position">{player.detailed_position}</span>
                 </div>
+            </div>
+            <div class="sentence-section">
+                {#if isKeeper}
+                <span class="keeper-label">Compared to other Keepers:</span>
+                {/if}
+                {#each sentences as sentence}
+                <p class="sentence">
+                    {@html sentence.text.replace(
+                        sentence.text.split(' - ')[0], 
+                        `<span style="color: ${sentence.color};">${sentence.text.split(' - ')[0]}</span>`
+                    )}
+                </p>
+                {/each}
             </div>
             <div class="stats-section">
                 {#if !isKeeper}
@@ -629,7 +682,22 @@
 </div>
 
 <style>
-   .progress-bar-container {
+    .sentence-section {
+        display: flex;
+        flex-direction: column;
+        /* gap: 1.5rem;  */
+    }
+
+    .keeper-label {
+        margin-bottom: 1.2rem; 
+        font-weight: bold; 
+    }
+
+    .sentence {
+        margin-bottom: 0.7rem; 
+    }
+
+    .progress-bar-container {
         position: relative;
         display: inline-block; 
     }
