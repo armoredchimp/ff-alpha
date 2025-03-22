@@ -138,6 +138,10 @@
         }
     }
 
+    function placeholder(){
+        console.log('Fack a youuu')
+    }
+
     function calculateAge(date_of_birth) {
         const dob = new Date(date_of_birth);
         const today = new Date();
@@ -932,12 +936,6 @@
 
     .score-label {
         display: flex;
-    }
-    .expanded-info {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
     }
 
     .expandable-section {
