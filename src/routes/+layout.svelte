@@ -503,7 +503,7 @@ function getAttackingScore(row, detailedPosition) {
         BigChancesMissed: row['Big Chances Missed'] || 0,
         Goals: row['Goals'] || 0,
         HitWoodwork: row['Hit Woodwork'] || 0,
-        ShotsBlocked: row['Shots Blocked'] || 0,
+        BlockedShots: row['Blocked Shots'] || 0,
         ShotsOffTarget: row['Shots Off Target'] || 0,
         ShotsOnTarget: row['Shots On Target'] || 0,
         SuccessfulDribbles: row['Successful Dribbles'] || 0,

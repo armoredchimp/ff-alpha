@@ -212,7 +212,12 @@
         console.log(`neg: `, negSelects)
         finalSelections = finalSelections.concat(potSelects, negSelects)
         console.log(finalSelections)
+        // createStatTexts(finalSelections)
     }
+
+    // function createStatTexts(array){
+
+    // }
 
     // async function getPlayerStatsDB(id) {
     //     try {
