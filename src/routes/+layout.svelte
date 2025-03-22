@@ -6,7 +6,7 @@
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
-    import { defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
 	import PlayerTeam from "$lib/PlayerTeam.svelte";
 	
 	onMount(()=>{
@@ -16,11 +16,7 @@
 
 	let { children } = $props();
 
-    let defenseWeightMap = $state({})
-    let passingWeightMap = $state({})
-    let possessionWeightMap = $state({})
-    let attackingWeightMap = $state({})
-    let keepingWeightMap = $state({})
+   
     let weightsFetched = $state(false)
 
 
