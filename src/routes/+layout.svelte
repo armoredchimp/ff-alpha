@@ -290,7 +290,8 @@
                 }
             }
             console.log('Operation Success!')
-            getPlayersThenScore('prem_mini_2425')
+            await getPlayersThenScore('prem_mini_2425')
+            await statRankings()
         } catch (err) {
             console.error("Error fetching Premier League players:", err);
         }
@@ -481,7 +482,7 @@ function getKeeperScore(row, detailedPosition){
         keepingScore = keepingScore * minutesPercentage;
     }
 
-    keepingScore = (keepingScore / 8).toFixed(2)
+    keepingScore = (keepingScore / 10).toFixed(2)
     keepingScore = capScore(keepingScore)
     console.log('keeping score', keepingScore)
     return {
@@ -800,7 +801,7 @@ async function statRankings() {
 
     // Only get rankings for players with significant minutes (half of the maximum or greater)
     const maxMinutes = Math.max(...data.map(player => player.MinutesPlayed));
-    const minutesThreshold = maxMinutes / 2;
+    const minutesThreshold = maxMinutes / 3;
     const filteredPlayers = data.filter(player => player.MinutesPlayed >= minutesThreshold);
 
     // Separate players into keepers and non-keepers
@@ -859,9 +860,16 @@ async function statRankings() {
     });
 
     console.log(rankedData);
+
+    const { rankings, err } = await supabase
+        .from('prem_stats_2425_rankings')
+        .upsert(rankedData, { onConflict: 'id'})
+    if(err){
+        console.error(err)
+    }else {
+        console.log('Rankings uploaded')
+    }
 }
-
-
 
 </script>
 

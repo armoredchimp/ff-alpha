@@ -127,6 +127,7 @@
         isExpanded = !isExpanded;
         if (isExpanded && !statted) {
             getPlayerStats(player.id);
+            getPlayerRankings(player.id);
             // getPlayerStatsDB(player.id)
         }
     }
@@ -190,6 +191,29 @@
         }
     }
 
+    function selectRankings(rankings){
+        let finalSelections = []
+        let potentialSelections = []
+        let negativeSelections = []
+        for(const [stat, rank] of Object.entries(rankings)){
+            if(rank === 1){
+                finalSelections.push([stat, rank])
+            }else if (rank > 1 && rank <= 20){
+                potentialSelections.push([stat, rank])
+            } else if (rank <= -1 && rank >= -20) { 
+             negativeSelections.push([stat, rank]);
+        }
+        }
+        potentialSelections.sort((a, b)=> a[1] - b[1])
+        console.log(`pot: `, potentialSelections)
+        const potSelects = potentialSelections.slice(0, 3)
+        const negSelects = negativeSelections.slice(-3)
+        console.log(`pos: `, potSelects)
+        console.log(`neg: `, negSelects)
+        finalSelections = finalSelections.concat(potSelects, negSelects)
+        console.log(finalSelections)
+    }
+
     // async function getPlayerStatsDB(id) {
     //     try {
     //         const { data, error } = await supabase
@@ -227,6 +251,24 @@
     //         console.error('Unexpected error', error)
     //     }
     // }
+
+    async function getPlayerRankings(id) {
+        try {
+            const { data, error } = await supabase
+                .from('prem_stats_2425_rankings')
+                .select('*')
+                .eq('id', id)
+                .single()
+            
+            if (error){
+                console.error('Supa error', error)
+            }
+            console.log(data)
+            selectRankings(data)
+        }catch(err){
+            console.log(`Error retrieving rankings`, err)
+        }
+    }
 
     async function getPlayerStats(id) {
         try {
