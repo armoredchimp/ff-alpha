@@ -67,6 +67,7 @@
     let sortedPassStats = $state([]);
     let sortedAttStats = $state([]);
     let sortedKprStats = $state([]);
+    let activeTab = $state('notables')
 
     const isKeeper = player.position === 'Goalkeeper';
 
@@ -114,6 +115,10 @@
 
     function capScore(score) {
         return Math.min(score, 5000);
+    }
+
+    function setActiveTab(tab){
+        activeTab = tab
     }
 
     function toggleSection(section) {
@@ -398,7 +403,6 @@
         }
     }
 </script>
-
 <div 
     role="button"
     tabindex="0"
@@ -422,270 +426,342 @@
         </div>
 
         {#if isExpanded}
-        <div class="expanded-content">
-            <div class="top-section">
-                <div class="image-section">
-                    {#if player.image_path}
-                        <img src={player.image_path} alt={player.display_name} class="player-photo" />
-                    {/if}
-                    {#if player.nation_image}
-                        <img src={player.nation_image} alt={player.nationality} class="nation-image" />
-                    {/if}
-                    <span class="detailed-position">{player.detailed_position}</span>
-                </div>
-            </div>
-            <div class="sentence-section">
-                {#if isKeeper}
-                <span class="keeper-label">Compared to other Keepers:</span>
-                {/if}
-                {#each sentences as sentence}
-                <p class="sentence">
-                    {@html sentence.text.replace(
-                        sentence.text.split(' - ')[0], 
-                        `<span style="color: ${sentence.color};">${sentence.text.split(' - ')[0]}</span>`
-                    )}
-                </p>
-                {/each}
-            </div>
-            <div class="stats-section">
-                {#if !isKeeper}
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('defensive')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('defensive')}}>
-                        <span>Defensive Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'defensive' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.defensive_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.defensive_score}</div>
+            <div class="expanded-content">
+                <div class="top-section">
+                    <div class="image-section">
+                        {#if player.image_path}
+                            <img src={player.image_path} alt={player.display_name} class="player-photo" />
+                        {/if}
+                        {#if player.nation_image}
+                            <img src={player.nation_image} alt={player.nationality} class="nation-image" />
+                        {/if}
+                        <span class="detailed-position">{player.detailed_position}</span>
                     </div>
                 </div>
-                {#if expandedSection === 'defensive'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedDefStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}    
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('passing')}}>
-                        <span>Passing Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.passing_score}</div>
-                    </div>
-                </div>
-                {#if expandedSection === 'passing'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedPassStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}    
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('possession')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('possession')}}>
-                        <span>Possession Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'possession' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.possession_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.possession_score}</div>
-                    </div>
-                </div>
-                {#if expandedSection === 'possession'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedPossStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}    
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('attacking')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('attacking')}}>
-                        <span>Attacking Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'attacking' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.attacking_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.attacking_score}</div>
-                    </div>
-                </div>
-                {#if expandedSection === 'attacking'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedAttStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-                <div class="score">
-                    <span>Overall Rating:</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.total_score}</div>
-                    </div>
-                </div>
-                {:else}
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('keeping')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('keeping')}}>
-                        <span>Keeping Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'keeping' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.keeper_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.keeper_score}</div>
-                    </div>
-                </div>
-                {#if expandedSection === 'keeping'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedKprStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-                <div class="score">
-                    <div 
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
-                        class="score-label" 
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            toggleSection('passing')}}>
-                        <span>Passing Score:</span>
-                        <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.passing_score}</div>
-                    </div>
-                </div>
-                {#if expandedSection === 'passing'}
-                    <div class="expandable-section">
-                        <div class="stat-grid">
-                            {#each sortedPassStats as stat}
-                                <div class="stat-item">
-                                    <span class="stat-name">{stat.name}:</span>
-                                    <span class="stat-value">{stat.value}</span>
-                                    <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
-                                        {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
-                                    </span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if} 
-                <div class="score">
-                    <span>Overall Rating:</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar">
-                            <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
-                        </div>
-                        <div class="popup">{player.total_score}</div>
-                    </div>
-                </div>
-                {/if}
-            </div>
-            <div class="expanded-info">
-                </div>
-        </div>
-    {/if}
-</div>
-</div>
 
+                <!-- Tab Navigation -->
+                <div class="tab-nav">
+                    <div 
+                        class="tab-nav-button"
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && setActiveTab('notables')}
+                        class:active={activeTab === 'notables'} onclick={(e) => {
+                            e.stopPropagation();
+                            setActiveTab('notables')}}>
+                            Notable Stats
+                    </div>
+                    <div 
+                        class="tab-nav-button"
+                        role="button"
+                        tabindex="0"
+                        onkeydown={e => e.key === 'Shift' && setActiveTab('scores')}
+                        class:active={activeTab === 'scores'} onclick={(e) => {
+                            e.stopPropagation();
+                            setActiveTab('scores')}}>
+                            Detailed Scores
+                    </div>
+                </div>
+                <!-- Notable Stats Tab -->
+                {#if activeTab === 'notables'}
+                    <div class="sentence-section">
+                        {#if isKeeper}
+                            <span class="keeper-label">Compared to other Keepers:</span>
+                        {/if}
+                        {#each sentences as sentence}
+                            <p class="sentence">
+                                {@html sentence.text.replace(
+                                    sentence.text.split(' - ')[0], 
+                                    `<span style="color: ${sentence.color};">${sentence.text.split(' - ')[0]}</span>`
+                                )}
+                            </p>
+                        {/each}
+                    </div>
+                {/if}
+
+                <!-- Scores Tab -->
+                {#if activeTab === 'scores'}
+                    <div class="stats-section">
+                        {#if !isKeeper}
+                            <!-- Defensive Score -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('defensive')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('defensive');
+                                    }}
+                                >
+                                    <span>Defensive Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'defensive' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.defensive_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.defensive_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'defensive'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedDefStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Passing Score -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('passing');
+                                    }}
+                                >
+                                    <span>Passing Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.passing_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'passing'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedPassStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Possession Score -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('possession')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('possession');
+                                    }}
+                                >
+                                    <span>Possession Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'possession' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.possession_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.possession_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'possession'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedPossStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Attacking Score -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('attacking')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('attacking');
+                                    }}
+                                >
+                                    <span>Attacking Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'attacking' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.attacking_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.attacking_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'attacking'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedAttStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Overall Rating -->
+                            <div class="score">
+                                <span>Overall Rating:</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.total_score}</div>
+                                </div>
+                            </div>
+                        {:else}
+                            <!-- Keeper-specific scores -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('keeping')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('keeping');
+                                    }}
+                                >
+                                    <span>Keeping Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'keeping' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.keeper_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.keeper_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'keeping'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedKprStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Passing Score for Keepers -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('passing')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('passing');
+                                    }}
+                                >
+                                    <span>Passing Score:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'passing' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.passing_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.passing_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'passing'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedPassStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Overall Rating for Keepers -->
+                            <div class="score">
+                                <span>Overall Rating:</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.total_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.total_score}</div>
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+</div>
 <style>
+     .tab-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .tab-nav-button  {
+        padding: 0.5rem 1rem;
+        border: none;
+        background: #f0f0f0;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .tab-nav-button.active {
+        background: #007bff;
+        color: white;
+    }
+
     .sentence-section {
         display: flex;
         flex-direction: column;
-        /* gap: 1.5rem;  */
     }
 
     .keeper-label {
