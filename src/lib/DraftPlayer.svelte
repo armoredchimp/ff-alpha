@@ -257,8 +257,37 @@
 
         notableStats.length = wIndex;
         console.log('sorted notables: ', notableStats)
+        colorizeNotables()
     }
 
+    function colorizeNotables() {
+        notableStats.forEach(stat => {
+            const rank = stat[2]; // Ranking is the third item in the array
+            let color;
+
+            if (rank === 1) {
+                color = "#6A5ACD"; // Muted Purple (Slate Blue)
+            } else if (rank >= 2 && rank <= 5) {
+                color = "#4682B4"; // Muted Blue (Steel Blue)
+            } else if (rank >= 6 && rank <= 10) {
+                color = "#32CD32"; // Muted Green (Lime Green)
+            } else if (rank >= 11 && rank <= 20) {
+                color = "#556B2F"; // Muted Dark Green (Dark Olive Green)
+            } else if (rank === -1) {
+                color = "#8B7355"; // Muted Brown (Burly Wood)
+            } else if (rank >= -5 && rank <= -2) {
+                color = "#CD5C5C"; // Muted Red (Indian Red)
+            } else if (rank >= -10 && rank <= -6) {
+                color = "#8B0000"; // Muted Dark Red (Dark Red)
+            } else if (rank >= -20 && rank <= -11) {
+                color = "#FF8C00"; // Muted Orange (Dark Orange)
+            } else {
+                color = "#808080"; // Muted Gray (Default color)
+            }
+
+            stat.push(color); // Add the color hex code to the end of the array
+        });
+}
     // function selectRankings(rankings){
     //     let finalSelections = []
     //     let potentialSelections = []
@@ -465,6 +494,7 @@
             }
         }
     }
+
 </script>
 <div 
     role="button"
@@ -504,16 +534,18 @@
 
                 <!-- Tab Navigation -->
                 <div class="tab-nav">
-                    <div 
-                        class="tab-nav-button"
-                        role="button"
-                        tabindex="0"
-                        onkeydown={e => e.key === 'Shift' && setActiveTab('notables')}
-                        class:active={activeTab === 'notables'} onclick={(e) => {
-                            e.stopPropagation();
-                            setActiveTab('notables')}}>
-                            Notable Stats
-                    </div>
+                    {#if notableStats[0[1]] !== NaN }
+                        <div 
+                            class="tab-nav-button"
+                            role="button"
+                            tabindex="0"
+                            onkeydown={e => e.key === 'Shift' && setActiveTab('notables')}
+                            class:active={activeTab === 'notables'} onclick={(e) => {
+                                e.stopPropagation();
+                                setActiveTab('notables')}}>
+                                Notable Stats
+                        </div>
+                    {/if}
                     <div 
                         class="tab-nav-button"
                         role="button"
@@ -527,21 +559,23 @@
                 </div>
                 <!-- Notable Stats Tab -->
                 {#if activeTab === 'notables'}
-                    <div class="sentence-section">
-                        {#if isKeeper}
-                            <span class="keeper-label">Compared to other Keepers:</span>
-                        {/if}
-                        {#each sentences as sentence}
-                            <p class="sentence">
-                                {@html sentence.text.replace(
-                                    sentence.text.split(' - ')[0], 
-                                    `<span style="color: ${sentence.color};">${sentence.text.split(' - ')[0]}</span>`
-                                )}
-                            </p>
+                    <div class="notable-section">
+                        <!-- Header Row -->
+                        <div class="notable-header">
+                            <span>Stat Name</span>
+                            <span style="text-align: right;">Value</span>
+                            <span style="text-align: right;">{!isKeeper? `League Ranking` : `Keeper Ranking`}</span>
+                        </div>
+                        <!-- Stat Rows -->
+                        {#each notableStats as [statName, hiddenScore, ranking, value, color]}
+                            <div class="notable-row" style="background-color: {color}; color: white;">
+                                <span class="notable-name">{statName}</span>
+                                <span class="notable-value">{value}</span>
+                                <span class="notable-ranking">{ranking}</span>
+                            </div>
                         {/each}
                     </div>
                 {/if}
-
                 <!-- Scores Tab -->
                 {#if activeTab === 'scores'}
                     <div class="stats-section">
@@ -822,11 +856,43 @@
         color: white;
     }
 
-    .sentence-section {
+    .notable-section {
         display: flex;
         flex-direction: column;
+        gap: 0.3rem;
     }
 
+    .notable-header, .notable-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr; /* Adjusted column widths */
+        align-items: center;
+        padding: 0.8rem;
+        margin: 0.5rem;
+        border-radius: 5px;
+    }
+
+    .notable-header {
+        font-weight: bold;
+        color: white;
+        background-color: #333;
+    }
+
+    .notable-row {
+        color: white;
+    }
+
+    .notable-name {
+        /* min-width: 150px;  */
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis;
+        /* color: white; */
+    }
+
+    .notable-value, .notable-ranking {
+        text-align: right; 
+        /* color: white; */
+    }
     .keeper-label {
         margin-bottom: 1.2rem; 
         font-weight: bold; 
