@@ -360,6 +360,8 @@
 								break;
 							case "Defender":
 								(statsToInsert['Detailed Position']) = 'Centre Back'
+							case "Goalkeeper":
+								(statsToInsert['Detailed Position']) = 'Goalkeeper'
 						}
                     }
 
