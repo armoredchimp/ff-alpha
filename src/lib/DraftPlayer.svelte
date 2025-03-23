@@ -219,7 +219,7 @@
 
             const absWeight = Math.abs(weight)
 
-            console.log(statName, absWeight)
+            // console.log(statName, absWeight)
 
             const normalizedWeight = absWeight / 3000;
 
@@ -227,7 +227,7 @@
            
 
             notableStats.push([statName, score, rank, statValue])
-            console.log(notableStats)
+            // console.log(notableStats)
         }
     }
 
@@ -374,6 +374,7 @@
             
             if (error){
                 console.error('Supa error', error)
+                return;
             }
             console.log(data)
             playerRankings = data
