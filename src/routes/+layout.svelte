@@ -293,8 +293,21 @@
         }
     }
 
+	async function getSinglePlayerApi(id){
+		const response = await axios.get(`/api/players/${id}`, { 
+                params: {
+                    include: 'statistics.details.type;position;detailedPosition',
+                    filter: 'playerStatisticSeasons:23614'
+                }
+            });
+
+            const playerData = response.data.data;
+            console.log("Player Data:", playerData);
+	}
+
 
     async function getPlayerStatsAndUpload(id, teamName) {
+		let seasonStats = null;
         try {
             // Fetch player data
             const response = await axios.get(`/api/players/${id}`, { 
@@ -310,7 +323,11 @@
             await delay(500); // Add a delay after each request
 
             if (playerData && playerData.statistics && playerData.statistics.length > 0) {
-                const seasonStats = playerData.statistics[0];
+				if (playerData.statistics[0].details.length < 5 && playerData.statistics[1]){
+					seasonStats = playerData.statistics[1]
+				}else {
+					seasonStats = playerData.statistics[0];
+				}
 
                 if (seasonStats.details.length > 1) {
                     // Initialize the stats object with common player data
@@ -334,7 +351,16 @@
                         (statsToInsert['Detailed Position']) = 'Centre Forward'
                     }
                     if ((statsToInsert['Detailed Position']) === null){
-                        (statsToInsert['Detailed Position']) = 'Central Midfield'
+						switch (statsToInsert.Position){
+							case "Attacker":
+								(statsToInsert['Detailed Position']) = 'Centre Forward'
+								break;
+							case "Midfielder":
+								(statsToInsert['Detailed Position']) = 'Central Midfield'
+								break;
+							case "Defender":
+								(statsToInsert['Detailed Position']) = 'Centre Back'
+						}
                     }
 
                     // Flatten the stats and add them to the object
@@ -819,58 +845,61 @@ async function statRankings() {
         }, {})
     }));
 
-    // Rank non-keepers using statsToRank
-    statsToRank.forEach(stat => {
-        const sortOrder = invertedStats.includes(stat) ? (a, b) => a[stat] - b[stat] : (a, b) => b[stat] - a[stat];
-        const sortedPlayers = [...nonKeepers].sort(sortOrder);
+    // Helper function to rank players with tie handling
+    const rankPlayers = (players, stat, isInverted) => {
+        const sortedPlayers = [...players].sort((a, b) => isInverted ? a[stat] - b[stat] : b[stat] - a[stat]);
+
+        let currentRank = 1;
+        let previousValue = null;
 
         sortedPlayers.forEach((player, index) => {
-            const rank = index + 1;
             const playerInRankedData = rankedData.find(p => p.id === player.id);
-            if (rank <= 20) {
-                playerInRankedData[stat] = rank; // Top 20
-            } else if (rank >= sortedPlayers.length - 19) {
-                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1); // Bottom 20
-            } else {
-                playerInRankedData[stat] = 0; // Not in top or bottom 20
+            const currentValue = player[stat];
+
+            if (currentValue !== previousValue) {
+                currentRank = index + 1; // Update rank if the value changes
             }
+
+            if (currentRank <= 50) {
+                playerInRankedData[stat] = currentRank; // Top 50
+            } else if (currentRank >= sortedPlayers.length - 49) {
+                playerInRankedData[stat] = -(sortedPlayers.length - currentRank + 1); // Bottom 50
+            } else {
+                playerInRankedData[stat] = 0; // Not in top or bottom 50
+            }
+
+            previousValue = currentValue; // Update previous value for the next iteration
         });
+    };
+
+    // Rank non-keepers using statsToRank
+    statsToRank.forEach(stat => {
+        const isInverted = invertedStats.includes(stat);
+        rankPlayers(nonKeepers, stat, isInverted);
     });
 
     // Rank keepers using keeperStatsToRank
     keeperStatsToRank.forEach(stat => {
-        const sortOrder = invertedStats.includes(stat) ? (a, b) => a[stat] - b[stat] : (a, b) => b[stat] - a[stat];
-        const sortedPlayers = [...keepers].sort(sortOrder);
-
-        sortedPlayers.forEach((player, index) => {
-            const rank = index + 1;
-            const playerInRankedData = rankedData.find(p => p.id === player.id);
-            if (rank <= 20) {
-                playerInRankedData[stat] = rank; // Top 20
-            } else if (rank >= sortedPlayers.length - 19) {
-                playerInRankedData[stat] = -(sortedPlayers.length - rank + 1); // Bottom 20
-            } else {
-                playerInRankedData[stat] = 0; // Not in top or bottom 20
-            }
-        });
+        const isInverted = invertedStats.includes(stat);
+        rankPlayers(keepers, stat, isInverted);
     });
 
     console.log(rankedData);
 
     const { rankings, err } = await supabase
         .from('prem_stats_2425_rankings')
-        .upsert(rankedData, { onConflict: 'id'})
-    if(err){
-        console.error(err)
-    }else {
-        console.log('Rankings uploaded')
+        .upsert(rankedData, { onConflict: 'id' })
+    if (err) {
+        console.error(err);
+    } else {
+        console.log('Rankings uploaded');
     }
 }
 
 </script>
 
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
-<button onclick={addExtraPlayers(extraIds)}>Extra Players</button>
+<button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
 <button onclick={getPlayersThenScore('prem_mini_2425')}>Upload Scores to Mini</button>
 <button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
 <button onclick={fetchAllWeights}>Weights</button>

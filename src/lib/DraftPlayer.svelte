@@ -214,8 +214,8 @@
             const weight = weightObj[statName]
 
             const flatRank = (rank >= 0)
-                ? (21 - rank ) / 20
-                : (21 + rank) / 20;
+                ? (51 - rank ) / 50
+                : (51 + rank) / 50;
 
             const absWeight = Math.abs(weight)
 
@@ -273,6 +273,8 @@
                 color = "#32CD32"; // Muted Green (Lime Green)
             } else if (rank >= 11 && rank <= 20) {
                 color = "#556B2F"; // Muted Dark Green (Dark Olive Green)
+            } else if (rank >= 21 && rank <= 50) {
+                color = "#9ACD32"; // Muted Yellow-Green (Yellow Green)
             } else if (rank === -1) {
                 color = "#8B7355"; // Muted Brown (Burly Wood)
             } else if (rank >= -5 && rank <= -2) {
@@ -281,13 +283,15 @@
                 color = "#8B0000"; // Muted Dark Red (Dark Red)
             } else if (rank >= -20 && rank <= -11) {
                 color = "#FF8C00"; // Muted Orange (Dark Orange)
+            } else if (rank >= -50 && rank <= -21) {
+                color = "#A9A9A9"; // Muted Yellow-Grey (Dark Gray)
             } else {
                 color = "#808080"; // Muted Gray (Default color)
             }
 
             stat.push(color); // Add the color hex code to the end of the array
         });
-}
+    }
     // function selectRankings(rankings){
     //     let finalSelections = []
     //     let potentialSelections = []
