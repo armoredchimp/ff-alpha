@@ -1,7 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
-    import { keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
 
@@ -67,6 +67,8 @@
     let sortedPassStats = $state([]);
     let sortedAttStats = $state([]);
     let sortedKprStats = $state([]);
+    let playerRankings = $state({})
+    let notableStats = $state([])
     let activeTab = $state('notables')
 
     const isKeeper = player.position === 'Goalkeeper';
@@ -81,35 +83,35 @@
 
     // Configuration mapping for player properties and importance assignments
     const statConfig = {
-        'TacklesPer90': ['tackles', [defenseImpMap, sortedDefStats]],
-        'AerialsWonPer90': ['aerial', [defenseImpMap, sortedDefStats]],
-        'ShotsOffTargetPer90': ['shotsOff', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
+        'TacklesPer90': ['tackles', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'AerialsWonPer90': ['aerial', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'ShotsOffTargetPer90': ['shotsOff', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
         'ShotsTotal': ['shots'],
-        'OffsidesPer90': ['offsides', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
-        'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats]],
-        'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats]],
-        'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats]],
-        'AssistsPer90': ['assists', [passingImpMap, sortedPassStats], [attackingImpMap, sortedAttStats]],
-        'PassesPer90': ['passes', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
-        'GoalsConcededPer90': ['goalsConc', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
-        'DispossessedPer90': ['disposs', [possessionImpMap, sortedPossStats]],
-        'FoulsPer90': ['fouls', [defenseImpMap, sortedDefStats], [possessionImpMap, sortedPossStats]],
-        'FoulsDrawnPer90': ['foulsDr', [possessionImpMap, sortedPossStats]],
-        'BlockedShotsPer90': ['blockedShots', [defenseImpMap, sortedDefStats]],
-        'AccurateCrossesPer90': ['accCrosses', [passingImpMap, sortedPassStats]],
-        'InterceptionsPer90': ['intercept', [defenseImpMap, sortedDefStats]],
-        'ClearancesPer90': ['clear', [defenseImpMap, sortedDefStats]],
-        'SuccessfulDribblesPer90': ['succDrib', [attackingImpMap, sortedAttStats], [possessionImpMap, sortedPossStats]],
-        'DribbledPastPer90': ['dribPast', [defenseImpMap, sortedDefStats]],
-        'ErrorLeadToGoal': ['errorToGoal', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
-        'KeyPassesPer90': ['keyP', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
+        'OffsidesPer90': ['offsides', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'AssistsPer90': ['assists', [passingImpMap, sortedPassStats, passingWeightMap], [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'PassesPer90': ['passes', [passingImpMap, sortedPassStats, passingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'GoalsConcededPer90': ['goalsConc', [defenseImpMap, sortedDefStats, defenseWeightMap], [keepingImpMap, sortedKprStats, keepingWeightMap]],
+        'DispossessedPer90': ['disposs', [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'FoulsPer90': ['fouls', [defenseImpMap, sortedDefStats, defenseWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'FoulsDrawnPer90': ['foulsDr', [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'BlockedShotsPer90': ['blockedShots', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'AccurateCrossesPer90': ['accCrosses', [passingImpMap, sortedPassStats, passingWeightMap]],
+        'InterceptionsPer90': ['intercept', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'ClearancesPer90': ['clear', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'SuccessfulDribblesPer90': ['succDrib', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'DribbledPastPer90': ['dribPast', [defenseImpMap, sortedDefStats, defenseWeightMap]],
+        'ErrorLeadToGoal': ['errorToGoal', [defenseImpMap, sortedDefStats, defenseWeightMap], [keepingImpMap, sortedKprStats, keepingWeightMap]],
+        'KeyPassesPer90': ['keyP', [passingImpMap, sortedPassStats, passingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
         'Rating': ['rating'],
-        'LongBallsWonPer90': ['lbWon', [defenseImpMap, sortedDefStats], [possessionImpMap, sortedPossStats]],
-        'Cleansheets': ['clean', [defenseImpMap, sortedDefStats], [keepingImpMap, sortedKprStats]],
-        'BigChancesCreatedPer90': ['bigCr', [passingImpMap, sortedPassStats], [possessionImpMap, sortedPossStats]],
-        'BigChancesMissedPer90': ['bigMis', [attackingImpMap, sortedAttStats]],
-        'AccuratePassesPercentage': ['accPPerc', [possessionImpMap, sortedPossStats]],
-        'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats]],
+        'LongBallsWonPer90': ['lbWon', [defenseImpMap, sortedDefStats, defenseWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'Cleansheets': ['clean', [defenseImpMap, sortedDefStats, defenseWeightMap], [keepingImpMap, sortedKprStats, keepingWeightMap]],
+        'BigChancesCreatedPer90': ['bigCr', [passingImpMap, sortedPassStats, passingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'BigChancesMissedPer90': ['bigMis', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'AccuratePassesPercentage': ['accPPerc', [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats, defenseWeightMap]],
     };
 
 
@@ -129,11 +131,11 @@
         }
     }
 
-    function toggleExpand() {
+    async function toggleExpand() {
         isExpanded = !isExpanded;
         if (isExpanded && !statted) {
-            getPlayerStats(player.id);
-            getPlayerRankings(player.id);
+            await getPlayerRankings(player.id);
+            await getPlayerStats(player.id);
             // getPlayerStatsDB(player.id)
         }
     }
@@ -194,79 +196,135 @@
       
 
         const maps = config.slice(1);
+        
 
-        maps.forEach(([impMap, sortedArray]) => {
+        maps.forEach(([impMap, sortedArray, weightMap]) => {
             assignImportances(statName, displayValue, player.detailed_position, impMap, sortedArray);
+            rankedScore(statName, displayValue, weightMap, player.detailed_position)
         });
         }
     }
 
-    function selectRankings(rankings){
-        let finalSelections = []
-        let potentialSelections = []
-        let negativeSelections = []
-        for(const [stat, rank] of Object.entries(rankings)){
-            if(rank === 1){
-                finalSelections.push([stat, rank])
-            }else if (rank > 1 && rank <= 20){
-                potentialSelections.push([stat, rank])
-            } else if (rank <= -1 && rank >= -20) { 
-             negativeSelections.push([stat, rank]);
+    function rankedScore(statName, statValue, weightMap, position){
+        if (playerRankings[statName] !== null && playerRankings[statName] !== 0){           
+            const rank = playerRankings[statName]
+           
+            const weightObj = weightMap[position]
+
+            const weight = weightObj[statName]
+
+            const flatRank = (rank >= 0)
+                ? (21 - rank ) / 20
+                : (21 + rank) / 20;
+
+            const absWeight = Math.abs(weight)
+
+            console.log(statName, absWeight)
+
+            const normalizedWeight = absWeight / 3000;
+
+            let score = flatRank * normalizedWeight
+           
+
+            notableStats.push([statName, score, rank, statValue])
+            console.log(notableStats)
         }
-        }
-        potentialSelections.sort((a, b)=> a[1] - b[1])
-        negativeSelections.sort((a, b)=> b[1] - a[1])
-        console.log(`pot: `, potentialSelections)
-        const potSelects = potentialSelections.slice(0, 3)
-        const negSelects = negativeSelections.slice(-3)
-        console.log(`pos: `, potSelects)
-        console.log(`neg: `, negSelects)
-        finalSelections = finalSelections.concat(potSelects, negSelects)
-        console.log(finalSelections)
-        createStatTexts(finalSelections)
     }
 
-    function createStatTexts(array, playerName) {
-        array.forEach(([stat, rank]) => {
-            const formattedStat = stat.replace(/([A-Z])/g, ' $1').trim(); // Format stat name
+    function selectNotables(){
+        notableStats.sort((a, b) => b[1] - a[1])
+        console.log(`sorted: `, notableStats)
 
-            let description, color;
+        const seenStats = new Set()
+        let wIndex = 0;
+
+        for (let rIndex = 0; rIndex < notableStats.length; rIndex++) {
+            const [statName] = notableStats[rIndex];
+
+            // If the stat hasn't been seen yet, keep it
+            if (!seenStats.has(statName)) {
+                // Move the unique stat to the current writeIndex
+                notableStats[wIndex] = notableStats[rIndex];
+                seenStats.add(statName);
+                wIndex++;
+
+                // Stop once we have 5 unique stats
+                if (wIndex === 5) {
+                    break;
+                }
+            }
+        }
+
+        notableStats.length = wIndex;
+        console.log('sorted notables: ', notableStats)
+    }
+
+    // function selectRankings(rankings){
+    //     let finalSelections = []
+    //     let potentialSelections = []
+    //     let negativeSelections = []
+    //     for(const [stat, rank] of Object.entries(rankings)){
+    //         if(rank === 1){
+    //             finalSelections.push([stat, rank])
+    //         }else if (rank > 1 && rank <= 20){
+    //             potentialSelections.push([stat, rank])
+    //         } else if (rank <= -1 && rank >= -20) { 
+    //          negativeSelections.push([stat, rank]);
+    //     }
+    //     }
+    //     potentialSelections.sort((a, b)=> a[1] - b[1])
+    //     negativeSelections.sort((a, b)=> b[1] - a[1])
+    //     console.log(`pot: `, potentialSelections)
+    //     const potSelects = potentialSelections.slice(0, 3)
+    //     const negSelects = negativeSelections.slice(-3)
+    //     console.log(`pos: `, potSelects)
+    //     console.log(`neg: `, negSelects)
+    //     finalSelections = finalSelections.concat(potSelects, negSelects)
+    //     console.log(finalSelections)
+    //     createStatTexts(finalSelections)
+    // }
+
+    // function createStatTexts(array, playerName) {
+    //     array.forEach(([stat, rank]) => {
+    //         const formattedStat = stat.replace(/([A-Z])/g, ' $1').trim(); // Format stat name
+
+    //         let description, color;
 
       
-            if (rank === 1) {
-                description = "Leads the league";
-                color = "#800080"; // Dark Purple
-            } else if (rank >= 2 && rank <= 5) {
-                description = "Elite";
-                color = "#0000FF"; // Blue
-            } else if (rank >= 6 && rank <= 10) {
-                description = "Excellent";
-                color = "#008000"; // Green
-            } else if (rank >= 11 && rank <= 20) {
-                description = "Very good";
-                color = "#335026"; // Dark Green
-            } else if (rank === -1) {
-                description = "League bottom";
-                color = "#8B4513"; // Brown
-            } else if (rank >= -5 && rank <= -2) {
-                description = "Bottom of the league";
-                color = "#FF0000"; // Red
-            } else if (rank >= -10 && rank <= -6) {
-                description = "Very poor";
-                color = "#8B0000"; // Dark Red
-            } else if (rank >= -20 && rank <= -11) {
-                description = "Poor";
-                color = "#FFA500"; // Orange
-            } 
-            // Create the sentence with the colored description
-            const sentence = {
-                text: `${description} - ${formattedStat}`,
-                color: color
-            };
+    //         if (rank === 1) {
+    //             description = "Leads the league";
+    //             color = "#800080"; // Dark Purple
+    //         } else if (rank >= 2 && rank <= 5) {
+    //             description = "Elite";
+    //             color = "#0000FF"; // Blue
+    //         } else if (rank >= 6 && rank <= 10) {
+    //             description = "Excellent";
+    //             color = "#008000"; // Green
+    //         } else if (rank >= 11 && rank <= 20) {
+    //             description = "Very good";
+    //             color = "#335026"; // Dark Green
+    //         } else if (rank === -1) {
+    //             description = "League bottom";
+    //             color = "#8B4513"; // Brown
+    //         } else if (rank >= -5 && rank <= -2) {
+    //             description = "Bottom of the league";
+    //             color = "#FF0000"; // Red
+    //         } else if (rank >= -10 && rank <= -6) {
+    //             description = "Very poor";
+    //             color = "#8B0000"; // Dark Red
+    //         } else if (rank >= -20 && rank <= -11) {
+    //             description = "Poor";
+    //             color = "#FFA500"; // Orange
+    //         } 
+    //         // Create the sentence with the colored description
+    //         const sentence = {
+    //             text: `${description} - ${formattedStat}`,
+    //             color: color
+    //         };
 
-            sentences.push(sentence); 
-        });
-    }
+    //         sentences.push(sentence); 
+    //     });
+    // }
 
     // async function getPlayerStatsDB(id) {
     //     try {
@@ -318,7 +376,7 @@
                 console.error('Supa error', error)
             }
             console.log(data)
-            selectRankings(data)
+            playerRankings = data
         }catch(err){
             console.log(`Error retrieving rankings`, err)
         }
@@ -384,8 +442,8 @@
                 sortStatsByImportance(sortedKprStats)
                 sortStatsByImportance(sortedPassStats)
                 sortStatsByImportance(sortedPossStats)
+                selectNotables()
                 statted = true
-                // console.log(`sorted attack array: `, sortedAttStats)
             } else {
                 console.log("No statistics found for this player.");
             }
