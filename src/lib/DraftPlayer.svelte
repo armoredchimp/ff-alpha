@@ -1,6 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
+    import NotableStat from "./NotableStat.svelte";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
@@ -571,11 +572,16 @@
                             <span style="text-align: right;">{!isKeeper? `League Ranking` : `Keeper Ranking`}</span>
                         </div>
                         <!-- Stat Rows -->
-                        {#each notableStats as [statName, hiddenScore, ranking, value, color]}
-                            <div class="notable-row" style="background-color: {color}; color: white;">
-                                <span class="notable-name">{statName}</span>
-                                <span class="notable-value">{value}</span>
-                                <span class="notable-ranking">{ranking}</span>
+                        {#each notableStats as [name, hiddenScore, ranking, value, color]}
+                            <div class="notable-wrapper">
+                            <NotableStat 
+                                name={name}
+                                hiddenScore={hiddenScore}
+                                ranking={ranking}
+                                value={value}
+                                color={color}
+                                position={player.detailed_position}
+                            />
                             </div>
                         {/each}
                     </div>
@@ -866,7 +872,15 @@
         gap: 0.3rem;
     }
 
-    .notable-header, .notable-row {
+    .notable-wrapper {
+        border-radius: 5px;
+    }
+
+    .notable-wrapper:hover {
+        background-color: #9e9393;
+    }
+
+    .notable-header {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr; /* Adjusted column widths */
         align-items: center;
@@ -881,22 +895,10 @@
         background-color: #333;
     }
 
-    .notable-row {
-        color: white;
-    }
-
-    .notable-name {
-        /* min-width: 150px;  */
-        white-space: nowrap; 
-        overflow: hidden; 
-        text-overflow: ellipsis;
-        /* color: white; */
-    }
-
     .notable-value, .notable-ranking {
         text-align: right; 
-        /* color: white; */
-    }
+    } 
+
     .keeper-label {
         margin-bottom: 1.2rem; 
         font-weight: bold; 

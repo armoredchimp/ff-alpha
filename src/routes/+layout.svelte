@@ -1,16 +1,16 @@
 <script>
 	import axios from "axios";
 	import { onMount } from "svelte";
-    import { allPlayers } from "$lib/stores/stores.svelte";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { countryMap, getCountry } from '$lib/data/countries';
-    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
+    import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/stores.svelte";
 	import PlayerTeam from "$lib/PlayerTeam.svelte";
 	
 	onMount(()=>{
 		fetchAllWeights()
+        getAverages()
 	})
 
 
@@ -22,6 +22,30 @@
 
     function capScore(score) {
         return Math.min(score, 5000);
+    }
+
+    async function getAverages(){
+        const { data: outfieldData, outError } = await supabase
+            .from('outfield_per90_averages')
+            .select('*') 
+
+        if (outError){
+            console.error('Error retrieving outfield avgs: ', outError)
+        }
+        const { data: keeperData, keepError } = await supabase
+            .from('gk_per90_averages')
+            .select('*') 
+
+        if (keepError){
+            console.error('Error retrieving keeper avgs: ', keepError)
+        }
+        setAvgs(outfieldData, keeperData, outfieldAverages, keeperAverages)
+    }
+
+    function setAvgs(outD, keepD, outAvgs, keepAvgs){
+        outAvgs['data'] = outD;
+        keepAvgs['data'] = keepD;
+        console.log(outfieldAverages, keeperAverages)
     }
 
     async function addExtraPlayers(ids){

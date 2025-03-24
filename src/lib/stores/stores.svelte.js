@@ -10,4 +10,13 @@ export let passingImpMap = $state({})
 export let possessionImpMap = $state({})
 export let attackingImpMap = $state({})
 export let keepingImpMap = $state({})
+export let outfieldAverages = $state({})
+export let keeperAverages = $state({})
 
+
+// export function setAvgs(outData, kData){
+//     return {
+//         setOutfieldAv(outData) { outfieldAverages = outData},
+//         setKeeperAv(kData) { keeperAverages = kData}
+//     }
+// }
