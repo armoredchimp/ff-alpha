@@ -1,6 +1,7 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
+    import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
     import Page from "../routes/+page.svelte";
@@ -73,14 +74,6 @@
     let activeTab = $state('notables')
 
     const isKeeper = player.position === 'Goalkeeper';
-
-    const nonPer90Stats = new Set([
-        'Error Lead To Goal',
-        'Duels Won Percentage',
-        'Rating',
-        'Cleansheets',
-        'Accurate Passes Percentage'
-    ]);
 
     // Configuration mapping for player properties and importance assignments
     const statConfig = {
@@ -182,12 +175,15 @@
 
     function processStat(statName, statValue, minutes) {
         let displayValue;
+        let p90;
         if (nonPer90Stats.has(statName)) {
             displayValue = statValue;
             statName = condenseString(statName);
+            p90 = false
         } else {
             displayValue = calculatePer90(statValue, minutes);
             statName = condenseString(statName) + 'Per90';
+            p90 = true
         }
 
         const config = statConfig[statName] || [];
@@ -201,12 +197,12 @@
 
         maps.forEach(([impMap, sortedArray, weightMap]) => {
             assignImportances(statName, displayValue, player.detailed_position, impMap, sortedArray);
-            rankedScore(statName, displayValue, weightMap, player.detailed_position)
+            rankedScore(statName, displayValue, weightMap, player.detailed_position, p90)
         });
         }
     }
 
-    function rankedScore(statName, statValue, weightMap, position){
+    function rankedScore(statName, statValue, weightMap, position, p90){
         if (playerRankings[statName] !== null && playerRankings[statName] !== 0){           
             const rank = playerRankings[statName]
            
@@ -227,7 +223,7 @@
             let score = flatRank * normalizedWeight
            
 
-            notableStats.push([statName, score, rank, statValue])
+            notableStats.push([statName, score, rank, statValue, p90])
             // console.log(notableStats)
         }
     }
@@ -572,8 +568,8 @@
                             <span style="text-align: right;">{!isKeeper? `League Ranking` : `Keeper Ranking`}</span>
                         </div>
                         <!-- Stat Rows -->
-                        {#each notableStats as [name, hiddenScore, ranking, value, color]}
-                            <div class="notable-wrapper">
+                        {#each notableStats as [name, hiddenScore, ranking, value, p90, color]}
+                            <div class={p90 === true ? "notable-wrapper" : "notable-nonavg-wrapper"}>
                             <NotableStat 
                                 name={name}
                                 hiddenScore={hiddenScore}
@@ -581,6 +577,7 @@
                                 value={value}
                                 color={color}
                                 position={player.detailed_position}
+                                averageTracked={p90}
                             />
                             </div>
                         {/each}
@@ -946,7 +943,7 @@
         padding: 1rem;
         border-radius: 8px;
         margin-bottom: 0.75rem;
-        cursor: pointer;
+        /* cursor: pointer; */
         transition: all 0.2s ease;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }

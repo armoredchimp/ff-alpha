@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
     import { outfieldAverages, keeperAverages } from "./stores/stores.svelte";
+    import { nonPer90Stats } from "./data/nonPer90Stats";
     import { formatStatKey } from "./utils/utils";
 
     let {
@@ -9,30 +10,37 @@
         ranking = '',
         value = '',
         color = '',
-        position = ''
+        position = '',
+        averageTracked = ''
     } = $props()
 
     let isExpanded = $state(false)
     let avgName = $state('')
     let avgValue = $state(0)
-    let avgDiff = $state(0)
+    let avgDiff = $state(null)
 
     onMount(()=>{
         avgName = formatStatKey(name)
-        console.log('avgName', avgName)
     })
+
+    function differenceDisplay(){
+        avgDiff = value - avgValue
+        if (avgDiff > 0){
+            avgDiff = `+${avgDiff.toFixed(2)}`
+        }else if (avgDiff < 0){
+            avgDiff = `${avgDiff.toFixed(2)}`
+        }
+    }
 
     function toggleExpand(e){
         e.stopPropagation()
         isExpanded = !isExpanded
         if (position !== 'Goalkeeper'){
             avgValue = outfieldAverages.data[0][avgName]
-            console.log('avgValue', avgValue)
-            console.log(outfieldAverages.data)
-            avgDiff = (value - avgValue).toFixed(2) 
+            differenceDisplay() 
         } else {
             avgValue = keeperAverages.data[0][avgName]
-            avgDiff = (value - avgValue).toFixed(2)
+            differenceDisplay()
         }
     }
 
@@ -44,23 +52,26 @@
     role="button"
     tabindex="0"
     onkeydown={e => e.key === 'Shift' && {toggleExpand}}
-    class="notable-row" 
+    class="notable-row"
     style="background-color: {color}; color: white;">
         <span class="notable-name">{name}</span>
         <span class="notable-value">{value}</span>
         <span class="notable-ranking">{ranking}</span>
-    {#if isExpanded}
+    {#if isExpanded && averageTracked === true}
         <div class="expanded-section">
-            <span>League Average:</span>
+            <span>{position === 'Goalkeeper' ? `Keeper Average:` : `League Average:`}</span>
             <span class="expanded-value">{avgValue.toFixed(2)}</span>
             <span></span>
         </div>
         <div class="expanded-section">
             <span>Difference:</span>
-            <span class="expanded-value">{value < avgValue ? `-${avgDiff} `:`+${avgDiff}` }</span>
+            <span class="expanded-value">{avgDiff}</span>
             <span></span> 
         </div>
     {/if}
+    <!-- {#if isExpanded && nonAverageStat}
+   
+    {/if} -->
 </div>
 
 <style>
@@ -75,7 +86,6 @@
         color: white;
         cursor: pointer;
     }
-
 
     .notable-name {
         /* min-width: 150px;  */
