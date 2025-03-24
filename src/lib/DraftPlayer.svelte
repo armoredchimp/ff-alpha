@@ -895,18 +895,6 @@
         background-color: #333;
     }
 
-    .notable-value, .notable-ranking {
-        text-align: right; 
-    } 
-
-    .keeper-label {
-        margin-bottom: 1.2rem; 
-        font-weight: bold; 
-    }
-
-    .sentence {
-        margin-bottom: 0.7rem; 
-    }
 
     .progress-bar-container {
         position: relative;
