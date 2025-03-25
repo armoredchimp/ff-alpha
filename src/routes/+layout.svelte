@@ -384,8 +384,10 @@
 								break;
 							case "Defender":
 								(statsToInsert['Detailed Position']) = 'Centre Back'
+                                break;
 							case "Goalkeeper":
 								(statsToInsert['Detailed Position']) = 'Goalkeeper'
+                                break;
 						}
                     }
 
@@ -877,13 +879,18 @@ async function statRankings() {
 
         let currentRank = 1;
         let previousValue = null;
+        let firstRankSet = false
 
         sortedPlayers.forEach((player, index) => {
             const playerInRankedData = rankedData.find(p => p.id === player.id);
             const currentValue = player[stat];
 
-            if (currentValue !== previousValue) {
-                currentRank = index + 1; // Update rank if the value changes
+            if (currentValue !== previousValue && !firstRankSet){
+                currentRank = 1
+                firstRankSet = true;
+            }
+            else if (currentValue !== previousValue) {
+                currentRank += 1; // Update rank if the value changes
             }
 
             if (currentRank <= 50) {
