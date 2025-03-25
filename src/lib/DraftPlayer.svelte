@@ -203,7 +203,7 @@
     }
 
     function rankedScore(statName, statValue, weightMap, position, p90){
-        if (playerRankings[statName] !== null && playerRankings[statName] !== 0){           
+        if (playerRankings[statName] !== null && playerRankings[statName] !== 0 && statName !== 'ErrorLeadToGoal'){           
             const rank = playerRankings[statName]
            
             const weightObj = weightMap[position]
