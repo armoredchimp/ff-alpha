@@ -1,3 +1,5 @@
+
+
 let singleNameFirsts = new Map();  // Track count of first names used alone
 let doubleNameFirsts = new Map();  // Track count of first names used in combinations
 let usedSecondParts = new Set();
@@ -15,9 +17,12 @@ export function generateClubName(firstParts, commonNames, secondParts) {
             (doubleNameFirsts.get(name) || 0) < 2
         );
         
+        let sameCity = false;
         const firstPart = availableFirsts[Math.floor(Math.random() * availableFirsts.length)];
         doubleNameFirsts.set(firstPart, (doubleNameFirsts.get(firstPart) || 0) + 1);
-        
+        if (doubleNameFirsts.get(firstPart) === 2){
+            sameCity = true;
+        }
         // For second part, either use common name or unused second part
         let secondPart;
         // 0.4 chance for common name
@@ -29,19 +34,27 @@ export function generateClubName(firstParts, commonNames, secondParts) {
             usedSecondParts.add(secondPart);
         }
         
-        return `${firstPart} ${secondPart}`;
+        return {
+            name: `${firstPart} ${secondPart}`,
+            sameCity,
+            firstPart: firstPart
+        };
         
     } else {
         // Get available first parts (not used in combinations and used <2 times alone)
         const availableFirsts = firstParts.filter(name => 
             !doubleNameFirsts.has(name) && 
-            (singleNameFirsts.get(name) || 0) < 2
+            !singleNameFirsts.has(name)
         );
         
         const firstPart = availableFirsts[Math.floor(Math.random() * availableFirsts.length)];
         singleNameFirsts.set(firstPart, (singleNameFirsts.get(firstPart) || 0) + 1);
         
-        return firstPart;
+        return {
+            name: firstPart,
+            sameCity: false,
+            firstPart: name
+        }
     }
 }
 
@@ -85,6 +98,59 @@ export function organizeDraftOrder(playerTeam, teams) {
     }
 
     return fullDraftOrder;
+}
+
+
+export function generateClubTraits() {
+    const possibleTraits = [
+        'Favors Defense',
+        'Strong Passing',
+        'High Pressure',
+        'Favors Attacking',
+        'Wing Play',
+        'Aggressive Tackling',
+        'Youth Focus',
+        'Favors Experience',
+        'Teamwork Focus',
+        'Set Piece Specialists'
+    ];
+    
+    // Randomly decide how many traits (0-2)
+    const numTraits = Math.floor(Math.random() * 3);
+    
+    // Create a copy of possible traits to draw from
+    const availableTraits = [...possibleTraits];
+    const selectedTraits = [];
+    
+    // Select random traits
+    for (let j = 0; j < numTraits; j++) {
+        const randomIndex = Math.floor(Math.random() * availableTraits.length);
+        const selectedTrait = availableTraits[randomIndex];
+        selectedTraits.push(selectedTrait);
+        
+        // Remove selected trait to avoid duplicates
+        availableTraits.splice(randomIndex, 1);
+        
+        // Handle mutually exclusive traits
+        if (selectedTrait === 'Favors Defense') {
+            const attackIndex = availableTraits.indexOf('Favors Attacking');
+            if (attackIndex > -1) availableTraits.splice(attackIndex, 1);
+        }
+        else if (selectedTrait === 'Favors Attacking') {
+            const defenseIndex = availableTraits.indexOf('Favors Defense');
+            if (defenseIndex > -1) availableTraits.splice(defenseIndex, 1);
+        }
+        else if (selectedTrait === 'Youth Focus') {
+            const experienceIndex = availableTraits.indexOf('Favors Experience');
+            if (experienceIndex > -1) availableTraits.splice(experienceIndex, 1);
+        }
+        else if (selectedTrait === 'Favors Experience') {
+            const youthIndex = availableTraits.indexOf('Youth Focus');
+            if (youthIndex > -1) availableTraits.splice(youthIndex, 1);
+        }
+    }
+
+    return selectedTraits;
 }
 
 export function playerName() {

@@ -2,7 +2,7 @@
 	import axios from "axios";
 	import '../app.css';
 	import { allPlayers } from "$lib/stores/generic.svelte";
-    import { generateClubName, assignDraftOrder, organizeDraftOrder, playerName } from "$lib/utils/utils";
+    import { generateClubName, assignDraftOrder, organizeDraftOrder, generateClubTraits, playerName } from "$lib/utils/utils";
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     import { getSetDraft, draft } from "$lib/stores/draft.svelte";
     import { firstParts, secondParts, commonNames } from "$lib/data/rngClubNames";
@@ -17,6 +17,7 @@
     //Local Draft Variables//
     const localDraftState = getSetDraft()
     let numberPool = $state(Array.from({length:14}, (_,i) => i+1))
+    let selectedNames = $state({})
 
     async function getPlayerById(id){
         let { data: row, error } = await supabase
@@ -93,15 +94,35 @@
 
     function draftSetup(){
         for(let i = 1; i <= 13; i++) {
-            teams[`team${i}`].name = generateClubName(firstParts, commonNames, secondParts);
-            // teams[`team${i}`].traits = generateClubTraits();
+            const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
+            teams[`team${i}`].name = name;
+            if (!selectedNames[firstName]){
+                selectedNames[firstName] = { name: name, index: i }
+            }
+            // teams[`team${i}`].rivals = assignRivals(teams[`team${i}`].name)
+            teams[`team${i}`].traits = generateClubTraits();
             teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
+            if (sameCity){
+                assignRivals(firstName, true, i)
+            }
         }
         playerTeam.draftOrder = assignDraftOrder(numberPool);
         playerTeam.name = playerName()
         localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams))
         localDraftState.setGate1(true)
     }
+
+    function assignRivals(firstName, bool, index){
+        if (bool === true){
+            if (selectedNames[firstName]){
+                const foundRival = selectedNames[firstName]
+                teams[`team${index}`].rivals.push({ name: foundRival.name, index: foundRival.index });
+                teams[`team${foundRival.index}`].rivals.push({ name: teams[`team${index}`].name, index: index });
+            }
+
+        }
+    }
+
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->

@@ -1,5 +1,5 @@
 <script>
-   
+   import PlayerMini from "./PlayerMini.svelte";
     let {
         team = {
             name: '',
@@ -10,7 +10,8 @@
             keepers: [],
             playerCount: 0,
             traits: [],
-            transferBudget: 0
+            rivals: [],
+            transferBudget: 0, 
         }
     } = $props();
     let isExpanded = $state(false);
@@ -35,7 +36,7 @@
         <h4>Draft Position: {team.draftOrder}</h4>
         <h4>Transfer Budget: £{team.transferBudget.toFixed(2)}M</h4>
     </div>
-    <!-- {#if isExpanded}
+    {#if isExpanded}
         <div class="expanded-content">
             <div class="stat-row">
                 <span class="label">Total Players:</span>
@@ -88,7 +89,18 @@
                     {/if}
                 </span>
             </div>
-            <div class="view-team-container">
+           
+            <div class="rivals-row">
+                <span class="label">Club Rivals:</span>
+                <span class="value">
+                    {#if team.rivals.length === 0}
+                        None
+                    {:else}
+                         {team.rivals.map(rival => rival.name).join(', ')}
+                    {/if}
+                </span>
+            </div>
+            <!-- <div class="view-team-container">
                 <a
                     href="draft2/teams/{team.name.toLowerCase()}"
                     class="view-team-btn"
@@ -96,9 +108,9 @@
                 >
                     View Team
                 </a>
-            </div>
+            </div> -->
         </div>
-    {/if} -->
+    {/if}
 </button>
 
 <style>

@@ -7,6 +7,7 @@
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
 	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
+	import { draft } from "$lib/stores/draft.svelte";
 	
 	onMount(()=>{
 		fetchAllWeights()
@@ -827,8 +828,8 @@ function getDefensiveScore(row, detailedPosition) {
     }
 }
 
-//Stat Rankings//
 /////////////////
+//Stat Rankings//
 async function statRankings() {
     const invertedStats = [
         "ShotsOffTargetPer90",
@@ -938,7 +939,9 @@ async function statRankings() {
 <button onclick={fetchAllWeights}>Weights</button>
 <button onclick={testWeightMap}>Test Weight to Defense</button>
 <button onclick={statRankings}>Stat Rankings</button>
-
+{#if draft.gate1}
+<button><a href='table'>League Table</a></button>
+{/if}
 <style>
     button {
         margin-right: 2rem;
