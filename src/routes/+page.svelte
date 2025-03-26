@@ -2,7 +2,9 @@
 	import axios from "axios";
 	import '../app.css';
 	import { allPlayers } from "$lib/stores/stores.svelte";
+    import { draftOrderState } from "$lib/stores/draft.svelte";
 	import DraftPlayer from "$lib/DraftPlayer.svelte";
+    import DraftTicker from "$lib/DraftTicker.svelte";
     import PlayerTeam from "$lib/PlayerTeam.svelte";
 	import { countryMap, getCountry } from '$lib/data/countries';
     import { supabase } from "$lib/supabase/supaClient";
@@ -84,6 +86,16 @@
 <button onclick={getPlayerById(539961)}>getPlayerById</button>
 <button onclick={getPremPlayersFromMini}>Get Players</button>
 <button onclick={getPremPlayers}>Get Players From API</button>
+
+
+<div class="draft-main-container">
+    <div class="draft-ticker-container">
+        <DraftTicker ticker={draftState}/>
+    </div>
+
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+</div>
+
 <div class="page-container">
 	<div class="players-section">
 		<h3>Prem Players: {allPlayers.length}</h3>
