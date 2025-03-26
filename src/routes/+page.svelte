@@ -103,6 +103,7 @@
             teams[`team${i}`].traits = generateClubTraits();
             teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
             if (sameCity){
+                console.log(`first first name: ${firstName} ${sameCity}`)
                 assignRivals(firstName, true, i)
             }
         }
@@ -116,6 +117,8 @@
         if (bool === true){
             if (selectedNames[firstName]){
                 const foundRival = selectedNames[firstName]
+                console.log('rival', foundRival)
+                console.log(`first name:  ${firstName}, index: ${index}`)
                 teams[`team${index}`].rivals.push({ name: foundRival.name, index: foundRival.index });
                 teams[`team${foundRival.index}`].rivals.push({ name: teams[`team${index}`].name, index: index });
             }

@@ -8,7 +8,7 @@ let usedSecondParts = new Set();
 ////////////////////
 //Draft Functions//
 export function generateClubName(firstParts, commonNames, secondParts) {
-    const isDoubleName = Math.random() < 0.8; // 4/5 chance for double name
+    const isDoubleName = Math.random() < 0.8; // 80% chance for double name
     
     if (isDoubleName) {
         // Get available first parts (not used alone and used <2 times in combinations)
@@ -17,15 +17,15 @@ export function generateClubName(firstParts, commonNames, secondParts) {
             (doubleNameFirsts.get(name) || 0) < 2
         );
         
-        let sameCity = false;
         const firstPart = availableFirsts[Math.floor(Math.random() * availableFirsts.length)];
-        doubleNameFirsts.set(firstPart, (doubleNameFirsts.get(firstPart) || 0) + 1);
-        if (doubleNameFirsts.get(firstPart) === 2){
-            sameCity = true;
-        }
+        const currentCount = (doubleNameFirsts.get(firstPart) || 0) + 1;
+        doubleNameFirsts.set(firstPart, currentCount);
+        
+        // Only set sameCity = true if this is the SECOND usage of this firstPart
+        const sameCity = currentCount === 2;
+        
         // For second part, either use common name or unused second part
         let secondPart;
-        // 0.4 chance for common name
         if (Math.random() < 0.4) {
             secondPart = commonNames[Math.floor(Math.random() * commonNames.length)];
         } else {
@@ -37,7 +37,7 @@ export function generateClubName(firstParts, commonNames, secondParts) {
         return {
             name: `${firstPart} ${secondPart}`,
             sameCity,
-            firstPart: firstPart
+            firstName: firstPart // (Note: Changed from firstPart to firstName for consistency)
         };
         
     } else {
@@ -53,8 +53,8 @@ export function generateClubName(firstParts, commonNames, secondParts) {
         return {
             name: firstPart,
             sameCity: false,
-            firstPart: name
-        }
+            firstName: firstPart
+        };
     }
 }
 
