@@ -2,13 +2,22 @@
 	import axios from "axios";
 	import '../app.css';
 	import { allPlayers } from "$lib/stores/stores.svelte";
-    import { draftOrderState } from "$lib/stores/draft.svelte";
+    import { generateClubName, assignDraftOrder, organizeDraftOrder, playerName } from "$lib/utils/utils";
+    import { teams, playerTeam } from "$lib/stores/teams.svelte";
+    import { getSetDraft, draft } from "$lib/stores/draft.svelte";
+    import { firstParts, secondParts, commonNames } from "$lib/data/rngClubNames";
 	import DraftPlayer from "$lib/DraftPlayer.svelte";
     import DraftTicker from "$lib/DraftTicker.svelte";
-    import PlayerTeam from "$lib/PlayerTeam.svelte";
+    import PlayerDraftTeam from "$lib/PlayerDraftTeam.svelte";
+    import DraftTeam from "$lib/DraftTeam.svelte";
 	import { countryMap, getCountry } from '$lib/data/countries';
     import { supabase } from "$lib/supabase/supaClient";
 	
+
+    //Local Draft Variables//
+    const localDraftState = getSetDraft()
+    let numberPool = $state(Array.from({length:14}, (_,i) => i+1))
+
     async function getPlayerById(id){
         let { data: row, error } = await supabase
         .from('prem_stats_2425')
@@ -40,6 +49,7 @@
         }
     
         console.log(allPlayers)
+        localDraftState.setGate0(true)
     }
 
 
@@ -80,6 +90,18 @@
             console.error(err);
         }
     }
+
+    function draftSetup(){
+        for(let i = 1; i <= 13; i++) {
+            teams[`team${i}`].name = generateClubName(firstParts, commonNames, secondParts);
+            // teams[`team${i}`].traits = generateClubTraits();
+            teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
+        }
+        playerTeam.draftOrder = assignDraftOrder(numberPool);
+        playerTeam.name = playerName()
+        localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams))
+        localDraftState.setGate1(true)
+    }
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
@@ -90,10 +112,19 @@
 
 <div class="draft-main-container">
     <div class="draft-ticker-container">
-        <DraftTicker ticker={draftState}/>
+        <DraftTicker ticker={draft}/>
     </div>
-
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    {#if draft.gate0}
+    <div class="create-teams-btn">
+        <button 
+            onclick={draftSetup}
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6"
+        >
+            Create Teams and Prepare Draft
+        </button>
+    </div>
+    {/if}
+    
 </div>
 
 <div class="page-container">
@@ -104,12 +135,21 @@
 				<DraftPlayer player={player} />
 			{/each}
 		</div>
-	</div>
-    <div class="team-section">
-        <PlayerTeam />
+	</div> 
+    {#if draft.gate1}
+    <div class="player-team-section">
+        <PlayerDraftTeam team={playerTeam}/>
     </div>
-    <div class="placeholder-section"></div>
-</div>
+    <div class="ai-teams-section">
+        <div class="teams-grid">
+            {#each Object.entries(teams)
+                .sort(([,a],[,b])=> a.draftOrder - b.draftOrder) as [key, team]}
+                <DraftTeam team={team} />
+            {/each}
+        </div>
+    </div>
+    {/if}
+ </div>
 
 <style>
     button {
@@ -150,11 +190,11 @@
         padding-right: 0.5rem;
     }
 
-    .team-section {
+    .player-team-section {
         flex: 0 0 30%; 
     }
 
-    .placeholder-section {
+    .ai-teams-section {
         flex: 0 0 30%; 
         background-color: #f8fafc; 
     }

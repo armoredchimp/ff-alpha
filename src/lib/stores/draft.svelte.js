@@ -4,26 +4,30 @@ export let draft = $state({
     currentRound: 1,
     currentPick: 1,
     currentTeam: '',
-    nextTeam: ''
+    nextTeam: '',
+    orderList: [],
+    gate0: false,
+    gate1: false
 });
 
-export let draftStageState = $state({
-    complete: false,
-    orderList: []
-    // gate1: false
-});
+// export let draftState = $state({
+//     complete: false,
+   
+
+//     // gate1: false
+// });
 
 
 
-export function getDraftStage() {
+export function getSetDraft() {
     return {
-        get complete() { return draftStageState.complete; },
-        get orderList() { return draftStageState.orderList; },
-        // get gate0() { return draftStageState.gate0; },
-        // get gate1() { return draftStageState.gate1; },
-        setComplete(value) { draftStageState.complete = value; },
-        setOrderList(value) { draftStageState.orderList = value },
-        // setGate0(value) { draftStageState.gate0 = value; },
-        // setGate1(value) { draftStageState.gate1 = value; }
+        get complete() { return draft.complete; },
+        get orderList() { return draft.orderList; },
+        get gate0() { return draft.gate0; },
+        get gate1() { return draft.gate1; },
+        setComplete(value) { draft.complete = value; },
+        setOrderList(value) { draft.orderList = value },
+        setGate0(value) { draft.gate0 = value; },
+        setGate1(value) { draft.gate1 = value; }
     };
 }
