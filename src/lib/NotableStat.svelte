@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from "svelte";
-    import { outfieldAverages, keeperAverages } from "./stores/stores.svelte";
+    import { outfieldAverages, keeperAverages } from "./stores/generic.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import { formatStatKey } from "./utils/utils";
 
@@ -69,9 +69,6 @@
             <span></span> 
         </div>
     {/if}
-    <!-- {#if isExpanded && nonAverageStat}
-   
-    {/if} -->
 </div>
 
 <style>
@@ -88,26 +85,24 @@
     }
 
     .notable-name {
-        /* min-width: 150px;  */
         white-space: nowrap; 
         overflow: hidden; 
         text-overflow: ellipsis;
-        /* color: white; */
     }
 
     .notable-value, .notable-ranking {
         text-align: right; 
-        /* color: white; */
+
     }
    
     .expanded-section {
-        grid-column: 1 / -1; /* Span all columns */
+        grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr; /* Match the main row layout */
-        padding: 0.8rem 0; /* Add breathing room above and below */
-        margin-top: 0.5rem; /* Additional spacing */
-        margin-bottom: 0.5rem; /* Additional spacing */
-        border-top: 1px solid rgba(255, 255, 255, 0.2); /* Visual separation */
+        grid-template-columns: 2fr 1fr 1fr; 
+        padding: 0.8rem 0; 
+        margin-top: 0.5rem; 
+        margin-bottom: 0.5rem; 
+        border-top: 1px solid rgba(255, 255, 255, 0.2); 
     }
 
     .expanded-value {

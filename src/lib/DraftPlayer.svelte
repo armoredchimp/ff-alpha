@@ -3,7 +3,7 @@
     import { supabase } from "./supabase/supaClient";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
-    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/stores.svelte";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/generic.svelte";
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
 
@@ -134,10 +134,6 @@
         }
     }
 
-    function placeholder(){
-        console.log('Fack a youuu')
-    }
-
     function calculateAge(date_of_birth) {
         const dob = new Date(date_of_birth);
         const today = new Date();
@@ -238,7 +234,7 @@
         for (let rIndex = 0; rIndex < notableStats.length; rIndex++) {
             const [statName] = notableStats[rIndex];
 
-            // If the stat hasn't been seen yet, keep it
+            // If the stat hasn't been seen yet, keep it. Stats can appear twice for being calculated in two different categories.
             if (!seenStats.has(statName)) {
                 // Move the unique stat to the current writeIndex
                 notableStats[wIndex] = notableStats[rIndex];
@@ -289,72 +285,7 @@
             stat.push(color); // Add the color hex code to the end of the array
         });
     }
-    // function selectRankings(rankings){
-    //     let finalSelections = []
-    //     let potentialSelections = []
-    //     let negativeSelections = []
-    //     for(const [stat, rank] of Object.entries(rankings)){
-    //         if(rank === 1){
-    //             finalSelections.push([stat, rank])
-    //         }else if (rank > 1 && rank <= 20){
-    //             potentialSelections.push([stat, rank])
-    //         } else if (rank <= -1 && rank >= -20) { 
-    //          negativeSelections.push([stat, rank]);
-    //     }
-    //     }
-    //     potentialSelections.sort((a, b)=> a[1] - b[1])
-    //     negativeSelections.sort((a, b)=> b[1] - a[1])
-    //     console.log(`pot: `, potentialSelections)
-    //     const potSelects = potentialSelections.slice(0, 3)
-    //     const negSelects = negativeSelections.slice(-3)
-    //     console.log(`pos: `, potSelects)
-    //     console.log(`neg: `, negSelects)
-    //     finalSelections = finalSelections.concat(potSelects, negSelects)
-    //     console.log(finalSelections)
-    //     createStatTexts(finalSelections)
-    // }
-
-    // function createStatTexts(array, playerName) {
-    //     array.forEach(([stat, rank]) => {
-    //         const formattedStat = stat.replace(/([A-Z])/g, ' $1').trim(); // Format stat name
-
-    //         let description, color;
-
-      
-    //         if (rank === 1) {
-    //             description = "Leads the league";
-    //             color = "#800080"; // Dark Purple
-    //         } else if (rank >= 2 && rank <= 5) {
-    //             description = "Elite";
-    //             color = "#0000FF"; // Blue
-    //         } else if (rank >= 6 && rank <= 10) {
-    //             description = "Excellent";
-    //             color = "#008000"; // Green
-    //         } else if (rank >= 11 && rank <= 20) {
-    //             description = "Very good";
-    //             color = "#335026"; // Dark Green
-    //         } else if (rank === -1) {
-    //             description = "League bottom";
-    //             color = "#8B4513"; // Brown
-    //         } else if (rank >= -5 && rank <= -2) {
-    //             description = "Bottom of the league";
-    //             color = "#FF0000"; // Red
-    //         } else if (rank >= -10 && rank <= -6) {
-    //             description = "Very poor";
-    //             color = "#8B0000"; // Dark Red
-    //         } else if (rank >= -20 && rank <= -11) {
-    //             description = "Poor";
-    //             color = "#FFA500"; // Orange
-    //         } 
-    //         // Create the sentence with the colored description
-    //         const sentence = {
-    //             text: `${description} - ${formattedStat}`,
-    //             color: color
-    //         };
-
-    //         sentences.push(sentence); 
-    //     });
-    // }
+   
 
     // async function getPlayerStatsDB(id) {
     //     try {

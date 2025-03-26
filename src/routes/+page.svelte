@@ -1,7 +1,7 @@
 <script>
 	import axios from "axios";
 	import '../app.css';
-	import { allPlayers } from "$lib/stores/stores.svelte";
+	import { allPlayers } from "$lib/stores/generic.svelte";
     import { generateClubName, assignDraftOrder, organizeDraftOrder, playerName } from "$lib/utils/utils";
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     import { getSetDraft, draft } from "$lib/stores/draft.svelte";
