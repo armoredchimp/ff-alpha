@@ -37,7 +37,7 @@ export function generateClubName(firstParts, commonNames, secondParts) {
         return {
             name: `${firstPart} ${secondPart}`,
             sameCity,
-            firstName: firstPart // (Note: Changed from firstPart to firstName for consistency)
+            firstName: firstPart 
         };
         
     } else {

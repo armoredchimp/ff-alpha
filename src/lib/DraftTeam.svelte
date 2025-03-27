@@ -18,6 +18,7 @@
    
     function expanded() {
         isExpanded = !isExpanded;
+        console.log(team.rivals)
     }
    
 </script>
@@ -96,7 +97,9 @@
                     {#if team.rivals.length === 0}
                         None
                     {:else}
-                         {team.rivals.map(rival => rival.name).join(', ')}
+                        {#each team.rivals.filter(r => r && r.name) as rival, index}
+                            {rival.name}{index < team.rivals.filter(r => r && r.name).length - 1 ? ', ' : ''}
+                        {/each}
                     {/if}
                 </span>
             </div>
