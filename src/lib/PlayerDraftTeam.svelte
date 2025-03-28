@@ -8,7 +8,8 @@
             defenders: [],
             keepers: [],
             playerCount: 0,
-            transferBudget: 0
+            transferBudget: 0,
+            rivals: []
         }
     } = $props();
 </script>
@@ -91,6 +92,18 @@
                 >
                     View Team
                 </a>
+            </div>
+            <div class="rivals-row">
+                <span class="label">Club Rival:</span>
+                <span class="value">
+                    {#if team.rivals.length === 0}
+                        None
+                    {:else}
+                        {#each team.rivals.filter(r => r && r.name) as rival, index}
+                            {rival.name}{index < team.rivals.filter(r => r && r.name).length - 1 ? ', ' : ''}
+                        {/each}
+                    {/if}
+                </span>
             </div>
         </div>
     </div>

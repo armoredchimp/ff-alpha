@@ -94,6 +94,7 @@
     }
 
     function draftSetup() {
+        playerTeam.name = playerName()
         for(let i = 1; i <= 13; i++) {
             const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
             teams[`team${i}`].name = name;
@@ -108,21 +109,19 @@
         }
         
         // Second pass for random rivals only after all names exist
-        for(let i = 1; i <= 13; i++) {
+        for(let i = 14; i >= 0; i--) {
             if ((clubsWithRivals[i] || []).length < 2) {
                 assignRivals('', false, i)
             }
         }
 
         playerTeam.draftOrder = assignDraftOrder(numberPool);
-        playerTeam.name = playerName()
         localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams))
         localDraftState.setGate1(true)
     }
 
     function assignRivals(firstName, bool, index) {
         // Initialize if needed
-        teams[`team${index}`].rivals = teams[`team${index}`].rivals || [];
         clubsWithRivals[index] = clubsWithRivals[index] || [];
         
         // Strict limit - never exceed 2 rivals
@@ -133,10 +132,6 @@
             if (selectedNames[firstName]) {
                 const foundRival = selectedNames[firstName];
                 
-                // Only proceed if both teams have room
-                if (clubsWithRivals[index].length < 2 && 
-                    (clubsWithRivals[foundRival.index] || []).length < 2) {
-                    
                     teams[`team${index}`].rivals.push({ 
                         name: foundRival.name, 
                         index: foundRival.index 
@@ -149,7 +144,7 @@
                     });
                     clubsWithRivals[foundRival.index] = clubsWithRivals[foundRival.index] || [];
                     clubsWithRivals[foundRival.index].push(index);
-                }
+                
             }
             return; // Same-city handled separately
         }
@@ -158,7 +153,25 @@
         const attempts = 3;
         for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
             const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
-            
+                //One-time Player Rival assignment
+                if (index === 14){
+                    if((clubsWithRivals[potentialRivalIndex] || []).length <= 1){ //Occurs first so this should always pass
+                        playerTeam.rivals.push({
+                        name: teams[`team${potentialRivalIndex}`].name,
+                        index: potentialRivalIndex
+                    });
+                        teams[`team${potentialRivalIndex}`].rivals.push({
+                        name: playerTeam.name,
+                        index: index
+                    });
+                        }
+                        clubsWithRivals[index].push(potentialRivalIndex);
+                        clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
+                        clubsWithRivals[potentialRivalIndex].push(index);
+                        return //Only one rival for player
+
+                }
+                    
             // Skip invalid cases
             if (potentialRivalIndex === index || 
                 clubsWithRivals[index].includes(potentialRivalIndex) ||
