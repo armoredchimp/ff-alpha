@@ -88,10 +88,12 @@
                 }
             }
             console.log(allPlayers);
+            // localDraftState.setPlayers(allPlayers)
         } catch (err) {
             console.error(err);
         }
     }
+
 
     function draftSetup() {
         playerTeam.name = playerName()
@@ -109,7 +111,7 @@
         }
         
         // Second pass for random rivals only after all names exist
-        for(let i = 14; i >= 0; i--) {
+        for(let i = 14; i > 0; i--) {
             if ((clubsWithRivals[i] || []).length < 2) {
                 assignRivals('', false, i)
             }
@@ -198,6 +200,40 @@
         }
     }
 
+    function beginDraft(){
+        if(!draft.started){
+            draft.started = true;
+            draft.currentRound = 1;
+            draft.currentPick = 1;
+            
+            let currPick = draft.orderList[0];
+            let nextPick = draft.orderList[1];
+
+            draft.currentTeam = currPick.id === 'player' ? playerTeam.name : currPick.name;
+            console.log('currentTeam: ', draft.currentTeam)
+            draft.nextTeam = nextPick.id === 'player' ? playerTeam.name : nextPick.name;
+        }
+    }
+
+    function handleAIPick(teamId){
+        const result = executePick(teamId, false)
+    }
+
+    function executePick(teamId, isPlayer){
+        const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId]
+
+        if(!isPlayer){
+            const sliceSize = Math.floor(Math.random() * 12) + 14;
+
+            const affordablePlayers = draft.availablePlayers.filter(p => p.transfer_value <= pickingTeam.transferBudget)
+
+            if (affordablePlayers.length < 1){
+                console.log('No affordable players available')
+                return false;
+            }
+        }
+    }
+
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
@@ -207,10 +243,12 @@
 
 
 <div class="draft-main-container">
+    {#if draft.gate1}
     <div class="draft-ticker-container">
         <DraftTicker ticker={draft}/>
     </div>
-    {#if draft.gate0}
+    {/if}
+    {#if draft.gate0 && !draft.gate1}
     <div class="create-teams-btn">
         <button 
             onclick={draftSetup}
@@ -220,7 +258,34 @@
         </button>
     </div>
     {/if}
+    {#if draft.gate1}
+    <div class="start-draft-btn">
+        <button 
+            onclick={beginDraft}
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6"
+        >
+            Start Draft
+        </button>
+    </div>
+    {/if}
     
+    
+    {#if draft.started}
+        {#if draft.currentTeam !== playerTeam.name}
+            <div class="draft-buttons">
+                <!-- {draft.currPick.id}
+                {draft.currPick.name} -->
+                <button 
+                    onclick={() => handleAIPick(draft.orderList[(draft.currentRound - 1) * 14 +(draft.currentPick -1)].id)} 
+                    class="advance-btn">Advance Draft
+                </button>
+                <button 
+                   
+                    class="skip-btn">Skip to Next Player Pick
+                </button>
+            </div>
+        {/if}
+    {/if}
 </div>
 
 <div class="page-container">

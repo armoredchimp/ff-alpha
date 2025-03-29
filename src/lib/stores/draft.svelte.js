@@ -7,16 +7,9 @@ export let draft = $state({
     nextTeam: '',
     orderList: [],
     gate0: false,
-    gate1: false
+    gate1: false,
+    // availablePlayers: []
 });
-
-// export let draftState = $state({
-//     complete: false,
-   
-
-//     // gate1: false
-// });
-
 
 
 export function getSetDraft() {
@@ -25,9 +18,11 @@ export function getSetDraft() {
         get orderList() { return draft.orderList; },
         get gate0() { return draft.gate0; },
         get gate1() { return draft.gate1; },
+        // get availablePlayers() { return draft.availablePlayers; },
         setComplete(value) { draft.complete = value; },
         setOrderList(value) { draft.orderList = value },
         setGate0(value) { draft.gate0 = value; },
-        setGate1(value) { draft.gate1 = value; }
+        setGate1(value) { draft.gate1 = value; },
+        // setPlayers(value) { draft.availablePlayers = value }
     };
 }

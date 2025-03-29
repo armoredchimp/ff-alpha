@@ -1,4 +1,5 @@
 export let allPlayers = $state([])
+
 export let playerCall = $state(false)
 
 export let defenseWeightMap = $state({})
@@ -15,7 +16,6 @@ export let keepingImpMap = $state({})
 
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
-
 
 // export function setAvgs(outData, kData){
 //     return {
