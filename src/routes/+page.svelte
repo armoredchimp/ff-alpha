@@ -221,6 +221,7 @@
 
     function executePick(teamId, isPlayer){
         const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId]
+        const traits = pickingTeam.traits || []
 
         if(!isPlayer){
             const sliceSize = Math.floor(Math.random() * 12) + 14;
@@ -232,8 +233,35 @@
                 return false;
             }
         }
+
+        const positionScores = getPositionalNeeds(pickingTeam, traits)
     }
 
+    function getPositionalNeeds(team, traits){
+        const positions = {
+            'goalkeeper' : team.keepers.length,
+            'defender' : team.defenders.length,
+            'midfielder' : team.midfielders.length,
+            'attacker' : team.attackers.length
+        }
+
+        const posTargets = {
+            'goalkeeper' : 2,
+            'defender' : 6,
+            'midfielder' : 6,
+            'attacker' : 4
+        }
+
+        const allTargetsMet = Object.entries(posTargets).every(([pos, target]) => positions[pos] >= target)
+        if (allTargetsMet){
+            return {
+                'goalkeeper' : 1,
+                'defender' : 1,
+                'midfielder' : 1,
+                'attacker' : 1
+            }
+        }
+    }
 </script>
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
