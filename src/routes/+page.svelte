@@ -1,266 +1,296 @@
 <script>
-	import axios from "axios";
-	import '../app.css';
-	import { allPlayers } from "$lib/stores/generic.svelte";
-    import { generateClubName, assignDraftOrder, organizeDraftOrder, generateClubTraits, playerName } from "$lib/utils/utils";
-    import { teams, playerTeam } from "$lib/stores/teams.svelte";
-    import { getSetDraft, draft } from "$lib/stores/draft.svelte";
-    import { firstParts, secondParts, commonNames } from "$lib/data/rngClubNames";
-	import DraftPlayer from "$lib/DraftPlayer.svelte";
-    import DraftTicker from "$lib/DraftTicker.svelte";
-    import PlayerDraftTeam from "$lib/PlayerDraftTeam.svelte";
-    import DraftTeam from "$lib/DraftTeam.svelte";
-	import { countryMap, getCountry } from '$lib/data/countries';
-    import { supabase } from "$lib/supabase/supaClient";
-	
-
-    //Local Draft Variables//
-    const localDraftState = getSetDraft()
-    let numberPool = $state(Array.from({length:14}, (_,i) => i+1))
-    let selectedNames = $state({})
-    let clubsWithRivals = $state({})
-
-    async function getPlayerById(id){
-        let { data: row, error } = await supabase
+    import axios from 'axios';
+    import '../app.css';
+    import { allPlayers } from '$lib/stores/generic.svelte';
+    import {
+      generateClubName,
+      assignDraftOrder,
+      organizeDraftOrder,
+      generateClubTraits,
+      playerName,
+    } from '$lib/utils/utils';
+    import { teams, playerTeam } from '$lib/stores/teams.svelte';
+    import { getSetDraft, draft } from '$lib/stores/draft.svelte';
+    import { firstParts, secondParts, commonNames } from '$lib/data/rngClubNames';
+    import DraftPlayer from '$lib/DraftPlayer.svelte';
+    import DraftTicker from '$lib/DraftTicker.svelte';
+    import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
+    import DraftTeam from '$lib/DraftTeam.svelte';
+    import { countryMap, getCountry } from '$lib/data/countries';
+    import { supabase } from '$lib/supabase/supaClient';
+  
+    // Local Draft Variables
+    const localDraftState = getSetDraft();
+    let numberPool = $state(Array.from({ length: 14 }, (_, i) => i + 1));
+    let selectedNames = $state({});
+    let clubsWithRivals = $state({});
+  
+    // Caching getTraitEffects
+    const traitEffectsCache = new Map();
+  
+    const getTraitEffects = (traits = []) => {
+      const traitsKey = JSON.stringify(traits.sort());
+      if (traitEffectsCache.has(traitsKey)) {
+        return traitEffectsCache.get(traitsKey);
+      }
+  
+      const traitSet = new Set(traits);
+      const effects = {
+        defensive: traitSet.has('Favors Defense'),
+        attacking: traitSet.has('Favors Attacking'),
+        passing: traitSet.has('Strong Passing'),
+        pressure: traitSet.has('High Pressure'),
+        wingPlay: traitSet.has('Wing Play'),
+        aggressive: traitSet.has('Aggressive Tackling'),
+        youth: traitSet.has('Youth Focus'),
+        experience: traitSet.has('Favors Experience'),
+        teamwork: traitSet.has('Teamwork Focus'),
+        setPiece: traitSet.has('Set Piece Specialists'),
+      };
+  
+      traitEffectsCache.set(traitsKey, effects);
+      return effects;
+    };
+  
+    async function getPlayerById(id) {
+      let { data: row, error } = await supabase
         .from('prem_stats_2425')
         .select('*')
         .eq('id', id)
-        .single()
-
-        if(error){
-            console.error(error)
-        }else{
-            console.log(row)
-        }
+        .single();
+  
+      if (error) {
+        console.error(error);
+      } else {
+        console.log(row);
+      }
     }
-
-
-    async function getPremPlayersFromMini(){
-        let { data: players, error } = await supabase
-            .from('prem_mini_2425')
-            .select('*')
-            .order('transfer_value', { ascending: false });
-
-        if (error){
-            console.error(error)
-        }
-
-        for(const player of players){
-            // console.log(`Processing player ${player.player_name}`)
-            allPlayers.push(player)
-        }
-    
-        console.log(allPlayers)
-        localDraftState.setGate0(true)
+  
+    async function getPremPlayersFromMini() {
+      let { data: players, error } = await supabase
+        .from('prem_mini_2425')
+        .select('*')
+        .order('transfer_value', { ascending: false });
+  
+      if (error) {
+        console.error(error);
+      }
+  
+      for (const player of players) {
+        allPlayers.push(player);
+      }
+  
+      console.log(allPlayers);
+      localDraftState.setGate0(true);
     }
-
-
-	async function getPremPlayers() {
-        let lads = []
-        try {
-            const premRes = await axios.get('/api/teams/seasons/23614', {
-                params: {
-                    include: 'players.player.detailedPosition;players.player.position' 
-                }
+  
+    async function getPremPlayers() {
+      let lads = [];
+      try {
+        const premRes = await axios.get('/api/teams/seasons/23614', {
+          params: {
+            include: 'players.player.detailedPosition;players.player.position',
+          },
         });
-            lads = premRes.data.data;
-            console.log(lads)
-            console.log(`Lads total: ${lads.length}`)
-            for (const team of lads) {
-                if (team.players && team.players.length > 0) {
-                    for (const player of team.players) {
-                        if (player.player.date_of_birth !== null) {
-                            const position = player.player.position.name;
-                            let dPosition = null;
-                            if(player.player.detailedposition && player.player.detailedposition.name){
-                                dPosition = player.player.detailedposition.name
-                            }
-                            const nation = await getCountry(player.player.country_id);	
-                            allPlayers.push({
-                                ...player.player,
-                                position: position,
-                                detailedPosition: dPosition,
-                                nationality: nation,
-                                team_name: team.name
-                            });
-                        }	
-                    }
+        lads = premRes.data.data;
+        console.log(lads);
+        console.log(`Lads total: ${lads.length}`);
+        for (const team of lads) {
+          if (team.players && team.players.length > 0) {
+            for (const player of team.players) {
+              if (player.player.date_of_birth !== null) {
+                const position = player.player.position.name;
+                let dPosition = null;
+                if (player.player.detailedposition && player.player.detailedposition.name) {
+                  dPosition = player.player.detailedposition.name;
                 }
+                const nation = await getCountry(player.player.country_id);
+                allPlayers.push({
+                  ...player.player,
+                  position: position,
+                  detailedPosition: dPosition,
+                  nationality: nation,
+                  team_name: team.name,
+                });
+              }
             }
-            console.log(allPlayers);
-            // localDraftState.setPlayers(allPlayers)
-        } catch (err) {
-            console.error(err);
+          }
         }
+        console.log(allPlayers);
+      } catch (err) {
+        console.error(err);
+      }
     }
-
-
+  
     function draftSetup() {
-        playerTeam.name = playerName()
-        for(let i = 1; i <= 13; i++) {
-            const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
-            teams[`team${i}`].name = name;
-            if (!selectedNames[firstName]){
-                selectedNames[firstName] = { name: name, index: i }
-            }
-            teams[`team${i}`].traits = generateClubTraits();
-            teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
-            if (sameCity){
-                assignRivals(firstName, true, i)
-            }
+      playerTeam.name = playerName();
+      for (let i = 1; i <= 13; i++) {
+        const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
+        teams[`team${i}`].name = name;
+        if (!selectedNames[firstName]) {
+          selectedNames[firstName] = { name: name, index: i };
         }
-        
-        // Second pass for random rivals only after all names exist
-        for(let i = 14; i > 0; i--) {
-            if ((clubsWithRivals[i] || []).length < 2) {
-                assignRivals('', false, i)
-            }
+        teams[`team${i}`].traits = generateClubTraits();
+        teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
+        if (sameCity) {
+          assignRivals(firstName, true, i);
         }
-
-        playerTeam.draftOrder = assignDraftOrder(numberPool);
-        localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams))
-        localDraftState.setGate1(true)
+      }
+  
+      for (let i = 14; i > 0; i--) {
+        if ((clubsWithRivals[i] || []).length < 2) {
+          assignRivals('', false, i);
+        }
+      }
+  
+      playerTeam.draftOrder = assignDraftOrder(numberPool);
+      localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams));
+      localDraftState.setGate1(true);
     }
-
+  
     function assignRivals(firstName, bool, index) {
-        // Initialize if needed
-        clubsWithRivals[index] = clubsWithRivals[index] || [];
-        
-        // Strict limit - never exceed 2 rivals
-        if (clubsWithRivals[index].length >= 2) return;
-
-        // Original same-city logic (working version)
-        if (bool === true) {
-            if (selectedNames[firstName]) {
-                const foundRival = selectedNames[firstName];
-                
-                    teams[`team${index}`].rivals.push({ 
-                        name: foundRival.name, 
-                        index: foundRival.index 
-                    });
-                    clubsWithRivals[index].push(foundRival.index);
-                    
-                    teams[`team${foundRival.index}`].rivals.push({ 
-                        name: teams[`team${index}`].name, 
-                        index: index 
-                    });
-                    clubsWithRivals[foundRival.index] = clubsWithRivals[foundRival.index] || [];
-                    clubsWithRivals[foundRival.index].push(index);
-                
-            }
-            return; // Same-city handled separately
+      clubsWithRivals[index] = clubsWithRivals[index] || [];
+  
+      if (clubsWithRivals[index].length >= 2) return;
+  
+      if (bool === true) {
+        if (selectedNames[firstName]) {
+          const foundRival = selectedNames[firstName];
+  
+          teams[`team${index}`].rivals.push({
+            name: foundRival.name,
+            index: foundRival.index,
+          });
+          clubsWithRivals[index].push(foundRival.index);
+  
+          teams[`team${foundRival.index}`].rivals.push({
+            name: teams[`team${index}`].name,
+            index: index,
+          });
+          clubsWithRivals[foundRival.index] = clubsWithRivals[foundRival.index] || [];
+          clubsWithRivals[foundRival.index].push(index);
         }
-
-        // Random rivals (only if we have room)
-        const attempts = 3;
-        for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
-            const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
-                //One-time Player Rival assignment
-                if (index === 14){
-                    if((clubsWithRivals[potentialRivalIndex] || []).length <= 1){ //Occurs first so this should always pass
-                        playerTeam.rivals.push({
-                        name: teams[`team${potentialRivalIndex}`].name,
-                        index: potentialRivalIndex
-                    });
-                        teams[`team${potentialRivalIndex}`].rivals.push({
-                        name: playerTeam.name,
-                        index: index
-                    });
-                        }
-                        clubsWithRivals[index].push(potentialRivalIndex);
-                        clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
-                        clubsWithRivals[potentialRivalIndex].push(index);
-                        return //Only one rival for player
-
-                }
-                    
-            // Skip invalid cases
-            if (potentialRivalIndex === index || 
-                clubsWithRivals[index].includes(potentialRivalIndex) ||
-                (clubsWithRivals[potentialRivalIndex] || []).length >= 2) {
-                continue;
-            }
-
-            if (Math.random() < 0.5) {
-                // Add both directions
-                teams[`team${index}`].rivals.push({
-                    name: teams[`team${potentialRivalIndex}`].name,
-                    index: potentialRivalIndex
-                });
-                teams[`team${potentialRivalIndex}`].rivals.push({
-                    name: teams[`team${index}`].name,
-                    index: index
-                });
-                
-                // Update tracking
-                clubsWithRivals[index].push(potentialRivalIndex);
-                clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
-                clubsWithRivals[potentialRivalIndex].push(index);
-            }
+        return;
+      }
+  
+      const attempts = 3;
+      for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
+        const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
+  
+        if (index === 14) {
+          if ((clubsWithRivals[potentialRivalIndex] || []).length <= 1) {
+            playerTeam.rivals.push({
+              name: teams[`team${potentialRivalIndex}`].name,
+              index: potentialRivalIndex,
+            });
+            teams[`team${potentialRivalIndex}`].rivals.push({
+              name: playerTeam.name,
+              index: index,
+            });
+          }
+          clubsWithRivals[index].push(potentialRivalIndex);
+          clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
+          clubsWithRivals[potentialRivalIndex].push(index);
+          return;
         }
+  
+        if (
+          potentialRivalIndex === index ||
+          clubsWithRivals[index].includes(potentialRivalIndex) ||
+          (clubsWithRivals[potentialRivalIndex] || []).length >= 2
+        ) {
+          continue;
+        }
+  
+        if (Math.random() < 0.5) {
+          teams[`team${index}`].rivals.push({
+            name: teams[`team${potentialRivalIndex}`].name,
+            index: potentialRivalIndex,
+          });
+          teams[`team${potentialRivalIndex}`].rivals.push({
+            name: teams[`team${index}`].name,
+            index: index,
+          });
+  
+          clubsWithRivals[index].push(potentialRivalIndex);
+          clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
+          clubsWithRivals[potentialRivalIndex].push(index);
+        }
+      }
     }
-
-    function beginDraft(){
-        if(!draft.started){
-            draft.started = true;
-            draft.currentRound = 1;
-            draft.currentPick = 1;
-            
-            let currPick = draft.orderList[0];
-            let nextPick = draft.orderList[1];
-
-            draft.currentTeam = currPick.id === 'player' ? playerTeam.name : currPick.name;
-            console.log('currentTeam: ', draft.currentTeam)
-            draft.nextTeam = nextPick.id === 'player' ? playerTeam.name : nextPick.name;
-        }
+  
+    function beginDraft() {
+      if (!draft.started) {
+        draft.started = true;
+        draft.currentRound = 1;
+        draft.currentPick = 1;
+  
+        let currPick = draft.orderList[0];
+        let nextPick = draft.orderList[1];
+  
+        draft.currentTeam = currPick.id === 'player' ? playerTeam.name : currPick.name;
+        console.log('currentTeam: ', draft.currentTeam);
+        draft.nextTeam = nextPick.id === 'player' ? playerTeam.name : nextPick.name;
+      }
     }
-
-    function handleAIPick(teamId){
-        const result = executePick(teamId, false)
+  
+    function handleAIPick(teamId) {
+      executePick(teamId, false);
     }
-
-    function executePick(teamId, isPlayer){
-        const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId]
-        const traits = pickingTeam.traits || []
-
-        if(!isPlayer){
-            const sliceSize = Math.floor(Math.random() * 12) + 14;
-
-            const affordablePlayers = draft.availablePlayers.filter(p => p.transfer_value <= pickingTeam.transferBudget)
-
-            if (affordablePlayers.length < 1){
-                console.log('No affordable players available')
-                return false;
-            }
+  
+    function executePick(teamId, isPlayer) {
+      const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
+      const traits = pickingTeam.traits || [];
+  
+      if (!isPlayer) {
+        const affordablePlayers = draft.availablePlayers.filter(
+          (p) => p.transfer_value <= pickingTeam.transferBudget
+        );
+  
+        if (affordablePlayers.length < 1) {
+          console.log('No affordable players available');
+          return false;
         }
-
-        const positionScores = getPositionalNeeds(pickingTeam, traits)
+      }
+  
+      const positionScores = getPositionalNeeds(pickingTeam, traits);
     }
-
-    function getPositionalNeeds(team, traits){
-        const positions = {
-            'goalkeeper' : team.keepers.length,
-            'defender' : team.defenders.length,
-            'midfielder' : team.midfielders.length,
-            'attacker' : team.attackers.length
-        }
-
-        const posTargets = {
-            'goalkeeper' : 2,
-            'defender' : 6,
-            'midfielder' : 6,
-            'attacker' : 4
-        }
-
-        const allTargetsMet = Object.entries(posTargets).every(([pos, target]) => positions[pos] >= target)
-        if (allTargetsMet){
-            return {
-                'goalkeeper' : 1,
-                'defender' : 1,
-                'midfielder' : 1,
-                'attacker' : 1
-            }
-        }
+  
+    function getPositionalNeeds(team, traits) {
+      const positions = {
+        goalkeeper: team.keepers.length,
+        defender: team.defenders.length,
+        midfielder: team.midfielders.length,
+        attacker: team.attackers.length,
+      };
+  
+      const posTargets = {
+        goalkeeper: 2,
+        defender: 6,
+        midfielder: 6,
+        attacker: 4,
+      };
+  
+      const allTargetsMet = Object.entries(posTargets).every(([pos, target]) => positions[pos] >= target);
+  
+      if (allTargetsMet) {
+        return {
+          goalkeeper: 1,
+          defender: 1,
+          midfielder: 1,
+          attacker: 1,
+        };
+      }
+  
+      const traitEffects = getTraitEffects(traits);
+  
+      const needs = {};
+      needs.goalkeeper = positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0;
+      needs.defender = positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2);
+      needs.midfielder = positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2;
+      needs.attacker = positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2);
+  
+      return needs;
     }
 </script>
 
