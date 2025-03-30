@@ -143,6 +143,7 @@
         }
       }
   
+      localDraftState.setPlayers(allPlayers)
       playerTeam.draftOrder = assignDraftOrder(numberPool);
       localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams));
       localDraftState.setGate1(true);
@@ -286,7 +287,7 @@
       pickingTeam.transferBudget -= transferVal;
       pickingTeam.playerCount++;
 
-      draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
+      localDraftState.setPlayers(draft.availablePlayers.filter(p => p.id !== player.id))
 
       return player;
     

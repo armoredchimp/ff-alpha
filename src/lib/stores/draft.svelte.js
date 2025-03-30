@@ -8,7 +8,7 @@ export let draft = $state({
     orderList: [],
     gate0: false,
     gate1: false,
-    // availablePlayers: []
+    availablePlayers: []
 });
 
 
@@ -23,6 +23,6 @@ export function getSetDraft() {
         setOrderList(value) { draft.orderList = value },
         setGate0(value) { draft.gate0 = value; },
         setGate1(value) { draft.gate1 = value; },
-        // setPlayers(value) { draft.availablePlayers = value }
+        setPlayers(value) { draft.availablePlayers = value }
     };
 }
