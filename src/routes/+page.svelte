@@ -289,6 +289,7 @@
 
       localDraftState.setPlayers(draft.availablePlayers.filter(p => p.id !== player.id))
 
+      console.log(player)
       return player;
     
     }
@@ -479,9 +480,9 @@
 
 <div class="page-container">
   <div class="players-section">
-    <h3>Prem Players: {allPlayers.length}</h3>
+    <h3>Prem Players: {draft.availablePlayers.length}</h3>
     <div class="player-list">
-      {#each allPlayers as player}
+      {#each draft.availablePlayers as player}
         <DraftPlayer player={player} />
       {/each}
     </div>
