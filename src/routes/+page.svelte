@@ -284,16 +284,109 @@
   
       const traitEffects = getTraitEffects(traits);
   
-      const needs = {};
-      needs.goalkeeper = positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0;
-      needs.defender = positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2);
-      needs.midfielder = positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2;
-      needs.attacker = positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2);
-  
-      return needs;
+      return {
+          goalkeeper : positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0,
+          defender : positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2),
+          midfielder : positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2,
+          attacker : positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2),
+      }
+    }
+
+    function getPlayerValue(index, player, traits){
+        const position = player.position;
+        let score = 0;
+
+        score += index < 5 ? 
+        Math.floor(Math.random() * 3) +  8 :
+        index < 10 ?
+            Math.floor(Math.random() * 4) +  4 :
+            Math.floor(Math.random() * 3) +  1;
+
+        //Defensive Trait
+        if (getTraitEffects(traits).defensive && player.tackles_per90 && player.ints_per90){
+            score += (player.tackles_per90 * 0.5) + (player.int)
+        }
+
+        //Passing Trait
+        if (getTraitEffects(traits).passing && player.key_passes_per90){
+            const passingMultiplier = position === 'Midfielder' ? 1.2 : 0.8;
+            score += player.key_passes_per90 * passingMultiplier
+        }
+
+        //High Pressure Trait
+        if (getTraitEffects(traits).pressure && player.tackles_per90 && player.ints_per90 && player.fouls_per90){
+            score += (player.tackles_per90 * 0.6) + (player.ints_per90 * 0.5) - (player.fouls_per90 * 0.2)
+        }
+
+        //Attacking Trait
+        if (getTraitEffects(traits).attacking && player.goals_per90 && player.assists_per90){
+            let attackingMultiplier = position === 'Attacker' ? 1.4 : position === 'Midfielder' ? 1.2 : 1;
+            score += (player.goals_per90 * attackingMultiplier) + (player.assists_per90 * 0.5)
+        }
+
+          //Wing Play Trait
+        // if (getTraitEffects(traits).wingPlay && player.crosses_per90 && player.dribbles_per90) {
+        //     if (position === 'Midfielder') {
+        //         score += (player.crosses_per90 * 1.3) + (player.dribbles_per90 * 0.8);
+        //     } else if (position === 'Attacker' || position === 'Forward') {
+        //         score += (player.crosses_per90 * 1.5) + (player.dribbles_per90 * 1.0);
+        //     } else {
+        //         score += (player.crosses_per90 * 1.0) + (player.dribbles_per90 * 0.6); //Default for other positions
+        //     }
+        // }
+
+        // //Aggressive Trait
+        // if (getTraitEffects(traits).aggressive && player.fouls_per90 && player.yellow_cards_per90 && player.red_cards_per90) {
+        //     score += (player.fouls_per90 * 1.0) + (player.yellow_cards_per90 * 0.5) + (player.red_cards_per90 * 2.0); //Adjusted for card severity
+        // }
+
+        //Youth Trait
+        if (getTraitEffects(traits).youth && player.player_age) {
+            let ageScore = 0;
+            if (player.player_age >= 18 && player.player_age <= 21) {
+                ageScore = 5;
+            } else {
+                const distanceFromIdeal = player.player_age < 18 ? 18 - player.player_age : player.player_age - 21;
+                ageScore = Math.max(-3, 5 - (distanceFromIdeal * 0.5));
+            }
+            score += ageScore;
+        }
+
+        //Experience Trait
+        if (getTraitEffects(traits).experience && player.player_age) {
+            let ageScore = 0;
+            if (player.player_age >= 28 && player.player_age <= 32) {
+                ageScore = 5;
+            } else {
+                const distanceFromIdeal = player.player_age < 28 ? 28 - player.player_age : player.player_age - 32;
+                ageScore = Math.max(-3, 5 - (distanceFromIdeal * 0.5));
+            }
+            score += ageScore;
+        }
+
+        // //Teamwork Trait
+        // if (getTraitEffects(traits).teamwork && player.assists_per90 && player.passes_completed_percentage && player.yellow_cards_per90 && player.red_cards_per90 && player.goals_per90) {
+        //     score -= (player.red_cards_per90 * 2) + (player.yellow_cards_per90 * 0.5);
+        //     score += (player.assists_per90 * 1.2) + (player.passes_completed_percentage * 0.4);
+        //     if (player.goals_per90 > player.assists_per90 * 2) {
+        //         score -= (player.goals_per90 - player.assists_per90 * 2) * 0.3;
+        //     }
+        // }
+
+        //Set Piece Trait
+        if (getTraitEffects(traits).setPiece && player.assists_per90 && player.goals_per90) {
+            if (position === 'Midfielder') {
+                score += player.assists_per90 * 1.5;
+            } else if (position === 'Defender') {
+                score += player.goals_per90 * 2.0;
+            } else {
+              score += (player.goals_per90 * 1.0) + (player.assists_per90 * 1.0); //Default for other positions
+            }
+        }
+
+        return score;
     }
 </script>
-
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <button onclick={getPlayerById(539961)}>getPlayerById</button>
 <button onclick={getPremPlayersFromMini}>Get Players</button>
