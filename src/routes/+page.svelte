@@ -285,10 +285,10 @@
       const traitEffects = getTraitEffects(traits);
   
       return {
-          goalkeeper : positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0,
-          defender : positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2),
-          midfielder : positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2,
-          attacker : positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2),
+          Goalkeeper : positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0,
+          Defender : positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2),
+          Midfielder : positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2,
+          Attacker : positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2),
       }
     }
 
