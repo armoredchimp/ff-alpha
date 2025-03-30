@@ -238,10 +238,10 @@
       executePick(teamId, false);
     }
   
-    function executePick(teamId, isPlayer) {
+    function executePick(teamId, isPlayer, player = null, transferVal = null) {
       const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
       const traits = pickingTeam.traits || [];
-  
+      
       if (!isPlayer) {
         const affordablePlayers = draft.availablePlayers.filter(
           (p) => p.transfer_value <= pickingTeam.transferBudget
@@ -251,9 +251,45 @@
           console.log('No affordable players available');
           return false;
         }
+
+        const positionScores = getPositionalNeeds(pickingTeam, traits);
+
+        const scoredPlayers = affordablePlayers.slice(0, (Math.floor(Math.random() * 12) + 15)).map((p, index) => ({
+            ...p,
+            score: getPlayerValue(index, p, traits) + positionScores[p.position]
+        })).sort((a, b) => b.score - a.score)
+
+        if (scoredPlayers.length < 1){
+            return false;
+        }
+
+        player = scoredPlayers[0]
+        transferVal = player.transfer_value;
+      }
+
+      if (transferVal > pickingTeam.transferBudget){
+        console.log('Insufficient funds');
+        return false;
       }
   
-      const positionScores = getPositionalNeeds(pickingTeam, traits);
+      const position = player.position ? player.position : null;
+      if (position === null) return false;
+
+      switch(position) {
+        case 'Goalkeeper' : pickingTeam.keepers.push(player); break;
+        case 'Defender' : pickingTeam.defenders.push(player); break;
+        case 'Midfielder' : pickingTeam.midfielders.push(player); break;
+        case 'Attacker' : pickingTeam.attackers.push(player); break;
+        default : return false;
+      }
+
+      pickingTeam.transferBudget -= transferVal;
+      pickingTeam.playerCount++;
+
+      draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
+
+      return player;
+    
     }
   
     function getPositionalNeeds(team, traits) {
@@ -386,6 +422,7 @@
 
         return score;
     }
+
 </script>
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <button onclick={getPlayerById(539961)}>getPlayerById</button>
@@ -440,14 +477,14 @@
 </div>
 
 <div class="page-container">
-	<div class="players-section">
-		<h3>Prem Players: {allPlayers.length}</h3>
-		<div class="player-list">
-			{#each allPlayers as player}
-				<DraftPlayer player={player} />
-			{/each}
-		</div>
-	</div> 
+  <div class="players-section">
+    <h3>Prem Players: {allPlayers.length}</h3>
+    <div class="player-list">
+      {#each allPlayers as player}
+        <DraftPlayer player={player} />
+      {/each}
+    </div>
+  </div> 
     {#if draft.gate1}
     <div class="player-team-section">
         <PlayerDraftTeam team={playerTeam}/>
