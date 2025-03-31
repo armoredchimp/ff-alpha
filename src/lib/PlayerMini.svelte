@@ -1,12 +1,11 @@
 <script>
     let {
-        player = {},
-        statistics = {}
+        player = {}
     } = $props();
 </script>
 
 <div class="player-image-container">
-    <img src={player.photo} alt={player.name} class="player-photo" />
+    <img src={player.image_path} alt={player.name} class="player-photo" />
     <div class="player-popup">
         <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
         <p>Age: {player.age}</p>

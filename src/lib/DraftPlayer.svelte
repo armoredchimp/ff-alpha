@@ -1,6 +1,8 @@
 <script>
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
+    import { draft } from "./stores/draft.svelte";
+    import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/generic.svelte";
@@ -17,6 +19,7 @@
             detailed_position: '',
             player_age: '',
             nationality: '',
+            image_path: '',
             nation_image: '',
             defensive_score: '',
             passing_score: '',
@@ -55,7 +58,8 @@
             bigMis: '',
             accPPerc: '',
             cBlocked: ''
-        }
+        },
+        onDraft
     } = $props();
 
     let statted = $state(false)
@@ -108,6 +112,10 @@
         'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats, defenseWeightMap]],
     };
 
+    function handleDraftClick(e){
+        e.stopPropagation();
+        onDraft(player.image_path)
+    }
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -441,7 +449,17 @@
     <div class="info">
         <div class="name-value">
             <h3>{player.player_name}</h3>
+            {#if draft.currentTeam === playerTeam.name}
+            <button 
+                    class="draft-button"
+                    onclick={handleDraftClick}
+                    aria-label={`Draft ${player.player_name}`}
+                >
+                    Draft for €{player.transfer_value.toFixed(0)}
+                </button>
+            {:else}
             <h2>€{player.transfer_value.toFixed(0)}</h2>
+            {/if}
         </div>
         <div class="details">
             <span>{player.player_age} yrs</span>
@@ -779,6 +797,32 @@
         display: flex;
         gap: 1rem;
         margin-bottom: 0.8rem;
+    }
+
+    .draft-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        margin-left: auto; /* Align to the right */
+    }
+
+    .draft-button:hover {
+        background-color: #0069d9;
+    }
+
+    .draft-button:active {
+        background-color: #005cbf;
+    }
+
+    .draft-button:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
     }
 
     .tab-nav-button  {

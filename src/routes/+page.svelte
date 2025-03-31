@@ -21,6 +21,7 @@
   
     // Local Draft Variables
     const localDraftState = getSetDraft();
+    const localDraftReference = $state(draft)
     let numberPool = $state(Array.from({ length: 14 }, (_, i) => i + 1));
     let selectedNames = $state({});
     let clubsWithRivals = $state({});
@@ -237,8 +238,15 @@
   
     function handleAIPick(teamId) {
       executePick(teamId, false);
+      advanceDraft()
     }
   
+    function handlePlayerPick(player, e){
+      player.image_path = e
+      executePick('player', true, player)
+      advanceDraft()
+    }
+
     function executePick(teamId, isPlayer, player = null, transferVal = null) {
       const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
       const traits = pickingTeam.traits || [];
@@ -424,7 +432,61 @@
 
         return score;
     }
+    function advanceDraft(){
+      // Calculate the current pick index before incrementing
+      let pickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
+      
+      // Now increment for the next pick
+      if(draft.currentPick === 14){
+        draft.currentRound++;
+        draft.currentPick = 1;
+      } else {
+        draft.currentPick++;
+      }
 
+      if (draft.availablePlayers.length < 30){ 
+        draft.complete = true;
+        return;
+      }
+
+      // Calculate the next pick index
+      let nextPickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
+      
+      // Use nextPickIndex to set the current and next teams
+      draft.currentTeam = draft.orderList[nextPickIndex].id === 'player' ?
+        playerTeam.name : draft.orderList[nextPickIndex].name;
+
+      draft.nextTeam = (nextPickIndex + 1 < draft.orderList.length) ? 
+        (draft.orderList[nextPickIndex + 1].id === 'player' ?
+          playerTeam.name : draft.orderList[nextPickIndex + 1].name) :
+        'None';
+    }
+
+//   function executePick(teamId, isPlayer, player = null, transferVal = null)
+    function skipToPlayerPick(){
+      let pickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
+      let nextPlayerIndex = pickIndex;
+
+      while (draft.availablePlayers.length > 30 &&  // Changed to .length
+        nextPlayerIndex < draft.orderList.length &&
+        draft.orderList[nextPlayerIndex].id !== 'player')
+      {
+        const result = executePick(draft.orderList[nextPlayerIndex].id, false)
+        nextPlayerIndex++
+      }
+
+      if (nextPlayerIndex >= draft.orderList.length || draft.availablePlayers.length < 30) {
+        draft.complete = true;
+      }
+
+      draft.currentTeam = draft.orderList[nextPlayerIndex].id === 'player' ?
+        playerTeam.name : draft.orderList[nextPlayerIndex].name;
+
+      draft.nextTeam = nextPlayerIndex + 1 < draft.orderList.length ?
+        (draft.orderList[nextPlayerIndex + 1].id === 'player' ?
+          playerTeam.name : draft.orderList[nextPlayerIndex + 1].name) :
+        'None';
+    }
 </script>
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <button onclick={getPlayerById(539961)}>getPlayerById</button>
@@ -435,7 +497,8 @@
 <div class="draft-main-container">
     {#if draft.gate1}
     <div class="draft-ticker-container">
-        <DraftTicker ticker={draft}/>
+      <!-- {draft.currentTeam} -->
+        <DraftTicker ticker={localDraftReference}/>
     </div>
     {/if}
     {#if draft.gate0 && !draft.gate1}
@@ -448,7 +511,7 @@
         </button>
     </div>
     {/if}
-    {#if draft.gate1}
+    {#if draft.gate1 && !draft.started}
     <div class="start-draft-btn">
         <button 
             onclick={beginDraft}
@@ -466,7 +529,7 @@
                 <!-- {draft.currPick.id}
                 {draft.currPick.name} -->
                 <button 
-                    onclick={() => handleAIPick(draft.orderList[(draft.currentRound - 1) * 14 +(draft.currentPick -1)].id)} 
+                    onclick={() => handleAIPick(localDraftReference.orderList[(localDraftReference.currentRound - 1) * 14 +(localDraftReference.currentPick -1)].id)} 
                     class="advance-btn">Advance Draft
                 </button>
                 <button 
@@ -483,7 +546,9 @@
     <h3>Prem Players: {draft.availablePlayers.length}</h3>
     <div class="player-list">
       {#each draft.availablePlayers as player}
-        <DraftPlayer player={player} />
+        <DraftPlayer player={player}
+         onDraft={(e)=> handlePlayerPick(player, e)}
+        />
       {/each}
     </div>
   </div> 

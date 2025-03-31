@@ -1,4 +1,6 @@
 <script>
+    import PlayerMini from "./PlayerMini.svelte";
+
     let {
         team = {
             name: '',
@@ -28,60 +30,32 @@
         <div class="position-group">
             <span class="label">Attackers:</span>
             <div class="player-images">
-                {#each team.attackers as [player, statistics]}
-                    <div class="player-image-container">
-                        <img src={player.photo} alt={player.name} class="player-photo" />
-                        <div class="player-popup">
-                            <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
-                            <p>Age: {player.age}</p>
-                            <p>Nationality: {player.nationality}</p>
-                        </div>
-                    </div>
+                {#each team.attackers as player}
+                    <PlayerMini player={player} />
                 {/each}
             </div>
         </div>
         <div class="position-group">
             <span class="label">Midfielders:</span>
             <div class="player-images">
-                {#each team.midfielders as [player, statistics]}
-                    <div class="player-image-container">
-                        <img src={player.photo} alt={player.name} class="player-photo" />
-                        <div class="player-popup">
-                            <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
-                            <p>Age: {player.age}</p>
-                            <p>Nationality: {player.nationality}</p>
-                        </div>
-                    </div>
+                {#each team.midfielders as player}
+                    <PlayerMini player={player} />
                 {/each}
             </div>
         </div>
         <div class="position-group">
             <span class="label">Defenders:</span>
             <div class="player-images">
-                {#each team.defenders as [player, statistics]}
-                    <div class="player-image-container">
-                        <img src={player.photo} alt={player.name} class="player-photo" />
-                        <div class="player-popup">
-                            <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
-                            <p>Age: {player.age}</p>
-                            <p>Nationality: {player.nationality}</p>
-                        </div>
-                    </div>
+                {#each team.defenders as player}
+                    <PlayerMini player={player} />
                 {/each}
             </div>
         </div>
         <div class="position-group">
             <span class="label">Keepers:</span>
             <div class="player-images">
-                {#each team.keepers as [player, statistics]}
-                    <div class="player-image-container">
-                        <img src={player.photo} alt={player.name} class="player-photo" />
-                        <div class="player-popup">
-                            <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
-                            <p>Age: {player.age}</p>
-                            <p>Nationality: {player.nationality}</p>
-                        </div>
-                    </div>
+                {#each team.keepers as player}
+                    <PlayerMini player={player} />
                 {/each}
             </div>
             <div class="view-team-container">
@@ -149,7 +123,7 @@
         flex-wrap: wrap;
         gap: 0.5rem;
     }
-
+/* 
     .player-image-container {
         position: relative;
         width: 50px;
@@ -191,7 +165,7 @@
         margin: 0.25rem 0;
         font-size: 0.8rem;
         color: #4a5568;
-    }
+    } */
 
     .view-team-container {
         margin-top: 1rem;

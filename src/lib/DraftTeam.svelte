@@ -47,8 +47,8 @@
             <div class="position-group">
                 <span class="label">Attackers:</span>
                 <div class="player-images">
-                    {#each team.attackers as [player, statistics]}
-                        <PlayerMini {player} {statistics} />
+                    {#each team.attackers as player}
+                        <PlayerMini {player} />
                     {/each}
                 </div>
             </div>
@@ -56,8 +56,8 @@
             <div class="position-group">
                 <span class="label">Midfielders:</span>
                 <div class="player-images">
-                    {#each team.midfielders as [player, statistics]}
-                        <PlayerMini {player} {statistics} />
+                    {#each team.midfielders as player}
+                        <PlayerMini {player} />
                     {/each}
                 </div>
             </div>
@@ -65,8 +65,8 @@
             <div class="position-group">
                 <span class="label">Defenders:</span>
                 <div class="player-images">
-                    {#each team.defenders as [player, statistics]}
-                        <PlayerMini {player} {statistics} />
+                    {#each team.defenders as player}
+                        <PlayerMini {player} />
                     {/each}
                 </div>
             </div>
@@ -74,8 +74,8 @@
             <div class="position-group">
                 <span class="label">Keepers:</span>
                 <div class="player-images">
-                    {#each team.keepers as [player, statistics]}
-                        <PlayerMini {player} {statistics} />
+                    {#each team.keepers as player}
+                        <PlayerMini {player} />
                     {/each}
                 </div>
             </div>
