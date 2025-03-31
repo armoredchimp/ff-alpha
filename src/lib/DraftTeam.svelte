@@ -1,5 +1,7 @@
 <script>
    import PlayerMini from "./PlayerMini.svelte";
+   import ManagerMini from "./ManagerMini.svelte";
+
     let {
         team = {
             name: '',
@@ -12,6 +14,7 @@
             traits: [],
             rivals: [],
             transferBudget: 0, 
+            manager: null
         }
     } = $props();
     let isExpanded = $state(false);
@@ -38,6 +41,10 @@
     </div>
     {#if isExpanded}
         <div class="expanded-content">
+            <div class="stat-row">
+                <span class="label">Manager: </span>
+                <ManagerMini manager={team.manager} />
+            </div>
             <div class="stat-row">
                 <span class="label">Total Players:</span>
                 <span class="value">{team.playerCount}</span>

@@ -9,6 +9,7 @@
       generateClubTraits,
       playerName,
 	  delay,
+      getRandomItem
     } from '$lib/utils/utils';
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
     import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
@@ -20,6 +21,7 @@
     import DraftTeam from '$lib/DraftTeam.svelte';
     import { countryMap, getCountry } from '$lib/data/countries';
     import { supabase } from '$lib/supabase/supaClient';
+    import { managers } from "$lib/stores/generic.svelte";
   
     // Local Draft Variables
     const localDraftState = getSetDraft();
@@ -125,8 +127,9 @@
       }
     }
   
-    function draftSetup() {
+    async function draftSetup() {
       playerTeam.name = playerName();
+      await getCoaches()
       for (let i = 1; i <= 13; i++) {
         const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
         teams[`team${i}`].name = name;
@@ -135,11 +138,15 @@
         }
         teams[`team${i}`].traits = generateClubTraits();
         teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
+        if (managers.length > 0){
+            teams[`team${i}`].manager = getRandomItem(managers)
+            console.log('manager: ', teams[`team${i}`].manager)
+        }
         if (sameCity) {
           assignRivals(firstName, true, i);
         }
       }
-  
+
       for (let i = 14; i > 0; i--) {
         if ((clubsWithRivals[i] || []).length < 2) {
           assignRivals('', false, i);
@@ -152,6 +159,45 @@
       localDraftState.setGate1(true);
     }
   
+    async function getCoaches(){
+        try {
+            const premRes = await axios.get('/api/teams/seasons/23614', {
+                params: {
+                    include: 'players.player;coaches'
+                }
+            });
+            const lads = premRes.data.data;
+            console.log("Teams and Players:", lads);
+            const coaches = []
+            for (const team of lads){
+                if(team.coaches && team.coaches.length > 0){
+                    for (const coach of team.coaches){
+                        if (coach.active === true){
+                            coaches.push([coach, team.name])
+                        }
+                    }
+                }
+            }
+            console.log('coaches: ', coaches)
+
+            try {
+                for (const coach of coaches){
+                    const coachRes = await axios.get(`/api/coaches/${coach[0].coach_id}`)
+                    if (coachRes){
+                        managers.push(coachRes.data.data)
+                    }
+                }
+            }catch(err){
+                console.error(err)
+            }
+
+
+        }catch(err){
+            console.error(err)
+        }
+    }
+
+
     function assignRivals(firstName, bool, index) {
       clubsWithRivals[index] = clubsWithRivals[index] || [];
   
@@ -360,6 +406,9 @@
 
         //Defensive Trait
         if (getTraitEffects(traits).defensive && player.tackles_per90 && player.ints_per90){
+            if (position === 'Defender'){
+                score += 1
+            }
             score += (player.tackles_per90 * 0.5) + (player.int)
         }
 

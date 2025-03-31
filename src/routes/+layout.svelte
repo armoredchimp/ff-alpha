@@ -4,11 +4,12 @@
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
-    import { delay } from "$lib/utils/utils";
+    import { delay, calculateAge } from "$lib/utils/utils";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
 	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
+	import Page from "./+page.svelte";
 	
 	onMount(()=>{
 		fetchAllWeights()
@@ -114,17 +115,6 @@
         ])
 
         weightsFetched = true
-    }
-
-    function calculateAge(date_of_birth) {
-        const dob = new Date(date_of_birth);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const monthDifference = today.getMonth() - dob.getMonth();
-        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
-            age--;
-        }
-        return age;
     }
 
     async function getPlayersThenScore(miniDB) {
@@ -298,7 +288,7 @@
             // Fetch all teams and players for the season
             const premRes = await axios.get('/api/teams/seasons/23614', {
                 params: {
-                    include: 'players.player'
+                    include: 'players.player;coaches'
                 }
             });
             lads = premRes.data.data;

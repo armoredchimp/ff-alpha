@@ -162,6 +162,18 @@ export function playerName() {
 }
 ////////////////////
 //Generic Utils////
+export function calculateAge(date_of_birth) {
+    const dob = new Date(date_of_birth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDifference = today.getMonth() - dob.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+
 export function formatStatKey(stat) {
     // Insert underscores before capital letters (except the first character) and make the string lowercase
     const formattedStat = stat.replace(/([A-Z])/g, '_$1').toLowerCase();
@@ -173,3 +185,8 @@ export function formatStatKey(stat) {
 export function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export function getRandomItem(array) {
+    const randomIndex = Math.floor(Math.random() * array.length);
+    return array.splice(randomIndex, 1)[0];
+} 
