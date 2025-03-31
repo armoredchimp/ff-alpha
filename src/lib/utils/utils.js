@@ -169,3 +169,7 @@ export function formatStatKey(stat) {
     // Add 'avg_' at the beginning and ensure no double underscores
     return `avg_${formattedStat.replace(/^_/, '').replace(/__/g, '_')}`;
 }
+
+export function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

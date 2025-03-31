@@ -2,12 +2,14 @@
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
     import { draft } from "./stores/draft.svelte";
+    import { delay } from "./utils/utils";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/generic.svelte";
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
+	import PlayerDraftTeam from "./PlayerDraftTeam.svelte";
 
     let {
         player = {
@@ -112,8 +114,16 @@
         'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats, defenseWeightMap]],
     };
 
-    function handleDraftClick(e){
+    async function handleDraftClick(e){
         e.stopPropagation();
+        if(player.image_path === '' || player.image_path === undefined){
+            await getPlayerPicture(player.id)
+        }
+        if(isExpanded){
+            isExpanded = !isExpanded
+            delay(200) //Force component to close if open. Probably not necessary due to the #each being keyed on player.id
+        }
+        
         onDraft(player.image_path)
     }
 
@@ -349,6 +359,17 @@
             playerRankings = data
         }catch(err){
             console.log(`Error retrieving rankings`, err)
+        }
+    }
+
+    async function getPlayerPicture(id) {
+        try {
+            const lad = await axios.get(`/api/players/${id}`);
+            if(lad){
+                player.image_path = lad.data.data.image_path;
+            }
+        } catch(err){
+            console.error(err)
         }
     }
 

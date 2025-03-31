@@ -241,7 +241,7 @@
       advanceDraft()
     }
   
-    function handlePlayerPick(player, e){
+    function handlePlayerPick(player, e, f){ //image path is passed up from whichever draftPlayer component was selected for drafting
       player.image_path = e
       executePick('player', true, player)
       advanceDraft()
@@ -273,8 +273,9 @@
         }
 
         player = scoredPlayers[0]
-        transferVal = player.transfer_value;
       }
+
+      transferVal = player.transfer_value;
 
       if (transferVal > pickingTeam.transferBudget){
         console.log('Insufficient funds');
@@ -533,7 +534,7 @@
                     class="advance-btn">Advance Draft
                 </button>
                 <button 
-                   
+                    onclick={skipToPlayerPick}
                     class="skip-btn">Skip to Next Player Pick
                 </button>
             </div>
@@ -545,7 +546,7 @@
   <div class="players-section">
     <h3>Prem Players: {draft.availablePlayers.length}</h3>
     <div class="player-list">
-      {#each draft.availablePlayers as player}
+      {#each draft.availablePlayers as player (player.id)}
         <DraftPlayer player={player}
          onDraft={(e)=> handlePlayerPick(player, e)}
         />

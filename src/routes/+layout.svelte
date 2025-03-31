@@ -4,6 +4,7 @@
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
+    import { delay } from "$lib/utils/utils";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
 	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
@@ -113,10 +114,6 @@
         ])
 
         weightsFetched = true
-    }
-
-    function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function calculateAge(date_of_birth) {
