@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from "svelte";
+	// import { onMount } from "svelte";
 
     let {
         player = {}
@@ -13,10 +13,11 @@
 </script>
 
 <div class="player-image-container">
-    <img src={player.image_path} alt={player.name} class="player-photo" />
+    <img src={player.image_path} alt={player.player_name} class="player-photo" />
     <div class="player-popup">
-        <h5>{player.name || `${player.firstname} ${player.lastname}`}</h5>
-        <p>Age: {player.age}</p>
+        <h5>{player.player_name}</h5>
+        <p>Position: {player.detailed_position}</p>
+        <p>Age: {player.player_age}</p>
         <p>Nationality: {player.nationality}</p>
     </div>
 </div>
