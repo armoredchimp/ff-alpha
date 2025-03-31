@@ -8,8 +8,10 @@
       organizeDraftOrder,
       generateClubTraits,
       playerName,
+	  delay,
     } from '$lib/utils/utils';
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
+    import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
     import { getSetDraft, draft } from '$lib/stores/draft.svelte';
     import { firstParts, secondParts, commonNames } from '$lib/data/rngClubNames';
     import DraftPlayer from '$lib/DraftPlayer.svelte';
@@ -241,13 +243,16 @@
       advanceDraft()
     }
   
-    function handlePlayerPick(player, e, f){ //image path is passed up from whichever draftPlayer component was selected for drafting
-      player.image_path = e
+    function handlePlayerPick(player, e){ 
+      //image path may be passed up from whichever draftPlayer component was selected for drafting
+      if(!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null){
+        player.image_path = e 
+      } //if this condition fails it will already be a property of player
       executePick('player', true, player)
       advanceDraft()
     }
 
-    function executePick(teamId, isPlayer, player = null, transferVal = null) {
+    async function executePick(teamId, isPlayer, player = null, transferVal = null) {
       const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
       const traits = pickingTeam.traits || [];
       
@@ -273,6 +278,10 @@
         }
 
         player = scoredPlayers[0]
+        if(!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null){
+            player.image_path = await getPlayerPicture(player.id)
+            console.log('image', player.image_path)
+        }
       }
 
       transferVal = player.transfer_value;
@@ -302,7 +311,7 @@
       return player;
     
     }
-  
+
     function getPositionalNeeds(team, traits) {
       const positions = {
         goalkeeper: team.keepers.length,
@@ -433,6 +442,7 @@
 
         return score;
     }
+
     function advanceDraft(){
       // Calculate the current pick index before incrementing
       let pickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
@@ -463,31 +473,29 @@
         'None';
     }
 
-//   function executePick(teamId, isPlayer, player = null, transferVal = null)
-    function skipToPlayerPick(){
-      let pickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
-      let nextPlayerIndex = pickIndex;
+   async function skipToPlayerPick() {
+      // Keep processing picks until it's the player's turn or draft ends
+      while (!draft.complete && 
+            draft.currentTeam !== playerTeam.name) {
+          // Execute AI pick
+          const currentTeamId = draft.orderList[
+              (draft.currentRound - 1) * 14 + (draft.currentPick - 1)
+          ].id;
 
-      while (draft.availablePlayers.length > 30 &&  // Changed to .length
-        nextPlayerIndex < draft.orderList.length &&
-        draft.orderList[nextPlayerIndex].id !== 'player')
-      {
-        const result = executePick(draft.orderList[nextPlayerIndex].id, false)
-        nextPlayerIndex++
+          await executePick(currentTeamId, false);
+          
+          // Advance to next pick
+          advanceDraft();
+
       }
-
-      if (nextPlayerIndex >= draft.orderList.length || draft.availablePlayers.length < 30) {
-        draft.complete = true;
+      
+      if (draft.complete) {
+          return;
       }
-
-      draft.currentTeam = draft.orderList[nextPlayerIndex].id === 'player' ?
-        playerTeam.name : draft.orderList[nextPlayerIndex].name;
-
-      draft.nextTeam = nextPlayerIndex + 1 < draft.orderList.length ?
-        (draft.orderList[nextPlayerIndex + 1].id === 'player' ?
-          playerTeam.name : draft.orderList[nextPlayerIndex + 1].name) :
-        'None';
-    }
+      
+      // At this point, it's guaranteed to be player's turn
+      // The advanceDraft() call has already updated currentTeam/nextTeam
+  }
 </script>
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <button onclick={getPlayerById(539961)}>getPlayerById</button>

@@ -3,6 +3,7 @@
     import { supabase } from "./supabase/supaClient";
     import { draft } from "./stores/draft.svelte";
     import { delay } from "./utils/utils";
+    import { getPlayerPicture } from "./api/sportsmonk/utils/apiUtils.svelte";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
@@ -116,8 +117,8 @@
 
     async function handleDraftClick(e){
         e.stopPropagation();
-        if(player.image_path === '' || player.image_path === undefined){
-            await getPlayerPicture(player.id)
+        if(player.image_path === '' || player.image_path === undefined || player.image_path === null){
+            player.image_path = await getPlayerPicture(player.id)
         }
         if(isExpanded){
             isExpanded = !isExpanded
@@ -359,17 +360,6 @@
             playerRankings = data
         }catch(err){
             console.log(`Error retrieving rankings`, err)
-        }
-    }
-
-    async function getPlayerPicture(id) {
-        try {
-            const lad = await axios.get(`/api/players/${id}`);
-            if(lad){
-                player.image_path = lad.data.data.image_path;
-            }
-        } catch(err){
-            console.error(err)
         }
     }
 

@@ -1,7 +1,15 @@
 <script>
+	import { onMount } from "svelte";
+
     let {
         player = {}
     } = $props();
+
+    // onMount(()=>{
+    //     if(player.image_path === '' || player.image_path === undefined){
+
+    //     }
+    // })
 </script>
 
 <div class="player-image-container">

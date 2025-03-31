@@ -18,7 +18,6 @@
    
     function expanded() {
         isExpanded = !isExpanded;
-        console.log(team.rivals)
     }
    
 </script>
