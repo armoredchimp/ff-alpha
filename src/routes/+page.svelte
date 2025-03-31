@@ -396,6 +396,7 @@
 
     function getPlayerValue(index, player, traits){
         const position = player.position;
+        const isWinger = player.detailed_position === "Right Wing" || player.detailed_position === "Left Wing"
         let score = 0;
 
         score += index < 5 ? 
@@ -407,9 +408,9 @@
         //Defensive Trait
         if (getTraitEffects(traits).defensive && player.tackles_per90 && player.ints_per90){
             if (position === 'Defender'){
-                score += 1
+                score += 2
             }
-            score += (player.tackles_per90 * 0.5) + (player.int)
+            score += (player.tackles_per90 * 0.4) + (player.ints_per90 * 0.3)
         }
 
         //Passing Trait
@@ -429,16 +430,18 @@
             score += (player.goals_per90 * attackingMultiplier) + (player.assists_per90 * 0.5)
         }
 
-          //Wing Play Trait
-        // if (getTraitEffects(traits).wingPlay && player.crosses_per90 && player.dribbles_per90) {
-        //     if (position === 'Midfielder') {
-        //         score += (player.crosses_per90 * 1.3) + (player.dribbles_per90 * 0.8);
-        //     } else if (position === 'Attacker' || position === 'Forward') {
-        //         score += (player.crosses_per90 * 1.5) + (player.dribbles_per90 * 1.0);
-        //     } else {
-        //         score += (player.crosses_per90 * 1.0) + (player.dribbles_per90 * 0.6); //Default for other positions
-        //     }
-        // }
+        //   Wing Play Trait
+        if (getTraitEffects(traits).wingPlay && player.accurate_crosses_per90 && player.successful_dribbles_per90) {
+            if (isWinger)
+                score += 1
+            if (position === 'Midfielder') {
+                score += (player.accurate_crosses_per90 * 1.3) + (player.successful_dribbles_per90 * 0.8);
+            } else if (position === 'Attacker' || position === 'Forward') {
+                score += (player.accurate_crosses_per90 * 1.5) + (player.successful_dribbles_per90 * 1.0);
+            } else {
+                score += (player.accurate_crosses_per90 * 1.0) + (player.successful_dribbles_per90 * 0.6); 
+            }
+        }
 
         // //Aggressive Trait
         // if (getTraitEffects(traits).aggressive && player.fouls_per90 && player.yellow_cards_per90 && player.red_cards_per90) {
