@@ -2,7 +2,6 @@
 	import axios from "axios";
 	import { onMount } from "svelte";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
-    import { createClient } from "@supabase/supabase-js";
     import { supabase } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils/utils";
     import { countryMap, getCountry } from '$lib/data/countries';
@@ -10,6 +9,7 @@
 	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
 	import Page from "./+page.svelte";
+	import { managers } from "$lib/stores/generic.svelte";
 	
 	onMount(()=>{
 		fetchAllWeights()
@@ -266,6 +266,76 @@
             console.error('Error in getPlayersThenScore:', err);
         }
     }}
+
+
+	//bizarre errors when trying to run this functionality in the draft page. Creating an almost duplicate function here *shrug*
+    async function getCoachesToDB(){
+        try {
+            const premRes = await axios.get('/api/teams/seasons/23614', {
+                params: {
+                    include: 'players.player;coaches'
+                }
+            });
+            const lads = premRes.data.data;
+            console.log("Teams and Players:", lads);
+            const coaches = []
+            for (const team of lads){
+                if(team.coaches && team.coaches.length > 0){
+                    for (const coach of team.coaches){
+                        if (coach.active === true){
+                            coaches.push([coach, team.name])
+                        }
+                    }
+                }
+            }
+            console.log('coaches: ', coaches)
+
+            try {
+                for (const coach of coaches){
+                    const coachRes = await axios.get(`/api/coaches/${coach[0].coach_id}`)
+                    if (coachRes){
+                        let manager = coachRes.data.data
+						manager.age = calculateAge(manager.date_of_birth)
+						manager.league_id = 1
+						manager.nationality = getCountry(manager.nationality_id)
+						const fieldsToRemove = [
+							'city_id',
+							'common_name',
+							'country_id',
+							'date_of_birth',
+							'firstname',
+							'gender',
+							'height',
+							'lastname',
+							'name',
+							'nationality_id',
+							'player_id',
+							'sport_id',
+							'weight'
+						];
+						for (const field of fieldsToRemove) {
+							delete manager[field];
+						}
+						let { data, error } = await supabase
+							.from('active_managers')
+							.upsert(manager)
+
+						if (error){
+							console.error('supa error: ', error)
+						}
+                    }
+                }
+				console.log('managers', managers)
+
+            }catch(err){
+                console.error(err)
+            }
+
+
+        }catch(err){
+            console.error(err)
+        }
+    }
 
     async function insertPer90s(id, p90s){
         const { data, error } = await supabase
@@ -936,6 +1006,9 @@ async function statRankings() {
 <button onclick={fetchAllWeights}>Weights</button>
 <button onclick={testWeightMap}>Test Weight to Defense</button>
 <button onclick={statRankings}>Stat Rankings</button>
+<button onclick={getCoachesToDB}>Managers to DB</button>
+
+
 {#if draft.gate1}
 <button><a href='table'>League Table</a></button>
 {/if}

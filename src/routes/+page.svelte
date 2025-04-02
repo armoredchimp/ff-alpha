@@ -129,7 +129,7 @@
   
     async function draftSetup() {
       playerTeam.name = playerName();
-      await getCoaches()
+      await getManagers()
       for (let i = 1; i <= 13; i++) {
         const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
         teams[`team${i}`].name = name;
@@ -159,43 +159,81 @@
       localDraftState.setGate1(true);
     }
   
-    async function getCoaches(){
+
+    // const { data, error } = await supabase
+    //         .from(tableName)
+    //         .select('*');
+
+    //     if (error) {
+    //         console.error(`Error fetching weights from ${tableName}`)
+    //         return null;
+    //     }
+        
+    //     data.forEach(row => {
+    //         const weights = Object.keys(row).reduce((acc, key) => {
+    //             if (key !== 'Position') {
+    //                 acc[key] = row[key];
+    //             }
+    //             return acc;
+    //         }, {});
+
+
+    async function getManagers(){
         try {
-            const premRes = await axios.get('/api/teams/seasons/23614', {
-                params: {
-                    include: 'players.player;coaches'
-                }
-            });
-            const lads = premRes.data.data;
-            console.log("Teams and Players:", lads);
-            const coaches = []
-            for (const team of lads){
-                if(team.coaches && team.coaches.length > 0){
-                    for (const coach of team.coaches){
-                        if (coach.active === true){
-                            coaches.push([coach, team.name])
-                        }
-                    }
-                }
-            }
-            console.log('coaches: ', coaches)
+            let { data, error } = await supabase
+                .from('active_managers')
+                .select('*')
 
-            try {
-                for (const coach of coaches){
-                    const coachRes = await axios.get(`/api/coaches/${coach[0].coach_id}`)
-                    if (coachRes){
-                        managers.push(coachRes.data.data)
-                    }
-                }
-            }catch(err){
-                console.error(err)
+            if (error) {
+                console.error('error retrieving managers', error)
             }
 
-
-        }catch(err){
-            console.error(err)
+            data.forEach(row =>{
+                managers.push(row)
+            })
+        } catch(err){
+            console.error('supa error at try catch', err)
         }
     }
+
+
+    // async function getCoachesApi(){
+    //     try {
+    //         const premRes = await axios.get('/api/teams/seasons/23614', {
+    //             params: {
+    //                 include: 'players.player;coaches'
+    //             }
+    //         });
+    //         const lads = premRes.data.data;
+    //         console.log("Teams and Players:", lads);
+    //         const coaches = []
+    //         for (const team of lads){
+    //             if(team.coaches && team.coaches.length > 0){
+    //                 for (const coach of team.coaches){
+    //                     if (coach.active === true){
+    //                         coaches.push([coach, team.name])
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         console.log('coaches: ', coaches)
+
+    //         try {
+    //             for (const coach of coaches){
+    //                 const coachRes = await axios.get(`/api/coaches/${coach[0].coach_id}`)
+    //                 if (coachRes){
+    //                     managers.push(coachRes.data.data)
+    //                 }
+    //             }
+    //         }catch(err){
+    //             console.error(err)
+    //         }
+
+
+    //     }catch(err){
+    //         console.error(err)
+    //     }
+    // }
 
 
     function assignRivals(firstName, bool, index) {

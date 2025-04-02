@@ -12,8 +12,8 @@
     <img src={manager.image_path} alt={manager.display_name} class="manager-photo" />
     <div class="manager-popup">
         <h5>{manager.display_name}</h5>
-        <p>Age: {calculateAge(manager.date_of_birth)} yrs</p>
-        <p>Nationality: {getCountry(manager.nationality_id)}</p>
+        <p>Age: {manager.age} yrs</p>
+        <p>Nationality: {manager.nationality}</p>
     </div>
 </div>
 
