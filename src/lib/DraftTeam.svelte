@@ -109,15 +109,15 @@
                     {/if}
                 </span>
             </div>
-            <!-- <div class="view-team-container">
+            <div class="view-team-container">
                 <a
-                    href="draft2/teams/{team.name.toLowerCase()}"
+                    href="teams/{team.name.toLowerCase()}"
                     class="view-team-btn"
                     
                 >
                     View Team
                 </a>
-            </div> -->
+            </div>
         </div>
     {/if}
 </button>
