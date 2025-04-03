@@ -378,6 +378,23 @@
       const position = player.position ? player.position : null;
       if (position === null) return false;
 
+      // Update team scores based on player attributes (divided by 10)
+      if (player.keeping_score) {
+          pickingTeam.scores.keeping += player.keeping_score / 10;
+      }
+      if (player.defensive_score) {
+          pickingTeam.scores.defensive += player.defensive_score / 10;
+      }
+      if (player.possession_score) {
+          pickingTeam.scores.possession += player.possession_score / 10;
+      }
+      if (player.passing_score) {
+          pickingTeam.scores.passing += player.passing_score / 10;
+      }
+      if (player.attacking_score) {
+          pickingTeam.scores.attacking += player.attacking_score / 10;
+      }
+
       switch(position) {
         case 'Goalkeeper' : pickingTeam.keepers.push(player); break;
         case 'Defender' : pickingTeam.defenders.push(player); break;
