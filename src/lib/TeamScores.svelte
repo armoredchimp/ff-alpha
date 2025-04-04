@@ -4,170 +4,134 @@
             attacking: 0,
             passing: 0,
             possession: 0,
-            defending: 0,
+            defensive: 0,
             keeping: 0
-        }
+        },
+        playerCount = 1
     } = $props();
+
+    let maxScore = 5000;
+
+    let atk = $derived(scores.attacking / playerCount);
+    let pas = $derived(scores.passing / playerCount);
+    let pos = $derived(scores.possession / playerCount);
+    let def = $derived(scores.defensive / playerCount);
+    let kep = $derived(scores.keeping / playerCount);
+
+    let percent = score => `${Math.min(100, (score / maxScore) * 100)}%`;
+
+    let barColors = {
+        Attacking: 'attacking-bar',
+        Passing: 'passing-bar',
+        Possession: 'possession-bar',
+        Defending: 'defending-bar',
+        Keeping: 'keeping-bar'
+    };
 </script>
 
 <div class="team-scores-container">
     <h3 class="team-scores-title">Team Ratings</h3>
-    
+
     <div class="scores-grid">
-        <!-- Attacking -->
-        <div class="score-item">
-            <div class="score-label">
-                <span>Attacking</span>
-                <span class="score-value">{scores.attacking}</span>
+        {#each [
+            { label: 'Keeping', value: kep },
+            { label: 'Defending', value: def },
+            { label: 'Possession', value: pos },
+            { label: 'Passing', value: pas },
+            { label: 'Attacking', value: atk },
+        ] as stat}
+            <div class="score-item">
+                <div class="score-label">
+                    <span>{stat.label}</span>
+                    <span class="score-value">{stat.value.toFixed(2)}</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div
+                        class={`progress-bar ${barColors[stat.label]}`}
+                        style={`width: ${percent(stat.value)}`}
+                    ></div>
+                </div>
             </div>
-            <div class="progress-bar-container">
-                <div 
-                    class="progress-bar attacking-bar" 
-                    style={`width: ${Math.min(100, (scores.attacking / 100) * 100)}%;`}
-                ></div>
-            </div>
-        </div>
-        
-        <!-- Passing -->
-        <div class="score-item">
-            <div class="score-label">
-                <span>Passing</span>
-                <span class="score-value">{scores.passing}</span>
-            </div>
-            <div class="progress-bar-container">
-                <div 
-                    class="progress-bar passing-bar" 
-                    style={`width: ${(scores.passing / 150) * 100}%;`}
-                ></div>
-            </div>
-        </div>
-        
-        <!-- Possession -->
-        <div class="score-item">
-            <div class="score-label">
-                <span>Possession</span>
-                <span class="score-value">{scores.possession}</span>
-            </div>
-            <div class="progress-bar-container">
-                <div 
-                    class="progress-bar possession-bar" 
-                    style={`width: ${(scores.possession / 150) * 100}%;`}
-                ></div>
-            </div>
-        </div>
-        
-        <!-- Defending -->
-        <div class="score-item">
-            <div class="score-label">
-                <span>Defending</span>
-                <span class="score-value">{scores.defending}</span>
-            </div>
-            <div class="progress-bar-container">
-                <div 
-                    class="progress-bar defending-bar" 
-                    style={`width: ${(scores.defending / 150) * 100}%;`}
-                ></div>
-            </div>
-        </div>
-        
-        <!-- Keeping -->
-        <div class="score-item">
-            <div class="score-label">
-                <span>Keeping</span>
-                <span class="score-value">{scores.keeping}</span>
-            </div>
-            <div class="progress-bar-container">
-                <div 
-                    class="progress-bar keeping-bar" 
-                    style={`width: ${(scores.keeping / 150) * 100}%;`}
-                ></div>
-            </div>
-        </div>
+        {/each}
     </div>
 </div>
 
 <style>
     .team-scores-container {
-        background: #2d3748;
-        border-radius: 12px;
+        background: #ffffff;
+        border-radius: 10px;
         padding: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        margin-top: 1rem;
+        max-width: 600px;
+        margin: 1rem auto;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e7eb;
     }
 
     .team-scores-title {
-        color: #fff;
         font-size: 1.25rem;
         font-weight: 600;
-        margin-bottom: 1.25rem;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        color: #111827;
+        margin-bottom: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #f3f4f6;
+        padding-bottom: 0.5rem;
     }
 
     .scores-grid {
-        display: grid;
-        gap: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     .score-item {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
     .score-label {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-    }
-
-    .score-label span:first-child {
-        color: #e2e8f0;
-        font-weight: 500;
         font-size: 0.95rem;
+        color: #374151;
     }
 
     .score-value {
-        color: #fff;
         font-weight: 600;
-        font-size: 1rem;
-        min-width: 3rem;
-        text-align: right;
+        color: #1f2937;
     }
 
     .progress-bar-container {
         width: 100%;
-        height: 16px;
-        background: #4a5568;
-        border-radius: 8px;
+        height: 10px;
+        background: #f3f4f6;
+        border-radius: 5px;
         overflow: hidden;
-        position: relative;
     }
 
     .progress-bar {
         height: 100%;
-        border-radius: 8px;
-        transition: width 0.4s ease-out;
+        transition: width 0.3s ease-in-out;
     }
 
+    /* Muted, professional tones */
     .attacking-bar {
-        background: linear-gradient(90deg, #ef4444, #f87171);
+        background-color: #fca5a5; /* soft red */
     }
 
     .passing-bar {
-        background: linear-gradient(90deg, #3b82f6, #93c5fd);
+        background-color: #93c5fd; /* soft blue */
     }
 
     .possession-bar {
-        background: linear-gradient(90deg, #10b981, #6ee7b7);
+        background-color: #6ee7b7; /* soft green */
     }
 
     .defending-bar {
-        background: linear-gradient(90deg, #f59e0b, #fcd34d);
+        background-color: #fde68a; /* soft yellow */
     }
 
     .keeping-bar {
-        background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
+        background-color: #a074cf; /* soft violet */
     }
 </style>

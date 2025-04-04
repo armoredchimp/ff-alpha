@@ -28,11 +28,12 @@
 </script>
 
 <div class="page-container">
+    <button><a href="/..">Home</a></button>
     <div>
         <TeamHeader team={data.team} computer={true} />
     </div>
     <div>
-        <TeamScores scores={data.team.scores} />
+        <TeamScores scores={data.team.scores} playerCount={data.team.playerCount}/>
     </div>
 
 </div>

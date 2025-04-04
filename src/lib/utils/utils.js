@@ -58,6 +58,8 @@ export function generateClubName(firstParts, commonNames, secondParts) {
     }
 }
 
+
+
 export function assignDraftOrder(numberPool) {
     if (numberPool.length === 0) {
         return null;
