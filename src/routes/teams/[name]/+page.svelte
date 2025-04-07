@@ -9,6 +9,8 @@
 
     onMount(() => {
         data.team.selected = createFormationStructure(data.team.formation)
+        console.log('structure', data.team.selected)
+        populateLineup(data.team)
     })
 
     function createFormationStructure(formationName){
@@ -24,6 +26,77 @@
                 }
             })
         })
+
+        
+        return structure;
+    }
+
+    function populateLineup(team) {
+        const selected = team.selected;
+        const usedIds = new Set(); // Use player.id to track
+
+        const getAvailablePlayer = (players, detailedPosition) => {
+            const player = players.find(p => 
+                p.detailed_position === detailedPosition && !usedIds.has(p.id)
+            );
+            if (player) {
+                console.log(`Found match for ${detailedPosition}:`, player.player_name);
+            }
+            return player;
+        };
+
+        const getFallbackPlayer = (group, pos) => {
+            const groupPlayers = team[group] || [];
+
+            const fallbackOrder = {
+                'Left-Mid': ['Central Midfielder', 'Left Wing'],
+                'Right-Mid': ['Central Midfielder', 'Right Wing']
+            };
+
+            const fallbacks = fallbackOrder[pos] || [];
+
+            for (const alt of fallbacks) {
+                const fallback = getAvailablePlayer(groupPlayers, alt);
+                if (fallback) {
+                    console.log(`Fallback used for ${pos}: ${fallback.player_name} (${alt})`);
+                    return fallback;
+                }
+            }
+
+            return null;
+        };
+
+        for (const group in selected) {
+            const groupPlayers = team[group] || [];
+            console.log(`Processing group: ${group} with ${groupPlayers.length} players`);
+
+            for (const pos in selected[group]) {
+                const max = selected[group][pos].max;
+                const picked = [];
+
+                for (let i = 0; i < max; i++) {
+                    // First, try exact match
+                    const exact = getAvailablePlayer(groupPlayers, pos);
+                    if (exact) {
+                        picked.push(exact);
+                        usedIds.add(exact.id);
+                        continue;
+                    }
+
+                    // Then, try fallback if defined
+                    const fallback = getFallbackPlayer(group, pos);
+                    if (fallback) {
+                        picked.push(fallback);
+                        usedIds.add(fallback.id);
+                    }
+                }
+
+                selected[group][pos].players = picked;
+                console.log(`Filled ${pos}:`, picked.map(p => p.player_name));
+            }
+        }
+
+        console.log('FINAL selected:', team.selected);
     }
 </script>
 

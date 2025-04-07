@@ -364,7 +364,7 @@
         player = scoredPlayers[0]
         if(!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null){
             player.image_path = await getPlayerPicture(player.id)
-            console.log('image', player.image_path)
+            // console.log('image', player.image_path)
         }
       }
 
