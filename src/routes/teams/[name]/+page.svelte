@@ -4,6 +4,7 @@
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
+	import Formation from "$lib/Formation.svelte";
 
     let { data } = $props()
 
@@ -40,7 +41,7 @@
                 p.detailed_position === detailedPosition && !usedIds.has(p.id)
             );
             if (player) {
-                console.log(`Found match for ${detailedPosition}:`, player.player_name);
+                // console.log(`Found match for ${detailedPosition}:`, player.player_name);
             }
             return player;
         };
@@ -58,7 +59,7 @@
             for (const alt of fallbacks) {
                 const fallback = getAvailablePlayer(groupPlayers, alt);
                 if (fallback) {
-                    console.log(`Fallback used for ${pos}: ${fallback.player_name} (${alt})`);
+                    // console.log(`Fallback used for ${pos}: ${fallback.player_name} (${alt})`);
                     return fallback;
                 }
             }
@@ -68,7 +69,7 @@
 
         for (const group in selected) {
             const groupPlayers = team[group] || [];
-            console.log(`Processing group: ${group} with ${groupPlayers.length} players`);
+            // console.log(`Processing group: ${group} with ${groupPlayers.length} players`);
 
             for (const pos in selected[group]) {
                 const max = selected[group][pos].max;
@@ -92,7 +93,7 @@
                 }
 
                 selected[group][pos].players = picked;
-                console.log(`Filled ${pos}:`, picked.map(p => p.player_name));
+                // console.log(`Filled ${pos}:`, picked.map(p => p.player_name));
             }
         }
 
@@ -107,6 +108,10 @@
     </div>
     <div>
         <TeamScores scores={data.team.scores} playerCount={data.team.playerCount}/>
+    </div>
+
+    <div>
+        <Formation team={data.team} />
     </div>
 
 </div>
