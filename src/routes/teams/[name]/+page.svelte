@@ -50,8 +50,8 @@
             const groupPlayers = team[group] || [];
 
             const fallbackOrder = {
-                'Left-Mid': ['Central Midfielder', 'Left Wing'],
-                'Right-Mid': ['Central Midfielder', 'Right Wing']
+                'Left-Mid': ['Left Wing','Central Midfield'],
+                'Right-Mid': ['Right Wing','Central Midfield']
             };
 
             const fallbacks = fallbackOrder[pos] || [];
