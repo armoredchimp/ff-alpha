@@ -1,18 +1,18 @@
 export const formationConfig = {
     '4-4-2': [
-        ['keepers', ['Goalkeeper', 1]],
+        ['keepers', ['Goalkeeper', 1, 1]],
         ['defenders', 
-            ['Left Back', 1],
-            ['Centre Back', 2], 
-            ['Right Back', 1]
+            ['Left Back', 1, 3],
+            ['Centre Back', 2, 4], 
+            ['Right Back', 1, 5]
         ],
         ['midfielders',
-            ['Left-Mid', 1],
-            ['Central Midfielder', 2],
-            ['Right-Mid', 1]
+            ['Left-Mid', 1, 9],
+            ['Central Midfielder', 2, 10],
+            ['Right-Mid', 1, 11]
         ],
         ['attackers',
-            ['Centre Forward', 2]
+            ['Centre Forward', 2, 16]
         ]
     ]
 }

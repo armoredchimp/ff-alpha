@@ -16,7 +16,7 @@
             <div class="formation-row">
                 {#each Object.entries(team.selected[group]) as [positionName, positionData]}
                     {#each positionData.players as player}
-                        <FormationPlayer {player} />
+                        <FormationPlayer player={player} currentPosition={positionName}/>
                     {/each}
                 {/each}
             </div>
