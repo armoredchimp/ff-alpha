@@ -53,8 +53,9 @@
             const fallbackOrder = {
                 'Centre Forward': ['Left Wing','Right Wing'],
                 'Left-Mid': ['Left Wing','Central Midfield'],
+                'Central Midfield': ['Attacking Midfield', 'Defensive Midfield'],
                 'Right-Mid': ['Right Wing','Central Midfield'],
-                'Defensive-Mid': ['Centre Back','Central Midfield']
+                'Defensive Midfield': ['Centre Back','Central Midfield']
             };
 
             const fallbacks = fallbackOrder[pos] || [];

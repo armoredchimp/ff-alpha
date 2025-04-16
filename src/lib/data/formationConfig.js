@@ -8,7 +8,7 @@ export const formationConfig = {
         ],
         ['midfielders',
             ['Left-Mid', 1, 9],
-            ['Central Midfielder', 2, 10],
+            ['Central Midfield', 2, 10],
             ['Right-Mid', 1, 11]
         ],
         ['attackers',
