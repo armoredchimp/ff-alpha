@@ -20,10 +20,11 @@
 
         config.forEach(([group, ...positions]) => {
             structure[group] = {},
-            positions.forEach(([pos, max]) => {
+            positions.forEach(([pos, max, zone]) => {
                 structure[group][pos] = {
                     players: [],
-                    max: max
+                    max,
+                    zone
                 }
             })
         })
@@ -50,8 +51,10 @@
             const groupPlayers = team[group] || [];
 
             const fallbackOrder = {
+                'Centre Forward': ['Left Wing','Right Wing'],
                 'Left-Mid': ['Left Wing','Central Midfield'],
-                'Right-Mid': ['Right Wing','Central Midfield']
+                'Right-Mid': ['Right Wing','Central Midfield'],
+                'Defensive-Mid': ['Centre Back','Central Midfield']
             };
 
             const fallbacks = fallbackOrder[pos] || [];
