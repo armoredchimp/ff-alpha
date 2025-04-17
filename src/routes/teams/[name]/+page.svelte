@@ -40,12 +40,16 @@
       // 3) map of fallback positions
       const fallbackOrder = {
         "Centre Forward": ["Left Wing", "Right Wing"],
+        "Left Wing": ["Right Wing","Centre Forward"],
+        "Right Wing": ["Left Wing","Centre Forward"],
         "Left-Mid": ["Left Wing", "Central Midfield", "Centre Forward"],
         "Right-Mid": ["Right Wing", "Central Midfield", "Centre Forward"],
         "Central Midfield": ["Attacking Midfield", "Defensive Midfield"],
         "Attacking Midfield": ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
         "Defensive Midfield": ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
-        "Centre Back": ["Left Back", "Right Back"]
+        "Centre Back": ["Left Back", "Right Back"],
+        "Left Back": ["Right Back","Centre Back"],
+        "Right Back": ["Left Back","Centre Back"]
       };
   
       // 4) find a fallback player from allPlayers
