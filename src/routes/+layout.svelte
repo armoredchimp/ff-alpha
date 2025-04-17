@@ -1008,7 +1008,7 @@ async function statRankings() {
 <button onclick={statRankings}>Stat Rankings</button>
 <button onclick={getCoachesToDB}>Managers to DB</button>
 
-
+<button><a href="/">Home</a></button>
 {#if draft.gate1}
   <button>
     <a
