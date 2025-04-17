@@ -1010,7 +1010,14 @@ async function statRankings() {
 
 
 {#if draft.gate1}
-<button><a href='table'>League Table</a></button>
+  <button>
+    <a
+      href={'/table'
+      }
+    >
+      League Table
+    </a>
+  </button>
 {/if}
 <style>
     button {
