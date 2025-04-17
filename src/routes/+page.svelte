@@ -15,6 +15,7 @@
     import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
     import { getSetDraft, draft } from '$lib/stores/draft.svelte';
     import { firstParts, secondParts, commonNames } from '$lib/data/rngClubNames';
+    import { formationConfig } from '$lib/data/formationConfig';
     import DraftPlayer from '$lib/DraftPlayer.svelte';
     import DraftTicker from '$lib/DraftTicker.svelte';
     import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
@@ -417,40 +418,60 @@
     }
 
     function getPositionalNeeds(team, traits) {
-      const positions = {
-        goalkeeper: team.keepers.length,
-        defender: team.defenders.length,
-        midfielder: team.midfielders.length,
-        attacker: team.attackers.length,
-      };
-  
-      const posTargets = {
-        goalkeeper: 2,
-        defender: 6,
-        midfielder: 6,
-        attacker: 4,
-      };
-  
-      const allTargetsMet = Object.entries(posTargets).every(([pos, target]) => positions[pos] >= target);
-  
-      if (allTargetsMet) {
-        return {
-          goalkeeper: 1,
-          defender: 1,
-          midfielder: 1,
-          attacker: 1,
+        // 1) derive targets from the selected formation
+        const config = formationConfig[team.formation];
+        const posTargets = config.reduce((acc, [group, ...positions]) => {
+            // turn "keepers" → "keeper", "defenders" → "defender", etc.
+            const singular = group.slice(0, -1);
+            // sum up the max values for this group
+            acc[singular] = positions.reduce((sum, [, max]) => sum + max, 0);
+            return acc;
+        }, {});
+
+        // 2) count how many players you currently have in each category
+        const positionsCount = {
+            goalkeeper: team.keepers.length,
+            defender:   team.defenders.length,
+            midfielder: team.midfielders.length,
+            attacker:   team.attackers.length,
         };
-      }
-  
-      const traitEffects = getTraitEffects(traits);
-  
-      return {
-          Goalkeeper : positions.goalkeeper >= posTargets.goalkeeper ? -15 : positions.goalkeeper === 0 ? 30 : positions.goalkeeper === 1 ? 2 : 0,
-          Defender : positions.defender >= posTargets.defender ? -15 : (posTargets.defender - positions.defender) * (traitEffects.defensive ? 3 : 2),
-          Midfielder : positions.midfielder >= posTargets.midfielder ? -15 : (posTargets.midfielder - positions.midfielder) * 2,
-          Attacker : positions.attacker >= posTargets.attacker ? -15 : (posTargets.attacker - positions.attacker) * (traitEffects.attacking ? 3 : 2),
-      }
-    }
+
+        // 3) if you’ve already met or exceeded all targets, draft one of each
+        const allTargetsMet = Object.entries(posTargets).every(
+            ([pos, target]) => positionsCount[pos] >= target
+        );
+        if (allTargetsMet) {
+            return Object.fromEntries(
+            Object.keys(posTargets).map((pos) => [pos, 1])
+            );
+        }
+
+        // 4) otherwise apply your old trait-based weighting
+        const traitEffects = getTraitEffects(traits);
+        return {
+            Goalkeeper: positionsCount.goalkeeper >= posTargets.goalkeeper
+            ? -15
+            : positionsCount.goalkeeper === 0
+                ? 30
+                : positionsCount.goalkeeper === 1
+                ? 2
+                : 0,
+
+            Defender: positionsCount.defender >= posTargets.defender
+            ? -15
+            : (posTargets.defender - positionsCount.defender)
+                * (traitEffects.defensive ? 3 : 2),
+
+            Midfielder: positionsCount.midfielder >= posTargets.midfielder
+            ? -15
+            : (posTargets.midfielder - positionsCount.midfielder) * 2,
+
+            Attacker: positionsCount.attacker >= posTargets.attacker
+            ? -15
+            : (posTargets.attacker - positionsCount.attacker)
+                * (traitEffects.attacking ? 3 : 2),
+        };
+        }
 
     function getPlayerValue(index, player, traits){
         const position = player.position;

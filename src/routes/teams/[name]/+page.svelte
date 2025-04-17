@@ -1,119 +1,95 @@
 <script>
     import { onMount } from "svelte";
-    import { teams } from "$lib/stores/teams.svelte";
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
+    import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
-	import Formation from "$lib/Formation.svelte";
-
-    let { data } = $props()
-
+  
+    let { data } = $props();
+  
     onMount(() => {
-        data.team.selected = createFormationStructure(data.team.formation)
-        console.log('structure', data.team.selected)
-        populateLineup(data.team)
-    })
-
-    function createFormationStructure(formationName){
-        const config = formationConfig[formationName]
-        const structure = {}
-
-        config.forEach(([group, ...positions]) => {
-            structure[group] = {},
-            positions.forEach(([pos, max, zone]) => {
-                structure[group][pos] = {
-                    players: [],
-                    max,
-                    zone
-                }
-            })
-        })
-
-        
-        return structure;
+      // prepare structure and then fill positions
+      data.team.selected = createFormationStructure(data.team.formation);
+      populateLineup(data.team);
+      console.log("FINAL selected:", data.team.selected);
+    });
+  
+    function createFormationStructure(formationName) {
+      const config = formationConfig[formationName];
+      const structure = {};
+      config.forEach(([group, ...positions]) => {
+        structure[group] = {};
+        positions.forEach(([pos, max, zone]) => {
+          structure[group][pos] = { players: [], max, zone };
+        });
+      });
+      return structure;
     }
-
+  
     function populateLineup(team) {
-        const selected = team.selected;
-        const usedIds = new Set(); // Use player.id to track
-
-        const getAvailablePlayer = (players, detailedPosition) => {
-            const player = players.find(p => 
-                p.detailed_position === detailedPosition && !usedIds.has(p.id)
-            );
-            if (player) {
-                // console.log(`Found match for ${detailedPosition}:`, player.player_name);
-            }
-            return player;
-        };
-
-        const getFallbackPlayer = (group, pos) => {
-            const groupPlayers = team[group] || [];
-
-            const fallbackOrder = {
-                'Centre Forward': ['Left Wing','Right Wing'],
-                'Left-Mid': ['Left Wing','Central Midfield'],
-                'Central Midfield': ['Attacking Midfield', 'Defensive Midfield'],
-                'Attacking Midfield': ['Central Midfield', 'Left Wing' || 'Right Wing', 'Centre Forward'],
-                'Right-Mid': ['Right Wing','Central Midfield'],
-                'Defensive Midfield': ['Centre Back','Central Midfield', 'Left Back' || 'Right Back'],
-                'Centre Back': ['Left Back' || 'Right Back']
-            };
-
-            const fallbacks = fallbackOrder[pos] || [];
-
-            for (const alt of fallbacks) {
-                const fallback = getAvailablePlayer(groupPlayers, alt);
-                if (fallback) {
-                    // console.log(`Fallback used for ${pos}: ${fallback.player_name} (${alt})`);
-                    return fallback;
-                }
-            }
-
-            return null;
-        };
-
-        for (const group in selected) {
-            const groupPlayers = team[group] || [];
-            // console.log(`Processing group: ${group} with ${groupPlayers.length} players`);
-
-            for (const pos in selected[group]) {
-                const max = selected[group][pos].max;
-                const picked = [];
-
-                for (let i = 0; i < max; i++) {
-                    // First, try exact match
-                    const exact = getAvailablePlayer(groupPlayers, pos);
-                    if (exact) {
-                        picked.push(exact);
-                        usedIds.add(exact.id);
-                        continue;
-                    }
-
-                    // Then, try fallback if defined
-                    const fallback = getFallbackPlayer(group, pos);
-                    if (fallback) {
-                        picked.push(fallback);
-                        usedIds.add(fallback.id);
-                    }
-                }
-
-                selected[group][pos].players = picked;
-                // console.log(`Filled ${pos}:`, picked.map(p => p.player_name));
-            }
+      const selected = team.selected;
+      const usedIds = new Set();
+  
+      // 1) gather all players from all groups
+      const allPlayers = Object.keys(selected).flatMap((g) => team[g] || []);
+  
+      // 2) find an exact match by detailed_position not yet used
+      const getAvailablePlayer = (players, detailedPosition) =>
+        players.find((p) => p.detailed_position === detailedPosition && !usedIds.has(p.id));
+  
+      // 3) map of fallback positions
+      const fallbackOrder = {
+        "Centre Forward": ["Left Wing", "Right Wing"],
+        "Left-Mid": ["Left Wing", "Central Midfield", "Centre Forward"],
+        "Right-Mid": ["Right Wing", "Central Midfield", "Centre Forward"],
+        "Central Midfield": ["Attacking Midfield", "Defensive Midfield"],
+        "Attacking Midfield": ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
+        "Defensive Midfield": ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
+        "Centre Back": ["Left Back", "Right Back"]
+      };
+  
+      // 4) find a fallback player from allPlayers
+      const getFallbackPlayer = (pos) => {
+        for (const alt of fallbackOrder[pos] || []) {
+          const player = getAvailablePlayer(allPlayers, alt);
+          if (player) return player;
         }
-
-        console.log('FINAL selected:', team.selected);
+        return null;
+      };
+  
+      // 5) fill each position up to its max
+      for (const group of Object.keys(selected)) {
+        const groupPlayers = team[group] || [];
+        for (const pos in selected[group]) {
+          const { max } = selected[group][pos];
+          const picked = [];
+          for (let i = 0; i < max; i++) {
+            // try exact match first
+            const exact = getAvailablePlayer(groupPlayers, pos);
+            if (exact) {
+              picked.push(exact);
+              usedIds.add(exact.id);
+              continue;
+            }
+            // then try fallback from any group
+            const fb = getFallbackPlayer(pos);
+            if (fb) {
+              picked.push(fb);
+              usedIds.add(fb.id);
+            }
+          }
+          selected[group][pos].players = picked;
+        }
+      }
     }
-</script>
-
+  </script>
 <div class="page-container">
     <button><a href="/..">Home</a></button>
     <div>
         <TeamHeader team={data.team} computer={true} />
     </div>
     <div>
-        <TeamScores scores={data.team.scores} playerCount={data.team.playerCount}/>
+        <TeamScores scores={data.team.scores} playerCount={data.team.playerCount} keeperCount={data.team.keepers.length}/>
     </div>
 
     <div>

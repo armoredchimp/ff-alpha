@@ -13,10 +13,9 @@
       <div class="player-placeholder">No Player Selected</div>
     {/if}
     <div class="player-position">{currentPosition}</div>
-    <select class="player-select">
+    <!-- <select class="player-select">
       <option disabled selected>Select replacement</option>
-      <!-- Options will go here later -->
-    </select>
+    </select> -->
   </div>
   
   <style>
