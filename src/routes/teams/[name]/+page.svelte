@@ -54,8 +54,10 @@
                 'Centre Forward': ['Left Wing','Right Wing'],
                 'Left-Mid': ['Left Wing','Central Midfield'],
                 'Central Midfield': ['Attacking Midfield', 'Defensive Midfield'],
+                'Attacking Midfield': ['Central Midfield', 'Left Wing' || 'Right Wing', 'Centre Forward'],
                 'Right-Mid': ['Right Wing','Central Midfield'],
-                'Defensive Midfield': ['Centre Back','Central Midfield']
+                'Defensive Midfield': ['Centre Back','Central Midfield', 'Left Back' || 'Right Back'],
+                'Centre Back': ['Left Back' || 'Right Back']
             };
 
             const fallbacks = fallbackOrder[pos] || [];

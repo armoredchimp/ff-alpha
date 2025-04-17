@@ -140,6 +140,9 @@
         teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
         if (managers.length > 0){
             teams[`team${i}`].manager = getRandomItem(managers)
+            if(teams[`team${i}`].manager.preferred_formation !== null){
+                teams[`team${i}`].formation = teams[`team${i}`].manager.preferred_formation
+            }
             console.log('manager: ', teams[`team${i}`].manager)
         }
         if (sameCity) {
