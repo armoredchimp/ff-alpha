@@ -4,7 +4,7 @@
 
     let {
         manager = {}
-    } = $props();
+        } = $props();
 
 </script>
 

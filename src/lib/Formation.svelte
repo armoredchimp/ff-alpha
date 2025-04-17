@@ -1,6 +1,9 @@
 <script>
+    let {
+      team = {}
+      } = $props();
+
     import FormationPlayer from "./FormationPlayer.svelte";
-    export let team = {};
   
     // Helper: Returns an array of formation slots for the given zone.
     // Each slot is generated based on the "max" value,

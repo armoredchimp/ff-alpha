@@ -175,6 +175,28 @@ export function calculateAge(date_of_birth) {
     return age;
 }
 
+export function positionAbbrev(detailed_position) {
+    const posMap = {
+        'Goalkeeper' : 'GK',
+        'Centre Back' : 'CB',
+        'Right Back' : 'RB',
+        'Left Back' : 'LB',
+        'Defensive Midfield' : 'DM',
+        'Central Midfield' : 'CM',
+        'Right-Mid' : 'RM',
+        'Left-Mid' : 'LM',
+        'Attacking Midfield' : 'AM',
+        'Right Wing' : 'RW',
+        'Left Wing' : 'LW',
+        'Centre Forward' : 'CF'
+    }
+
+    if(posMap[detailed_position]){
+        return posMap[detailed_position]
+    }else {
+        return detailed_position
+    }
+}
 
 export function formatStatKey(stat) {
     // Insert underscores before capital letters (except the first character) and make the string lowercase
