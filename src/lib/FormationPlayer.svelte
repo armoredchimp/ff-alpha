@@ -1,5 +1,6 @@
 <script>
   import { positionAbbrev } from "./utils/utils";
+  import { getCountryUrl } from "./data/countryImages";
 
   let {
     player = {},
@@ -18,13 +19,20 @@
   <div class="player-position">{currentPosition}</div>
 
    <!-- Hover popup -->
-  {#if player}
+  {#if player}  
+  {#if player.detailed_position !== "Goalkeeper"}
    <div class="player-popup">
-     <div><strong>{player.player_name}</strong></div>
-     <div><strong>Nationality: </strong>   {player.nationality}</div>
-     <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-     <div><strong>Age: </strong>   {player.player_age} yrs</div>
-
+    <div class="popup-upper-section">
+        <div class="popup-info">
+            <div><strong>{player.player_name}</strong></div>
+            <!-- <div><strong>Nationality: </strong>   {player.nationality}</div> -->
+            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
+            <div><strong>Age: </strong>   {player.player_age} yrs</div>
+        </div>
+        <div class="nation-image">
+            <img src={getCountryUrl(player.nationality)} alt={player.nationality} />
+        </div>
+    </div>
      <!-- Metrics bar graph -->
      <div class="player-metrics">
        <div class="metric">
@@ -68,8 +76,36 @@
        </div>
      </div>
    </div>
+   {:else if player.detailed_position === "Goalkeeper"}
+   <div class="player-popup">
+     <div><strong>{player.player_name}</strong></div>
+     <div><strong>Nationality:</strong> {player.nationality}</div>
+     <div><strong>Position:</strong> {positionAbbrev(player.detailed_position)}</div>
+     <div><strong>Age:</strong> {player.player_age} yrs</div>
+ 
+     <div class="metric">
+       <span class="metric-label">Passing</span>
+       <div class="metric-bar-container">
+         <div
+           class="metric-bar bar-pass"
+           style="width: {(player.passing_score / 5000) * 100}%"
+         ></div>
+       </div>
+     </div>
+ 
+     <div class="metric">
+       <span class="metric-label">Keeping</span>
+       <div class="metric-bar-container">
+         <div
+           class="metric-bar bar-poss"
+           style="width: {(player.keeper_score / 5000) * 100}%"
+         ></div>
+       </div>
+     </div>
+   </div>
    {/if}
-</div>
+   {/if} 
+ </div>
 
 <style>
   .formation-player {
@@ -89,6 +125,14 @@
   }
   .formation-player:hover {
     transform: translateY(-4px);
+  }
+
+  .nation-image {
+    width: 4rem;
+    height: 4rem;;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
   }
 
   .player-name {
@@ -147,6 +191,33 @@
   .formation-player:hover .player-popup {
     display: block;
     opacity: 1;
+  }
+
+  .popup-upper-section {
+    position: relative;    /* make this the containing block */
+    display: flex;
+    align-items: center;
+  }
+
+  .nation-image {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: none;
+    flex-shrink: 0;
+    position: absolute;    
+    right: 0.75rem;        
+    top: 50%;              
+    transform: translateY(-50%);
+    margin-left: 0; 
+  }
+
+  .nation-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* fill the circle cleanly */
+    display: block;
   }
 
   /* Metrics bar chart styles */

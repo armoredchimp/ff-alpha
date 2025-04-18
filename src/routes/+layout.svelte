@@ -997,6 +997,42 @@ async function statRankings() {
     }
 }
 
+async function getNations() {
+  // This object will accumulate name→image_path
+  const nameImageMap = {};
+
+  try {
+    // 1) Loop pages starting at 1
+    for (let page = 1; ; page++) {
+      const resp = await axios.get('/core/countries/', {
+        params: { page }
+      });
+
+      // resp.data has shape { data: [...countries], pagination: { has_more, ... } }
+      const { data: countries, pagination } = resp.data;
+
+      // 2) Add each country’s name→image_path into our map
+      countries.forEach(country => {
+        nameImageMap[country.name] = country.image_path;
+      });
+
+      // 3) Break when there’s no more pages
+      if (!pagination.has_more) {
+        break;
+      }
+    }
+
+    // 4) Log the final map
+    console.log('🌍 Country → Image map:', nameImageMap);
+
+    return nameImageMap;
+
+  } catch (err) {
+    console.error('Error fetching nations', err);
+    // return an empty map on error
+    return {};
+  }
+}
 </script>
 
 <button onclick={getPremPlayersAndUpload}>Let's Go</button>
@@ -1007,6 +1043,7 @@ async function statRankings() {
 <button onclick={testWeightMap}>Test Weight to Defense</button>
 <button onclick={statRankings}>Stat Rankings</button>
 <button onclick={getCoachesToDB}>Managers to DB</button>
+<button onclick={getNations}>Nations</button>
 
 <button><a href="/">Home</a></button>
 {#if draft.gate1}
