@@ -24,7 +24,7 @@
    <div class="player-popup">
     <div class="popup-upper-section">
         <div class="popup-info">
-            <div><strong>{player.player_name}</strong></div>
+            <!-- <div><strong>{player.player_name}</strong></div> -->
             <!-- <div><strong>Nationality: </strong>   {player.nationality}</div> -->
             <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
             <div><strong>Age: </strong>   {player.player_age} yrs</div>
@@ -78,11 +78,15 @@
    </div>
    {:else if player.detailed_position === "Goalkeeper"}
    <div class="player-popup">
-     <div><strong>{player.player_name}</strong></div>
-     <div><strong>Nationality:</strong> {player.nationality}</div>
-     <div><strong>Position:</strong> {positionAbbrev(player.detailed_position)}</div>
-     <div><strong>Age:</strong> {player.player_age} yrs</div>
- 
+    <div class="popup-upper-section">
+        <div class="popup-info">
+            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
+            <div><strong>Age: </strong>   {player.player_age} yrs</div>
+        </div>
+        <div class="nation-image">
+            <img src={getCountryUrl(player.nationality)} alt={player.nationality} />
+        </div>
+    </div>
      <div class="metric">
        <span class="metric-label">Passing</span>
        <div class="metric-bar-container">
@@ -127,13 +131,6 @@
     transform: translateY(-4px);
   }
 
-  .nation-image {
-    width: 4rem;
-    height: 4rem;;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 2px solid #e2e8f0;
-  }
 
   .player-name {
     font-weight: bold;
@@ -200,11 +197,11 @@
   }
 
   .nation-image {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 25%;
     overflow: hidden;
-    border: none;
+    border: 0.01rem solid #a0a0a091;
     flex-shrink: 0;
     position: absolute;    
     right: 0.75rem;        
