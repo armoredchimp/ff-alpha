@@ -4,6 +4,7 @@
     import TeamScores from "$lib/TeamScores.svelte";
     import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
+	import SelectedList from "$lib/SelectedList.svelte";
   
     let { data } = $props();
   
@@ -95,8 +96,15 @@
         <TeamScores scores={data.team.scores} playerCount={data.team.playerCount} keeperCount={data.team.keepers.length}/>
     </div>
 
-    <div>
+    <div class="middle-section">
         <Formation team={data.team} />
+        <SelectedList team={data.team}/>
     </div>
 
 </div>
+
+<style>
+    .middle-section {
+        display: flex;
+    }
+</style>
