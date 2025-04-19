@@ -1,3 +1,4 @@
+import { formationConfig } from "$lib/data/formationConfig";
 
 
 let singleNameFirsts = new Map();  // Track count of first names used alone
@@ -214,3 +215,15 @@ export function getRandomItem(array) {
     const randomIndex = Math.floor(Math.random() * array.length);
     return array.splice(randomIndex, 1)[0];
 } 
+
+export function createFormationStructure(formationName) {
+    const config = formationConfig[formationName];
+    const structure = {};
+    config.forEach(([group, ...positions]) => {
+      structure[group] = {};
+      positions.forEach(([pos, max, zone]) => {
+        structure[group][pos] = { players: [], max, zone };
+      });
+    });
+    return structure;
+}

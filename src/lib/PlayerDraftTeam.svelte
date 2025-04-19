@@ -60,7 +60,7 @@
             </div>
             <div class="view-team-container">
                 <a
-                    href="draft2/teams/player"
+                    href="teams/player/main"
                     class="view-team-btn"
                     
                 >

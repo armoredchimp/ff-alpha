@@ -4,7 +4,8 @@
     import TeamScores from "$lib/TeamScores.svelte";
     import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
-	import SelectedList from "$lib/SelectedList.svelte";
+	  import SelectedList from "$lib/SelectedList.svelte";
+    import { createFormationStructure } from "$lib/utils/utils.js";
   
     let { data } = $props();
   
@@ -14,18 +15,6 @@
       populateLineup(data.team);
       console.log("FINAL selected:", data.team.selected);
     });
-  
-    function createFormationStructure(formationName) {
-      const config = formationConfig[formationName];
-      const structure = {};
-      config.forEach(([group, ...positions]) => {
-        structure[group] = {};
-        positions.forEach(([pos, max, zone]) => {
-          structure[group][pos] = { players: [], max, zone };
-        });
-      });
-      return structure;
-    }
   
     function populateLineup(team) {
       const selected = team.selected;
