@@ -243,12 +243,15 @@
     function assignRivals(firstName, bool, index) {
       clubsWithRivals[index] = clubsWithRivals[index] || [];
   
+       // Limit each club to at most two rivals
       if (clubsWithRivals[index].length >= 2) return;
   
+      // Establish rivalry based on matching first names when same-city flag is set
       if (bool === true) {
         if (selectedNames[firstName]) {
           const foundRival = selectedNames[firstName];
   
+          // Add mutual rivalry entries between current club and found rival
           teams[`team${index}`].rivals.push({
             name: foundRival.name,
             index: foundRival.index,
@@ -266,6 +269,7 @@
       }
   
       const attempts = 3;
+      // Attempt to assign random rivals up to two total
       for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
         const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
   
@@ -294,6 +298,7 @@
           continue;
         }
   
+        // 50% chance for rivalry
         if (Math.random() < 0.5) {
           teams[`team${index}`].rivals.push({
             name: teams[`team${potentialRivalIndex}`].name,

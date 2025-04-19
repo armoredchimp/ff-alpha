@@ -48,29 +48,28 @@
 
     <button onclick={populateLineup(playerTeam)}>Auto-Pick Team</button>
 
-        <!-- {#key playerFormationToggle.formToggle} -->
+        
             <div class="content-wrapper">
                 <Formation team={playerTeam} />
                 <SelectedList team={playerTeam} />
             </div>
-        <!-- {/key} -->
     </div>
 </div>
 
 <style>
     .middle-section {
       display: flex;
-      flex-direction: column;   /* stack dropdown + button above content */
-      gap: 1.5rem;              /* a bit more breathing room */
-      padding: 1rem 0;          /* vertical padding around the controls */
-      overflow: visible;        /* allow dropdown to float */
+      flex-direction: column;   
+      gap: 1.5rem;              
+      padding: 1rem 0;         
+      overflow: visible;       
     }
   
     .dropdown-wrapper {
       position: relative;
       z-index: 1000;
       overflow: visible;
-      margin-left: 1rem;        /* push it in from the left */
+      margin-left: 1rem;        
     }
   
     select {
