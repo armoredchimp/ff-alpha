@@ -39,8 +39,8 @@ export const formationConfig = {
             ['Right Back', 1, 5]
         ],
         ['midfielders',
-            ['Defensive Midfield', 1, 7],
             ['Central Midfield', 2, 10],
+            ['Defensive Midfield', 1, 7],
         ],
         ['attackers',
             ['Left Wing', 1, 15],
@@ -70,8 +70,8 @@ export const formationConfig = {
         ],
         ['midfielders',
           ['Left-Mid', 1, 9],
-          ['Right-Mid', 1, 11],
           ['Central Midfield', 2, 10],
+          ['Right-Mid', 1, 11],
           ['Defensive Midfield', 1, 7]
         ],
         ['attackers',
@@ -137,9 +137,9 @@ export const formationConfig = {
             ['Right Back', 1, 5]
         ],
         ['midfielders',
-            ['Defensive Midfield', 2, 7],
             ['Left-Mid', 1, 9],
             ['Right-Mid', 1, 11]
+            ['Defensive Midfield', 2, 7],
         ],
         ['attackers',
             ['Centre Forward', 2, 16]
