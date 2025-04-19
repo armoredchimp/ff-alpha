@@ -69,7 +69,7 @@
                 {@const goalDifference = team.goalsFor - team.goalsAgainst}
                 <tr class="hover:bg-gray-50 {team === playerTeam ? 'bg-blue-50' : ''}">
                     <td class="px-4 py-2 border-b">{index + 1}</td>
-                    <td class="px-4 py-2 border-b font-medium"><a href="teams/{team.player ? 'player' : team.name.toLowerCase()}">{team.name || `Team ${index + 1}`}</a></td>
+                    <td class="px-4 py-2 border-b font-medium"><a href="teams/{team.player ? 'player/main' : team.name.toLowerCase()}">{team.name || `Team ${index + 1}`}</a></td>
                     <td class="px-4 py-2 text-center border-b">{gamesPlayed}</td>
                     <td class="px-4 py-2 text-center border-b">{team.wins}</td>
                     <td class="px-4 py-2 text-center border-b">{team.draws}</td>
