@@ -138,7 +138,7 @@ export const formationConfig = {
         ],
         ['midfielders',
             ['Left-Mid', 1, 9],
-            ['Right-Mid', 1, 11]
+            ['Right-Mid', 1, 11],
             ['Defensive Midfield', 2, 7],
         ],
         ['attackers',
