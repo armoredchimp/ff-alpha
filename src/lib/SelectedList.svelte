@@ -34,5 +34,17 @@
         {/each}
       {/if}
     {/each}
+
+    {#if team.unused?.length}
+      <!-- Render list of players not selected -->
+      {#each team.unused as player}
+        <SelectedPlayer
+          player={player}
+          position="Not Selected"
+          posGroup="unused"
+        />
+      {/each}
+    {/if}
+
   </div>
   
