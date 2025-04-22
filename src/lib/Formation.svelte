@@ -1,6 +1,7 @@
 <script>
     let {
-      team = {}
+      team = {},
+      zonesVisible = true
       } = $props();
 
     import FormationPlayer from "./FormationPlayer.svelte";
@@ -29,6 +30,20 @@
   </script>
   
   <div class="field">
+    {#if zonesVisible}
+    <div class="zone-lines">
+      <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
+      <div class="horizontal-line" style="top: 17.5%;"></div>
+      <div class="horizontal-line" style="top: 32.5%;"></div>
+      <div class="horizontal-line" style="top: 47.5%;"></div>
+      <div class="horizontal-line" style="top: 62.5%;"></div>
+      <div class="horizontal-line" style="top: 80%;"></div>
+  
+      <!-- internal vertical boundaries (3 cols ⇒ 2 lines) -->
+      <div class="vertical-line" style="left: 35%;"></div>
+      <div class="vertical-line" style="left: 65%;"></div>
+    </div>
+  {/if}
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
     {#if getSlotsByZone(15).length}
       <div class="zone zone-15">
@@ -200,5 +215,29 @@
     
     /* Keeper Row (Row 1, Bottom: Zone 1) */
     .zone-1 { position: absolute; left: 50%; top: 90%; transform: translate(-50%, -50%); }
+
+    .zone-lines {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* each horizontal divider */
+    .horizontal-line {
+      position: absolute;
+      left: 0; width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* each vertical divider */
+    .vertical-line {
+      position: absolute;
+      top: 0; height: 100%;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.5);
+    }
   </style>
   
