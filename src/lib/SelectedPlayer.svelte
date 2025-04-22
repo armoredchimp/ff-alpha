@@ -7,7 +7,7 @@
         posGroup = ''
     } = $props();
 
-    const validGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
+    const validGroups = ['attackers', 'midfielders', 'defenders', 'keepers', 'subs'];
     const groupClass = validGroups.includes(posGroup) ? posGroup : 'default';
 </script>
 
@@ -130,6 +130,9 @@
 
   .keepers { background: #264653; }
   .keepers.empty { background: #73bcdaa1; }
+
+  .subs { background: #ac8439; }
+  .subs.empty { background: #f0d199;}
 
   .default { background: #6c757d; }
   .default.empty { background: hsl(210, 5%, 47%); }

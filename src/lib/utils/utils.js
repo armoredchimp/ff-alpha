@@ -230,61 +230,78 @@ export function createFormationStructure(formationName) {
 export function populateLineup(team) {
     const selected = team.selected;
     const usedIds = new Set();
-
-    // 1) gather all players from all groups
-    const allPlayers = Object.keys(selected).flatMap((g) => team[g] || []);
-
-    // 2) find an exact match by detailed_position not yet used
+  
+    // Retrieve all players across all position groups
+    const allPlayers = Object.keys(selected).flatMap(group => team[group] || []);
+  
+    // Helper: find an unused player matching a given detailed position
     const getAvailablePlayer = (players, detailedPosition) =>
-      players.find((p) => p.detailed_position === detailedPosition && !usedIds.has(p.id));
-
-    // 3) map of fallback positions
+      players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id));
+  
+    // Fallback mapping for secondary position assignments
     const fallbackOrder = {
-      "Centre Forward": ["Left Wing", "Right Wing"],
-      "Left Wing": ["Right Wing","Centre Forward"],
-      "Right Wing": ["Left Wing","Centre Forward"],
-      "Left-Mid": ["Left Wing", "Central Midfield", "Centre Forward"],
-      "Right-Mid": ["Right Wing", "Central Midfield", "Centre Forward"],
-      "Central Midfield": ["Attacking Midfield", "Defensive Midfield"],
-      "Attacking Midfield": ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
-      "Defensive Midfield": ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
-      "Centre Back": ["Left Back", "Right Back"],
-      "Left Back": ["Right Back","Centre Back"],
-      "Right Back": ["Left Back","Centre Back"]
+      "Centre Forward":       ["Left Wing", "Right Wing"],
+      "Left Wing":            ["Right Wing", "Centre Forward"],
+      "Right Wing":           ["Left Wing", "Centre Forward"],
+      "Left-Mid":             ["Left Wing", "Central Midfield", "Centre Forward"],
+      "Right-Mid":            ["Right Wing", "Central Midfield", "Centre Forward"],
+      "Central Midfield":     ["Attacking Midfield", "Defensive Midfield"],
+      "Attacking Midfield":   ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
+      "Defensive Midfield":   ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
+      "Centre Back":          ["Left Back", "Right Back"],
+      "Left Back":            ["Right Back", "Centre Back"],
+      "Right Back":           ["Left Back", "Centre Back"]
     };
-
-    // 4) find a fallback player from allPlayers
-    const getFallbackPlayer = (pos) => {
-      for (const alt of fallbackOrder[pos] || []) {
-        const player = getAvailablePlayer(allPlayers, alt);
-        if (player) return player;
+  
+    // Helper: attempt a fallback assignment for a specified position
+    const getFallbackPlayer = pos => {
+      for (const alt of (fallbackOrder[pos] || [])) {
+        const candidate = getAvailablePlayer(allPlayers, alt);
+        if (candidate) return candidate;
       }
       return null;
     };
-
-    // 5) fill each position up to its max
-    for (const group of Object.keys(selected)) {
-      const groupPlayers = team[group] || [];
-      for (const pos in selected[group]) {
-        const { max } = selected[group][pos];
+  
+    // Assign starters into their configured slots
+    Object.entries(selected).forEach(([group, positions]) => {
+      const pool = team[group] || [];
+      Object.entries(positions).forEach(([pos, cfg]) => {
         const picked = [];
-        for (let i = 0; i < max; i++) {
-          // try exact match first
-          const exact = getAvailablePlayer(groupPlayers, pos);
-          if (exact) {
-            picked.push(exact);
-            usedIds.add(exact.id);
-            continue;
-          }
-          // then try fallback from any group
-          const fb = getFallbackPlayer(pos);
-          if (fb) {
-            picked.push(fb);
-            usedIds.add(fb.id);
+        for (let i = 0; i < cfg.max; i++) {
+          const exact = getAvailablePlayer(pool, pos);
+          const substitute = exact || getFallbackPlayer(pos);
+          if (substitute) {
+            picked.push(substitute);
+            usedIds.add(substitute.id);
           }
         }
-        selected[group][pos].players = picked;
+        cfg.players = picked;
+      });
+    });
+  
+    // Update the unused‑players pool
+    team.unused = allPlayers.filter(p => !usedIds.has(p.id));
+  
+    // Build list of “substitute‑slots” equal to number of starters per position
+    const substituteSlots = Object.values(selected)
+      .flatMap(positions =>
+        Object.values(positions)
+          .flatMap(cfg => Array(cfg.players.length).fill(cfg))
+      );
+  
+    // Populate up to seven substitutes in team.subs
+    team.subs.length = 0;  // clear existing entries
+    for (const slotCfg of substituteSlots) {
+      if (team.subs.length >= 7) break;
+      const pos = slotCfg.players[0]?.detailed_position || null;
+      const candidate = getAvailablePlayer(allPlayers, pos) || getFallbackPlayer(pos);
+      if (candidate) {
+        team.subs.push(candidate);
+        usedIds.add(candidate.id);
       }
     }
-    team.unused = allPlayers.filter((p) => !usedIds.has(p.id));
+  
+    // Final refresh of the unused‑players pool
+    team.unused = allPlayers.filter(p => !usedIds.has(p.id));
   }
+  

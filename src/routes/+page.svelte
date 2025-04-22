@@ -423,7 +423,7 @@
     }
 
     function getPositionalNeeds(team, traits) {
-        // 1) derive targets from the selected formation
+        //derive targets from the selected formation
         const config = formationConfig[team.formation];
         const posTargets = config.reduce((acc, [group, ...positions]) => {
             // turn "keepers" → "keeper", "defenders" → "defender", etc.
@@ -433,7 +433,6 @@
             return acc;
         }, {});
 
-        // 2) count how many players you currently have in each category
         const positionsCount = {
             goalkeeper: team.keepers.length,
             defender:   team.defenders.length,
@@ -441,7 +440,7 @@
             attacker:   team.attackers.length,
         };
 
-        // 3) if you’ve already met or exceeded all targets, draft one of each
+        //if you’ve already met or exceeded all targets, draft one of each
         const allTargetsMet = Object.entries(posTargets).every(
             ([pos, target]) => positionsCount[pos] >= target
         );
@@ -451,7 +450,7 @@
             );
         }
 
-        // 4) otherwise apply your old trait-based weighting
+        //otherwise apply original trait-based weighting
         const traitEffects = getTraitEffects(traits);
         return {
             Goalkeeper: positionsCount.goalkeeper >= posTargets.goalkeeper
