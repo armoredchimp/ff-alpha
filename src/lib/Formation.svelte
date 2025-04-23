@@ -186,6 +186,7 @@
       justify-content: center;
       align-items: center;
       gap: 5.5rem;
+      z-index: 2;
     }
     
     /* Attacker Row (Row 6, Top: Zones 15, 16, 17) */
@@ -221,23 +222,24 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none;
-      z-index: 1;
+      z-index: 0;
     }
 
     /* each horizontal divider */
     .horizontal-line {
       position: absolute;
-      left: 0; width: 100%;
+      left: 0;
+      width: 100%;
       height: 2px;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.25);
     }
 
-    /* each vertical divider */
     .vertical-line {
       position: absolute;
-      top: 0; height: 100%;
+      top: 0;
+      height: 100%;
       width: 2px;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.25);
     }
   </style>
   

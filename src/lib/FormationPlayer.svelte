@@ -114,7 +114,7 @@
 <style>
   .formation-player {
     position: relative;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgb(255, 255, 255);
     border-radius: 12px;
     padding: 0.75rem;
     width: 120px;
