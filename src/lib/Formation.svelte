@@ -5,7 +5,25 @@
       } = $props();
 
     import FormationPlayer from "./FormationPlayer.svelte";
+
+    const zoneIntervals = [
+        { top: '0%',    height: '17.5%' },
+        { top: '17.5%', height: '15%'   },
+        { top: '32.5%', height: '15%'   },
+        { top: '47.5%', height: '15%'   },
+        { top: '62.5%', height: '17.5%' },
+        { top: '80%',   height: '20%'   }
+    ];
   
+    let hoveredZone = $state(null)
+
+    function handleZoneEnter(index){
+        hoveredZone = index;
+    }
+
+    function handleZoneExit(){
+        hoveredZone = null;
+    }
     // Helper: Returns an array of formation slots for the given zone.
     // Each slot is generated based on the "max" value,
     // and if a player isn't available for that slot, player is set to null.
@@ -29,6 +47,7 @@
     }
   </script>
   
+
   <div class="field">
     {#if zonesVisible}
     <div class="zone-lines">
@@ -39,9 +58,17 @@
       <div class="horizontal-line" style="top: 62.5%;"></div>
       <div class="horizontal-line" style="top: 80%;"></div>
   
-      <!-- internal vertical boundaries (3 cols ⇒ 2 lines) -->
       <div class="vertical-line" style="left: 35%;"></div>
       <div class="vertical-line" style="left: 65%;"></div>
+    </div>
+
+    <div class="hover-zones">
+        <div class="hover-zone" style="top:   0%;   height: 17.5%;"></div>
+        <div class="hover-zone" style="top:  17.5%; height: 15%;  "></div>
+        <div class="hover-zone" style="top:  32.5%; height: 15%;  "></div>
+        <div class="hover-zone" style="top:  47.5%; height: 15%;  "></div>
+        <div class="hover-zone" style="top:  62.5%; height: 17.5%;"></div>
+        <div class="hover-zone" style="top:  80%;   height: 20%;  "></div>
     </div>
   {/if}
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
@@ -225,7 +252,6 @@
       z-index: 0;
     }
 
-    /* each horizontal divider */
     .horizontal-line {
       position: absolute;
       left: 0;
@@ -240,6 +266,26 @@
       height: 100%;
       width: 2px;
       background: rgba(255, 255, 255, 0.25);
+    }
+
+    .hover-zones {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 1;
+        pointer-events: none;
+    }
+    
+    .hover-zone {
+        position: absolute;
+        left: 0; width: 100%;
+        background-color: transparent;
+        pointer-events: auto;
+        transition: background-color 0.25s ease;
+    }
+ 
+    .hover-zone:hover {
+        background-color: rgba(255, 255, 255, 0.1);
     }
   </style>
   
