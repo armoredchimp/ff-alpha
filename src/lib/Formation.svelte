@@ -63,10 +63,8 @@
     </div>
 
     <div class="hover-zones">
-        <div class="hover-zone" style="top:   0%;   height: 17.5%;"></div>
-        <div class="hover-zone" style="top:  17.5%; height: 15%;  "></div>
-        <div class="hover-zone" style="top:  32.5%; height: 15%;  "></div>
-        <div class="hover-zone" style="top:  47.5%; height: 15%;  "></div>
+        <div class="hover-zone" style="top:   0%;   height: 32.5%;"></div>
+        <div class="hover-zone" style="top:  32.5%; height: 30%;  "></div>
         <div class="hover-zone" style="top:  62.5%; height: 17.5%;"></div>
         <div class="hover-zone" style="top:  80%;   height: 20%;  "></div>
     </div>
