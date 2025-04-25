@@ -1,29 +1,19 @@
 <script>
+    import FormationPlayer from "./FormationPlayer.svelte";
+    import FormationTab from "./FormationTab.svelte";
+
     let {
       team = {},
       zonesVisible = true
       } = $props();
 
-    import FormationPlayer from "./FormationPlayer.svelte";
 
-    const zoneIntervals = [
-        { top: '0%',    height: '17.5%' },
-        { top: '17.5%', height: '15%'   },
-        { top: '32.5%', height: '15%'   },
-        { top: '47.5%', height: '15%'   },
-        { top: '62.5%', height: '17.5%' },
-        { top: '80%',   height: '20%'   }
-    ];
-  
-    let hoveredZone = $state(null)
+    let activeTab = $state(null)
 
-    function handleZoneEnter(index){
-        hoveredZone = index;
+    function setActiveTab(tab){
+        activeTab = tab;
     }
 
-    function handleZoneExit(){
-        hoveredZone = null;
-    }
     // Helper: Returns an array of formation slots for the given zone.
     // Each slot is generated based on the "max" value,
     // and if a player isn't available for that slot, player is set to null.
@@ -47,7 +37,6 @@
     }
   </script>
   
-
   <div class="field">
     {#if zonesVisible}
     <div class="zone-lines">
@@ -63,12 +52,63 @@
     </div>
 
     <div class="hover-zones">
-        <div class="hover-zone" style="top:   0%;   height: 32.5%;"></div>
-        <div class="hover-zone" style="top:  32.5%; height: 30%;  "></div>
-        <div class="hover-zone" style="top:  62.5%; height: 17.5%;"></div>
-        <div class="hover-zone" style="top:  80%;   height: 20%;  "></div>
-    </div>
-  {/if}
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('attackers')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 0%; height: 32.5%;"
+        >
+          {#if activeTab === 'attackers'}
+            <div class="tab-container">
+              <FormationTab group="attackers" />
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('midfielders')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 32.5%; height: 30%;"
+        >
+          {#if activeTab === 'midfielders'}
+            <div class="tab-container">
+              <FormationTab group="midfielders" />
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('defenders')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 62.5%; height: 17.5%;"
+        >
+          {#if activeTab === 'defenders'}
+            <div class="tab-container">
+              <FormationTab group="defenders" />
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('keepers')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 80%; height: 20%;"
+        >
+          {#if activeTab === 'keepers'}
+            <div class="tab-container">
+              <FormationTab group="keepers" />
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
     {#if getSlotsByZone(15).length}
       <div class="zone zone-15">
@@ -193,7 +233,9 @@
       </div>
     {/if}
   </div>
-  
+
+
+
   <style>
     .field {
       position: relative;
@@ -276,14 +318,24 @@
     
     .hover-zone {
         position: absolute;
-        left: 0; width: 100%;
+        left: 0;
+        width: 100%;
         background-color: transparent;
         pointer-events: auto;
         transition: background-color 0.25s ease;
+        overflow: visible; /* allow tab-container to overflow */
     }
  
     .hover-zone:hover {
         background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-container {
+        position: absolute;
+        left: 100%;     
+        top: 50%;       
+        transform: translateY(-50%);
+        pointer-events: auto;
     }
   </style>
   
