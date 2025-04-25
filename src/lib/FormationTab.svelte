@@ -1,14 +1,23 @@
 <script>
-    // Component properties
     let { 
       group = '',
-      scores = {},
+      scores = {
+        attacking : 0,
+        possession : 0,
+        passing : 0,
+        defense : 0,
+        keeping : 0
+      },
     } = $props();
   </script>
   
   <!-- Tab container: positioned outside the left border of the formation field -->
   <div class="formation-tab">
     <span class="group-name">{group}</span>
+    <p>{scores.attacking}</p>
+    <p>{scores.possession}</p>
+    <p>{scores.passing}</p>
+    <p>{scores.defense}</p>
   </div>
   
   <style>
@@ -16,15 +25,15 @@
     .formation-tab {
       background-color: #f4f4f4;
       padding: 0.5rem 1rem;
-      /* Rounded on top-right and bottom-right corners */
+     
       border-top-right-radius: 8px;
       border-bottom-right-radius: 8px;
-      /* Straight edge on the left */
+
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
-      /* Light drop-shadow for elevation */
+    
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      /* Ensure tab appears above other elements */
+      
       z-index: 10;
     }
   

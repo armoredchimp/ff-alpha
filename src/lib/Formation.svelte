@@ -9,6 +9,30 @@
 
 
     let activeTab = $state(null)
+    let scores = ({
+        attackers : {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        midfielders : {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        defenders : {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        keeper : {
+            passing: 0,
+            keeping: 0
+        },
+    })
 
     function setActiveTab(tab){
         activeTab = tab;
@@ -25,6 +49,7 @@
           if (positionData.zone === zone) {
             for (let i = 0; i < positionData.max; i++) {
               const player = i < positionData.players.length ? positionData.players[i] : null;
+              
               slots.push({
                 player,
                 currentPosition: positionName
@@ -36,7 +61,8 @@
       return slots;
     }
   </script>
-  
+
+
   <div class="field">
     {#if zonesVisible}
     <div class="zone-lines">
@@ -61,7 +87,7 @@
         >
           {#if activeTab === 'attackers'}
             <div class="tab-container">
-              <FormationTab group="attackers" />
+              <FormationTab group="attackers" scores={scores[activeTab]}/>
             </div>
           {/if}
         </div>
@@ -75,7 +101,7 @@
         >
           {#if activeTab === 'midfielders'}
             <div class="tab-container">
-              <FormationTab group="midfielders" />
+              <FormationTab group="midfielders" scores={scores[activeTab]}/>
             </div>
           {/if}
         </div>
@@ -89,7 +115,7 @@
         >
           {#if activeTab === 'defenders'}
             <div class="tab-container">
-              <FormationTab group="defenders" />
+              <FormationTab group="defenders" scores={scores[activeTab]}/>
             </div>
           {/if}
         </div>
@@ -103,7 +129,7 @@
         >
           {#if activeTab === 'keepers'}
             <div class="tab-container">
-              <FormationTab group="keepers" />
+              <FormationTab group="keeper" scores={scores[activeTab]}/>
             </div>
           {/if}
         </div>

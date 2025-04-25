@@ -46,7 +46,7 @@
             </select>
         </div>
 
-    <button onclick={populateLineup(playerTeam)}>Auto-Pick Team</button>
+    <button onclick={()=> populateLineup(playerTeam)}>Auto-Pick Team</button>
 
         
             <div class="content-wrapper">
