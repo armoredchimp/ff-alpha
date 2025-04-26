@@ -23,7 +23,7 @@
       <TeamHeader team={data.team} computer={true} />
   </div>
   <div>
-      <TeamScores scores={data.team.scores} playerCount={data.team.playerCount} keeperCount={data.team.keepers.length}/>
+      <TeamScores scores={data.team.scores.total} playerCount={data.team.playerCount} keeperCount={data.team.keepers.length}/>
   </div>
 
   <div class="middle-section">

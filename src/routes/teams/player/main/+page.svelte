@@ -28,7 +28,7 @@
     </div>
     <div>
         <TeamScores
-            scores={playerTeam.scores}
+            scores={playerTeam.scores.total}
             playerCount={playerTeam.playerCount}
             keeperCount={playerTeam.keepers.length}
         />

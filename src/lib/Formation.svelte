@@ -9,30 +9,6 @@
 
 
     let activeTab = $state(null)
-    let scores = ({
-        attackers : {
-            attacking: 0,
-            possession: 0,
-            passing: 0,
-            defense: 0
-        },
-        midfielders : {
-            attacking: 0,
-            possession: 0,
-            passing: 0,
-            defense: 0
-        },
-        defenders : {
-            attacking: 0,
-            possession: 0,
-            passing: 0,
-            defense: 0
-        },
-        keeper : {
-            passing: 0,
-            keeping: 0
-        },
-    })
 
     function setActiveTab(tab){
         activeTab = tab;
@@ -87,7 +63,7 @@
         >
           {#if activeTab === 'attackers'}
             <div class="tab-container">
-              <FormationTab group="attackers" scores={scores[activeTab]}/>
+              <FormationTab group="attackers" scores={team.scores.attackers}/>
             </div>
           {/if}
         </div>
@@ -101,7 +77,7 @@
         >
           {#if activeTab === 'midfielders'}
             <div class="tab-container">
-              <FormationTab group="midfielders" scores={scores[activeTab]}/>
+              <FormationTab group="midfielders" scores={team.scores.midfielders}/>
             </div>
           {/if}
         </div>
@@ -115,7 +91,7 @@
         >
           {#if activeTab === 'defenders'}
             <div class="tab-container">
-              <FormationTab group="defenders" scores={scores[activeTab]}/>
+              <FormationTab group="defenders" scores={team.scores.defenders}/>
             </div>
           {/if}
         </div>
@@ -129,7 +105,7 @@
         >
           {#if activeTab === 'keepers'}
             <div class="tab-container">
-              <FormationTab group="keeper" scores={scores[activeTab]}/>
+              <FormationTab group="keeper" scores={team.scores.keeper}/>
             </div>
           {/if}
         </div>

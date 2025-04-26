@@ -230,29 +230,19 @@ export function createFormationStructure(formationName) {
 export function populateLineup(team) {
     const selected = team.selected;
     const usedIds = new Set();
-  
+
     // Retrieve all players across all position groups
     const allPlayers = Object.keys(selected).flatMap(group => team[group] || []);
-  
+
     // Helper: find an unused player matching a given detailed position
     const getAvailablePlayer = (players, detailedPosition) =>
-      players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id));
-  
+        players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id));
+
     // Fallback mapping for secondary position assignments
     const fallbackOrder = {
-      "Centre Forward":       ["Left Wing", "Right Wing"],
-      "Left Wing":            ["Right Wing", "Centre Forward"],
-      "Right Wing":           ["Left Wing", "Centre Forward"],
-      "Left-Mid":             ["Left Wing", "Central Midfield", "Centre Forward"],
-      "Right-Mid":            ["Right Wing", "Central Midfield", "Centre Forward"],
-      "Central Midfield":     ["Attacking Midfield", "Defensive Midfield"],
-      "Attacking Midfield":   ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
-      "Defensive Midfield":   ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
-      "Centre Back":          ["Left Back", "Right Back"],
-      "Left Back":            ["Right Back", "Centre Back"],
-      "Right Back":           ["Left Back", "Centre Back"]
+      /* … your existing mapping … */
     };
-  
+
     // Helper: attempt a fallback assignment for a specified position
     const getFallbackPlayer = pos => {
       for (const alt of (fallbackOrder[pos] || [])) {
@@ -261,34 +251,66 @@ export function populateLineup(team) {
       }
       return null;
     };
-  
+
+    // --- NEW: zero out all team scores before accumulating ---
+    team.scores.total = { keeping: 0, defensive: 0, possession: 0, passing: 0, attacking: 0 };
+    team.scores.attackers    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.midfielders  = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.defenders    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.keeper       = { passing: 0, keeping: 0 };
+    // ------------------------------------------------------
+
     // Assign starters into their configured slots
     Object.entries(selected).forEach(([group, positions]) => {
       const pool = team[group] || [];
+
       Object.entries(positions).forEach(([pos, cfg]) => {
         const picked = [];
+
         for (let i = 0; i < cfg.max; i++) {
-          const exact = getAvailablePlayer(pool, pos);
+          const exact     = getAvailablePlayer(pool, pos);
           const substitute = exact || getFallbackPlayer(pos);
+
           if (substitute) {
             picked.push(substitute);
             usedIds.add(substitute.id);
+
+            const scoreKey = group === 'keepers' ? 'keeper' : group;
+
+            if (scoreKey !== 'keeper') {
+              team.scores[scoreKey].attacking  += substitute.attacking_score;
+              team.scores[scoreKey].defense     += substitute.defensive_score;
+              team.scores[scoreKey].possession  += substitute.possession_score;
+              team.scores[scoreKey].passing     += substitute.passing_score;
+            } else {
+              team.scores.keeper.passing += substitute.passing_score;
+              team.scores.keeper.keeping += substitute.keeping_score || 0;
+            }
+
+            // this is currently in drafting section, but may be implemented here later
+            // team.scores.total.attacking  += substitute.attacking_score;
+            // team.scores.total.defensive  += substitute.defensive_score;
+            // team.scores.total.possession += substitute.possession_score;
+            // team.scores.total.passing    += substitute.passing_score;
+            // team.scores.total.keeping    += substitute.keeping_score || 0;
+            // ----------------------------------------
           }
         }
+
         cfg.players = picked;
       });
     });
-  
-    // Update the unused‑players pool
+
+    // Update the unused-players pool
     team.unused = allPlayers.filter(p => !usedIds.has(p.id));
-  
-    // Build list of “substitute‑slots” equal to number of starters per position
+
+    // Build list of “substitute-slots” equal to number of starters per position
     const substituteSlots = Object.values(selected)
       .flatMap(positions =>
         Object.values(positions)
           .flatMap(cfg => Array(cfg.players.length).fill(cfg))
       );
-  
+
     // Populate up to seven substitutes in team.subs
     team.subs.length = 0;  // clear existing entries
     for (const slotCfg of substituteSlots) {
@@ -300,8 +322,7 @@ export function populateLineup(team) {
         usedIds.add(candidate.id);
       }
     }
-  
-    // Final refresh of the unused‑players pool
+
+    // Final refresh of the unused-players pool
     team.unused = allPlayers.filter(p => !usedIds.has(p.id));
-  }
-  
+}

@@ -4,7 +4,7 @@
             attacking: 0,
             passing: 0,
             possession: 0,
-            defensive: 0,
+            defense: 0,
             keeping: 0
         },
         playerCount = 1,
@@ -16,7 +16,7 @@
     let atk = $derived(scores.attacking / playerCount);
     let pas = $derived(scores.passing / playerCount);
     let pos = $derived(scores.possession / playerCount);
-    let def = $derived(scores.defensive / playerCount);
+    let def = $derived(scores.defense / playerCount);
     let kep = $derived(scores.keeping ? scores.keeping / keeperCount : 0);
 
     let percent = score => `${Math.min(100, (score / maxScore) * 100)}%`;

@@ -23,11 +23,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team2: {
@@ -54,11 +78,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team3: {
@@ -85,11 +133,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team4: {
@@ -116,11 +188,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team5: {
@@ -147,11 +243,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team6: {
@@ -178,11 +298,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team7: {
@@ -209,11 +353,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team8: {
@@ -240,11 +408,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team9: {
@@ -271,11 +463,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team10: {
@@ -302,11 +518,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team11: {
@@ -333,11 +573,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team12: {
@@ -364,11 +628,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     },
     team13: {
@@ -395,11 +683,35 @@ export let teams = $state({
         formationDisplayed: false,
         manager: [],
         scores: {
-            keeping: 0,
-            defensive: 0,
-            possession: 0,
-            passing: 0,
-            attacking: 0
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
         }
     }
 });
@@ -427,10 +739,34 @@ export let playerTeam = $state({
     player: true,
     rivals: [],
     scores: {
-        keeping: 0,
-        defensive: 0,
-        possession: 0,
-        passing: 0,
-        attacking: 0
+        total: {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0,
+            keeping: 0
+        },
+        attackers: {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        midfielders: {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        defenders: {
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defense: 0
+        },
+        keeper: {
+            passing: 0,
+            keeping: 0
+        }
     }
 });

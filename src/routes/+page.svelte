@@ -389,19 +389,19 @@
 
       // Update team scores based on player attributes (divided by 10)
       if (player.keeper_score) {
-          pickingTeam.scores.keeping += player.keeper_score;
+          pickingTeam.scores.total.keeping += player.keeper_score;
       }
       if (player.defensive_score) {
-          pickingTeam.scores.defensive += player.defensive_score;
+          pickingTeam.scores.total.defense += player.defensive_score;
       }
       if (player.possession_score) {
-          pickingTeam.scores.possession += player.possession_score;
+          pickingTeam.scores.total.possession += player.possession_score;
       }
       if (player.passing_score) {
-          pickingTeam.scores.passing += player.passing_score;
+          pickingTeam.scores.total.passing += player.passing_score;
       }
       if (player.attacking_score) {
-          pickingTeam.scores.attacking += player.attacking_score ;
+          pickingTeam.scores.total.attacking += player.attacking_score ;
       }
 
       switch(position) {
