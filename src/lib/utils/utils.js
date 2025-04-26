@@ -227,6 +227,13 @@ export function createFormationStructure(formationName) {
     return structure;
 }
 
+export function resetScores(team) {
+    team.scores.attackers    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.midfielders  = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.defenders    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.keeper       = { passing: 0, keeping: 0 };
+}
+
 export function populateLineup(team) {
     const selected = team.selected;
     const usedIds = new Set();
@@ -240,8 +247,18 @@ export function populateLineup(team) {
 
     // Fallback mapping for secondary position assignments
     const fallbackOrder = {
-      /* … your existing mapping … */
-    };
+        "Centre Forward":       ["Left Wing", "Right Wing"],
+        "Left Wing":            ["Right Wing", "Centre Forward"],
+        "Right Wing":           ["Left Wing", "Centre Forward"],
+        "Left-Mid":             ["Left Wing", "Central Midfield", "Centre Forward"],
+        "Right-Mid":            ["Right Wing", "Central Midfield", "Centre Forward"],
+        "Central Midfield":     ["Attacking Midfield", "Defensive Midfield"],
+        "Attacking Midfield":   ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
+        "Defensive Midfield":   ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
+        "Centre Back":          ["Left Back", "Right Back"],
+        "Left Back":            ["Right Back", "Centre Back"],
+        "Right Back":           ["Left Back", "Centre Back"]
+      };
 
     // Helper: attempt a fallback assignment for a specified position
     const getFallbackPlayer = pos => {
@@ -252,13 +269,7 @@ export function populateLineup(team) {
       return null;
     };
 
-    // --- NEW: zero out all team scores before accumulating ---
-    team.scores.total = { keeping: 0, defensive: 0, possession: 0, passing: 0, attacking: 0 };
-    team.scores.attackers    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.midfielders  = { attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.defenders    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.keeper       = { passing: 0, keeping: 0 };
-    // ------------------------------------------------------
+    resetScores(team)
 
     // Assign starters into their configured slots
     Object.entries(selected).forEach(([group, positions]) => {

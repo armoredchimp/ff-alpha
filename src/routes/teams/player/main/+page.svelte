@@ -5,8 +5,8 @@
     import SelectedList from "$lib/SelectedList.svelte";
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
-	import { onMount } from "svelte";
-    import { createFormationStructure, populateLineup } from "$lib/utils/utils";
+	  import { onMount } from "svelte";
+    import { createFormationStructure, resetScores, populateLineup } from "$lib/utils/utils";
 
 
     onMount(()=>{
@@ -17,6 +17,7 @@
 
     function formationChange(e){
         playerTeam.formation = e.target.value;
+        resetScores(playerTeam)
         playerTeam.selected = createFormationStructure(playerTeam.formation)
     }
 
