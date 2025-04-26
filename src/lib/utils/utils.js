@@ -295,7 +295,7 @@ export function populateLineup(team) {
               team.scores[scoreKey].passing     += substitute.passing_score;
             } else {
               team.scores.keeper.passing += substitute.passing_score;
-              team.scores.keeper.keeping += substitute.keeping_score || 0;
+              team.scores.keeper.keeping += substitute.keeper_score || 0;
             }
 
             // this is currently in drafting section, but may be implemented here later

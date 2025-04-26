@@ -1,4 +1,6 @@
 <script>
+	import { onMount } from "svelte";
+
   // Props for the tab: group label and score breakdown
   let {
     group = '',
@@ -6,57 +8,97 @@
       defense: 0,
       possession: 0,
       passing: 0,
-      attacking: 0
-    }
+      attacking: 0,
+      keeping: 0
+    },
+    playerCount = 0,
   } = $props();
+
+  // Exponent for power-law scaling (0 < alpha < 1)
+  const alpha = 0.8;
+
+  const widthPct = score =>
+    playerCount > 0
+      ? `${(score / 5000 / Math.pow(playerCount, alpha)) * 100}%`
+      : '0%';
+
+  onMount(() => {
+    console.log(group, playerCount)
+  })
 </script>
+{#if group !== 'keepers'}
+  <div class="formation-tab">
+    <div class="tab-header">{group}</div>
 
-<div class="formation-tab">
-  <div class="tab-header">{group}</div>
-
-  <!-- Metrics bar graph, styled inline per existing pattern -->
-  <div class="tab-metrics">
-    <div class="metric">
-      <span class="metric-label">Def. Score</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-def"
-          style="width: {((scores.defense / 5000) / 2) * 100}%"
-        ></div>
+    <div class="tab-metrics">
+      <div class="metric">
+        <span class="metric-label">Def. Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-def"
+            style="width: {widthPct(scores.defense)}"
+          ></div>
+        </div>
       </div>
-    </div>
 
-    <div class="metric">
-      <span class="metric-label">Poss. Score</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-poss"
-          style="width: {((scores.possession / 5000) / 2) * 100}%"
-        ></div>
+      <div class="metric">
+        <span class="metric-label">Poss. Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {widthPct(scores.possession)}"
+          ></div>
+        </div>
       </div>
-    </div>
 
-    <div class="metric">
-      <span class="metric-label">Pass. Score</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-pass"
-          style="width: {((scores.passing / 5000) / 2 ) * 100}%"
-        ></div>
+      <div class="metric">
+        <span class="metric-label">Pass. Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-pass"
+            style="width: {widthPct(scores.passing)}"
+          ></div>
+        </div>
       </div>
-    </div>
 
-    <div class="metric">
-      <span class="metric-label">Att. Score</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-attk"
-          style="width: {(( scores.attacking / 5000) / 2 ) * 100}%"
-        ></div>
+      <div class="metric">
+        <span class="metric-label">Att. Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-attk"
+            style="width: {widthPct(scores.attacking)}"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
+{:else}
+  <div class="formation-tab">
+    <div class="tab-header">{group}</div>
+
+    <div class="tab-metrics">
+      <div class="metric">
+        <span class="metric-label">Keeper Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-def"
+            style="width: {widthPct(scores.keeping)}"
+          ></div>
+        </div>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Pass. Score</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {widthPct(scores.passing)}"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .formation-tab {

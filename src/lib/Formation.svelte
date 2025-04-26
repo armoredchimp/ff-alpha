@@ -14,6 +14,11 @@
         activeTab = tab;
     }
 
+    // Helper: Gets current number of players in current formation positional group
+    const playerCount = groupName =>
+      Object.values(team.selected[groupName] || {})
+        .reduce((sum, posData) => sum + posData.players.length, 0);
+
     // Helper: Returns an array of formation slots for the given zone.
     // Each slot is generated based on the "max" value,
     // and if a player isn't available for that slot, player is set to null.
@@ -63,7 +68,7 @@
         >
           {#if activeTab === 'attackers'}
             <div class="tab-container">
-              <FormationTab group="attackers" scores={team.scores.attackers}/>
+              <FormationTab group="attackers" scores={team.scores.attackers} playerCount={playerCount('attackers')}/>
             </div>
           {/if}
         </div>
@@ -77,7 +82,7 @@
         >
           {#if activeTab === 'midfielders'}
             <div class="tab-container">
-              <FormationTab group="midfielders" scores={team.scores.midfielders}/>
+              <FormationTab group="midfielders" scores={team.scores.midfielders} playerCount={playerCount('midfielders')}/>
             </div>
           {/if}
         </div>
@@ -91,7 +96,7 @@
         >
           {#if activeTab === 'defenders'}
             <div class="tab-container">
-              <FormationTab group="defenders" scores={team.scores.defenders}/>
+              <FormationTab group="defenders" scores={team.scores.defenders} playerCount={playerCount('defenders')}/>
             </div>
           {/if}
         </div>
@@ -105,7 +110,7 @@
         >
           {#if activeTab === 'keepers'}
             <div class="tab-container">
-              <FormationTab group="keeper" scores={team.scores.keeper}/>
+              <FormationTab group="keepers" scores={team.scores.keeper} playerCount={playerCount('keepers')}/>
             </div>
           {/if}
         </div>
