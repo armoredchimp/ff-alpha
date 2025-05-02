@@ -21,7 +21,7 @@
 
    
     let weightsFetched = $state(false)
-
+    let devBarVisible = $state(true)
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -1033,17 +1033,31 @@ async function getNations() {
     return {};
   }
 }
+
+function toggleDevBar() {
+    devBarVisible = !devBarVisible;
+  }
 </script>
 
-<button onclick={getPremPlayersAndUpload}>Let's Go</button>
-<button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
-<button onclick={getPlayersThenScore('prem_mini_2425')}>Upload Scores to Mini</button>
-<button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
-<button onclick={fetchAllWeights}>Weights</button>
-<button onclick={testWeightMap}>Test Weight to Defense</button>
-<button onclick={statRankings}>Stat Rankings</button>
-<button onclick={getCoachesToDB}>Managers to DB</button>
-<button onclick={getNations}>Nations</button>
+<div class="dev-bar-toggle">
+    <button class="dev-button" onclick={toggleDevBar}>Toggle Dev Bar</button>
+  </div>
+  
+
+
+{#if devBarVisible}
+    <div class="dev-bar">
+        <button onclick={getPremPlayersAndUpload}>Let's Go</button>
+        <button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
+        <button onclick={getPlayersThenScore('prem_mini_2425')}>Upload Scores to Mini</button>
+        <button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
+        <button onclick={fetchAllWeights}>Weights</button>
+        <button onclick={testWeightMap}>Test Weight to Defense</button>
+        <button onclick={statRankings}>Stat Rankings</button>
+        <button onclick={getCoachesToDB}>Managers to DB</button>
+        <button onclick={getNations}>Nations</button>
+    </div>  
+{/if}
 
 <button><a href="/">Home</a></button>
 {#if draft.gate1}
@@ -1057,9 +1071,37 @@ async function getNations() {
   </button>
 {/if}
 <style>
-    button {
-        margin-right: 2rem;
-    }
+ button {
+    display: inline-block;
+    margin-right: 2rem;
+    padding: 0.75rem 1.5rem;       
+    font-family: inherit;          
+    font-size: 1rem;             
+    line-height: 1.2;
+    color: #ffffff;             
+    background-color: #007BFF;    
+    border: none;                 
+    border-radius: 0.375rem;     
+    cursor: pointer;               
+    text-align: center;
+    text-decoration: none;
+    transition:
+      background-color 0.2s ease-in-out,
+      transform 0.1s ease-in-out
+  }
+  
+  button:hover {
+    background-color: #0056B3;    
+  }
+  
+  button:active {
+    transform: scale(0.98);       
+  }
+
+  .dev-button {
+    background-color: #aed384;
+    margin-bottom: 1rem;
+  }
 </style>
 
 
