@@ -59,8 +59,8 @@ export const formationConfig = {
           ['Right-Mid', 1, 11]
         ],
         ['attackers',
-          ['Attacking Midfield', 2, 13],  
-          ['Centre Forward', 1, 16]
+          ['Centre Forward', 1, 16],
+          ['Attacking Midfield', 2, 13]  
         ]
     ],
     '3-5-2': [
