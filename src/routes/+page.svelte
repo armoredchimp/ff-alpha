@@ -1,4 +1,6 @@
 <script>
+  import { signUp, confirmSignUp, signIn, getCurrentUser } from 'aws-amplify/auth';
+  import 
 
 </script>
 
