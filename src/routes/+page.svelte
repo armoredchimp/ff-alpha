@@ -5,7 +5,7 @@
 <div class="login-page-container">
   <div class="content-wrapper">
     <header>
-      <h1>Sparrow Sports</h1>
+      <h1>Sparrow Football</h1>
     </header>
 
     <main class="login-section">
