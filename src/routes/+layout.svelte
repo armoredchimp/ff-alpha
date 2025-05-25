@@ -3,6 +3,7 @@
     import { Amplify } from 'aws-amplify';
     import amplifyConfig from "$lib/api/aws/amplifyConfig";
 	import { onMount } from "svelte";
+    import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { supabase } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils/utils";
@@ -12,11 +13,14 @@
 	import { draft } from "$lib/stores/draft.svelte";
 	import Page from "./+page.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
+	import { userStore, setUser } from "$lib/stores/userStore.svelte";
 	
-    Amplify.configure(amplifyConfig)
+    
 
 	onMount(()=>{
-		fetchAllWeights()
+        Amplify.configure(amplifyConfig)
+        checkUser()
+        fetchAllWeights()
         getAverages()
 	})
 
@@ -29,6 +33,29 @@
 
     function capScore(score) {
         return Math.min(score, 5000);
+    }
+
+    async function checkUser(){
+        try{
+            const currentUser = await getCurrentUser()
+            if(currentUser !== null || currentUser !== undefined){
+                setUser(currentUser)
+                console.log('user set at startup!')
+                console.log(JSON.stringify(userStore))
+            }
+
+        }catch(error){
+            console.log('No logged in user')
+        }
+    }
+
+    async function signUserOut(){
+        try{
+            await signOut()
+            console.log('Logged out')
+        }catch(error){
+            console.error(error)
+        }
     }
 
     async function getAverages(){
@@ -1062,7 +1089,10 @@ function toggleDevBar() {
         <button onclick={getNations}>Nations</button>
     </div>  
 {/if}
-
+{#if userStore.user}
+    <h2>Signed in as {userStore.user ? userStore.user.signInDetails.loginId : null}</h2>
+    <button onclick={signUserOut}>Logout</button>
+{/if}
 <button><a href="/">Home</a></button>
 {#if draft.gate1}
   <button>

@@ -1,6 +1,6 @@
 <script>
   import { signUp, confirmSignUp, signIn, getCurrentUser } from 'aws-amplify/auth';
-  import { userStore } from '$lib/stores/userStore.svelte';
+  import { setRegStatus, userStore, setUser } from '$lib/stores/userStore.svelte';
   
 
   let registering = $state(false);
@@ -37,10 +37,11 @@
             });
             if (isSignedIn) {
                 const currentUser = await getCurrentUser();
-                userStore.setUser(currentUser);
+                setUser(currentUser);
                 displayConfirmCodes = false;
                 emailValue = ''
                 passwordValue = ''
+                console.log(`Successfully logged in!`, currentUser)
             } else {
                 console.log('Failed to Login');
             }
@@ -123,9 +124,10 @@
 
       if (isSignUpComplete) {
         console.log('Sign up confirmed successfully!');
-        userStore.regStatus({
+        registering = false
+        setRegStatus({
           completed: true,
-          email: emailValue
+          username: emailValue
         });
         displayConfirmCodes = false;
         confirmationCodeDigits = ['', '', '', '', '', ''];
