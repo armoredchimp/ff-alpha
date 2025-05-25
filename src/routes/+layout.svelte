@@ -1,5 +1,7 @@
 <script>
 	import axios from "axios";
+    import { Amplify } from 'aws-amplify';
+    import amplifyConfig from "$lib/api/aws/amplifyConfig";
 	import { onMount } from "svelte";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { supabase } from "$lib/supabase/supaClient";
@@ -11,6 +13,8 @@
 	import Page from "./+page.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
 	
+    Amplify.configure(amplifyConfig)
+
 	onMount(()=>{
 		fetchAllWeights()
         getAverages()

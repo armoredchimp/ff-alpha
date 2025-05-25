@@ -1,6 +1,27 @@
 <script>
   import { signUp, confirmSignUp, signIn, getCurrentUser } from 'aws-amplify/auth';
-  import 
+  import { userStore } from '$lib/stores/userStore.svelte';
+  
+  let emailValue = '';
+  let passwordValue = '';
+
+
+  async function registerUser(values){
+    const { isSignUpComplete, userId, nextStep } = await signUp({
+      username: values.email,
+      password: values.password
+    })
+    if(isSignUpComplete){
+      userStore.regStatus({
+        completed: true,
+        email: email
+      })
+    }
+  }
+
+  function triggerRegistration() {
+    registerUser({ email: emailValue, password: passwordValue });
+  }
 
 </script>
 
@@ -13,13 +34,13 @@
     <main class="login-section">
       <div class="input-group">
         <label for="email">Email Address</label>
-        <input type="email" id="email" />
+        <input type="email" id="email" bind:value={emailValue}/>
       </div>
       <div class="input-group">
         <label for="password">Password</label>
-        <input type="password" id="password" />
+        <input type="password" id="password" bind:value={passwordValue} />
       </div>
-      <button type="submit" class="confirm-button">Confirm</button>
+      <button type="submit" class="confirm-button" onclick={triggerRegistration}>Confirm</button>
       <button class="forgot-password-button">Forgot Password?</button>
     </main>
   </div>

@@ -16,6 +16,7 @@ const initialState: UserState = {
 };
 
 export let userStore = $state<UserState>(initialState);
+let user = $derived(userStore.user);
 
 export function setUser(user: AuthUser | null): void {
 	userStore.user = user;
@@ -30,8 +31,15 @@ export function resetUserStore(): void {
 	userStore.regStatus = initialState.regStatus;
 }
 
-export const user = $derived(userStore.user);
-export const registrationStatus = $derived(userStore.regStatus);
+export function getUser(){
+	return user;
+}
+
+let registrationStatus = $derived(userStore.regStatus);
+
+export function getRegStatus(){
+	return registrationStatus;
+}
 
 export function isAuthUser(value: any): value is AuthUser {
 	return value !== null && typeof value === 'object' && 'username' in value;
