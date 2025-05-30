@@ -60,7 +60,7 @@
     {#if isExpanded && averageTracked === true}
         <div class="expanded-section">
             <span>{position === 'Goalkeeper' ? `Keeper Average:` : `League Average:`}</span>
-            <span class="expanded-value">{avgValue.toFixed(2)}</span>
+            <span class="expanded-value">{avgValue !== null ? avgValue.toFixed(2) : 'N/A'}</span>
             <span></span>
         </div>
         <div class="expanded-section">

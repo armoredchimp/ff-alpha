@@ -46,6 +46,7 @@
 
         }catch(error){
             console.log('No logged in user')
+            console.error(error)
         }
     }
 
@@ -1094,6 +1095,7 @@ function toggleDevBar() {
     <button onclick={signUserOut}>Logout</button>
 {/if}
 <button><a href="/">Home</a></button>
+<button><a href="/draft">To Draft</a></button>
 {#if draft.gate1}
   <button>
     <a
