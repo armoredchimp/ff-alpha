@@ -1,6 +1,7 @@
 <script>
   import { signUp, confirmSignUp, signIn, getCurrentUser } from 'aws-amplify/auth';
   import { setRegStatus, userStore, setUser } from '$lib/stores/userStore.svelte';
+	import { goto } from '$app/navigation';
   
 
   let registering = $state(false);
@@ -30,25 +31,53 @@
 
   async function signUserIn(values){
     try {
-            const { isSignedIn, nextStep } = await signIn({
-                username: values.email,
-                password: values.password,
+        const { isSignedIn, nextStep } = await signIn({
+            username: values.email,
+            password: values.password,
+        });
+        
+        if (isSignedIn) {
+            const currentUser = await getCurrentUser();
+            console.log('Current user:', currentUser); // Debug log
+            setUser(currentUser);
             
+            // Create server session
+            console.log('Attempting to create session...'); // Debug log
+            
+            const sessionResponse = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ 
+                    userId: currentUser.userId, 
+                    username: currentUser.username 
+                })
             });
-            if (isSignedIn) {
-                const currentUser = await getCurrentUser();
-                setUser(currentUser);
+            
+            console.log('Session response status:', sessionResponse.status); // Debug log
+            
+            if (sessionResponse.ok) {
+                const result = await sessionResponse.json();
+                console.log('Session result:', result); // Debug log
+                
                 displayConfirmCodes = false;
-                emailValue = ''
-                passwordValue = ''
-                console.log(`Successfully logged in!`, currentUser)
+                emailValue = '';
+                passwordValue = '';
+                console.log(`Successfully logged in!`, currentUser);
+                
+                goto('/draft');
             } else {
-                console.log('Failed to Login');
+                const errorText = await sessionResponse.text();
+                console.error('Failed to create session:', errorText);
             }
-        } catch(err) {
-            console.error('Login error', err);
+        } else {
+            console.log('Failed to Login');
         }
-  }
+    } catch(err) {
+        console.error('Login error', err);
+    }
+}
 
   async function triggerRegistration() {
     await registerUser({ email: emailValue, password: passwordValue });
@@ -132,6 +161,8 @@
         displayConfirmCodes = false;
         confirmationCodeDigits = ['', '', '', '', '', ''];
         passwordValue = ''; 
+
+        await signUserIn({ email: emailValue, password: passwordValue})
       } else {
         console.log('Confirmation not complete. Next step:', nextStep);
       }

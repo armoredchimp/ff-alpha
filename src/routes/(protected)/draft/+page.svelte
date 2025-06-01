@@ -1,6 +1,6 @@
 <script>
     import axios from 'axios';
-    import '../../app.css';
+    import '../../../app.css';
     import { allPlayers } from '$lib/stores/generic.svelte';
     import {
       generateClubName,

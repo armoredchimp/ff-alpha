@@ -13,7 +13,8 @@
 	import { draft } from "$lib/stores/draft.svelte";
 	import Page from "./+page.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
-	import { userStore, setUser } from "$lib/stores/userStore.svelte";
+	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
+	import { goto } from "$app/navigation";
 	
     
 
@@ -26,7 +27,6 @@
 
 
 	let { children } = $props();
-
    
     let weightsFetched = $state(false)
     let devBarVisible = $state(true)
@@ -53,7 +53,13 @@
     async function signUserOut(){
         try{
             await signOut()
+            resetUserStore();
+
+            await fetch('/api/auth/session', {
+                method: 'DELETE'
+            });
             console.log('Logged out')
+            goto('/')
         }catch(error){
             console.error(error)
         }
