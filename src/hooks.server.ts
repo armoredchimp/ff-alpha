@@ -14,9 +14,9 @@ export const handle: Handle = async ({ event, resolve }) => {
         return new Response('Not Found', { status: 404 });
     }
 
-    if (event.url.pathname.startsWith('/api/sports')){  
+    if (event.url.pathname.startsWith('/api/teams') || event.url.pathname.startsWith('/api/players') || event.url.pathname.startsWith('/api/coaches')){  
         try {
-            const endpoint = event.url.pathname.replace('/api/sports','') 
+            const endpoint = event.url.pathname.replace('/api','') 
             const queryParams = new URLSearchParams(event.url.searchParams)
             queryParams.set('api_token', API_TOKEN)
             const response = await axios.get(`${BASE_URL}${endpoint}`, {

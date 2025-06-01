@@ -435,7 +435,7 @@
 
     async function getNation(id) {
         try {
-            const nationRes = await axios.get(`/core/countries/${id}`);
+            const nationRes = await axios.get(`api/core/countries/${id}`);
             player.nation_image = nationRes.data.data.image_path
             return;
         } catch (err) {
