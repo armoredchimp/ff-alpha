@@ -13,89 +13,96 @@
     let isCreating = $state(false);
 
     async function handleCreateLeague() {
-        if (!leagueName.trim()) {
-            alert('Please enter a league name')
-            return;
-        }
-        const leagueState = getLeagueState()
-    
-        if (!leagueState.creationToken) {
-            alert('Not authorized to create a league. Please refresh and try again.');
-            goto('/');
-            return;
-            
-        }
-
-        isCreating = true;
-        
-        try {
-            const session = await fetchAuthSession();
-            const userId = session.tokens?.idToken?.payload?.sub;
-
-           const { data: league, error: supabaseError } = await supabaseScaling
-            .from('leagues')
-            .insert({
-                creator: userId,
-                total_teams: selectedTeams,
-                countries_code: 1, // England = 1 for now
-                draft_complete: false
-            })
-            .select()
-            .single();
-            
-        if (supabaseError) {
-            console.error('Supabase error:', supabaseError);
-            throw new Error('Failed to create league in database');
-        }
-        
-        console.log('League created', league)
-
-        const idToken = session.tokens?.idToken?.toString();
-
-        const registerResponse = await axios.post(REGISTER_LEAGUE_URL, {
-            leagueId: league.id.toString(),
-            creationToken: leagueState.creationToken
-        }, {
-            headers: {
-                'Authorization': idToken,
-                'Content-Type': 'application/json'
+            if (!leagueName.trim()) {
+                alert('Please enter a league name');
+                return;
             }
-        });
-
-        if (registerResponse.data.success) {
-            console.log('League registered successfully!')
-
-            leagueState.hasLeague = true;
-            leagueState.leagueId = league.id.toString();
-            leagueState.canCreateLeague = false;
-            leagueState.creationToken = null;
-
-            goto('/teams/player/main')
+            
+            const leagueState = getLeagueState();
+            
+            if (!leagueState.creationToken) {
+                alert('Not authorized to create a league. Please refresh and try again.');
+                goto('/');
+                return;
+            }
+            
+            isCreating = true;
+            
+            try {
+                // Get user info
+                const session = await fetchAuthSession();
+                const userId = session.tokens?.idToken?.payload?.sub;
+                
+                // Create league in Supabase
+                const { data: league, error: supabaseError } = await supabaseScaling
+                    .from('leagues')
+                    .insert({
+                        creator: userId,
+                        league_name: leagueName,
+                        total_teams: selectedTeams,
+                        countries_code: 1, // England = 1 for now
+                        draft_complete: false
+                    })
+                    .select()
+                    .single();
+                    
+                if (supabaseError) {
+                    console.error('Supabase error:', supabaseError);
+                    throw new Error('Failed to create league in database');
+                }
+                
+                console.log('League created in Supabase:', league);
+                
+                // Register with Lambda
+                const idToken = session.tokens?.idToken?.toString();
+                
+                const registerResponse = await axios.post(REGISTER_LEAGUE_URL, {
+                    leagueId: league.id.toString(),
+                    creationToken: leagueState.creationToken
+                }, {
+                    headers: {
+                        'Authorization': idToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (registerResponse.data.success) {
+                    console.log('League registered successfully!');
+                    
+                    // Update local state
+                    leagueState.hasLeague = true;
+                    leagueState.leagueId = league.id.toString();
+                    leagueState.canCreateLeague = false;
+                    leagueState.creationToken = null;
+                    
+                    // Navigate to main app
+                    goto('/teams/player/main');
+                } else {
+                    throw new Error('Failed to register league');
+                }
+                
+            } catch (error) {
+                console.error('Error creating league:', error);
+                
+                // Clean up if needed
+                if (league?.id && error.message.includes('register')) {
+                    console.log('Cleaning up failed league creation...');
+                    await supabaseScaling
+                        .from('leagues')
+                        .delete()
+                        .eq('id', league.id);
+                }
+                
+                if (error.response?.status === 403) {
+                    alert('Your session has expired or you already have a league. Please refresh and try again.');
+                    goto('/');
+                } else {
+                    alert('Failed to create league. Please try again.');
+                }
+            } finally {
+                isCreating = false;
+            }
         }
-            throw new Error('Failed to register league');
-        } catch(error) {
-            console.error('Error creating league:', error)
-
-        // Clean up if needed
-        if (league?.id && error.message.includes('register')) {
-            console.log('Cleaning up failed league creation...');
-            await supabaseScaling
-                .from('leagues')
-                .delete()
-                .eq('id', league.id);
-        }
-        
-        if (error.response?.status === 403) {
-            alert('Your session has expired or you already have a league. Please refresh and try again.');
-            goto('/');
-        } else {
-            alert('Failed to create league. Please try again.');
-        }
-    } finally {
-        isCreating = false;
-    }
-}
-
 </script>
 
 <div class="create-league-container">
@@ -117,11 +124,10 @@
             </div>
 
             <div class="input-group">
-                <label>Total Teams</label>
+                <label for="selectedTeams">Total Teams</label>
                 <p class="field-description">Select the number of teams in your league (including yours)</p>
                 <div class="teams-selector">
-                    {#each Array(7) as _, i}
-                        {@const teamCount = i + 14}
+                   {#each [14, 16, 18, 20] as teamCount}
                         <button 
                             class="team-option {selectedTeams === teamCount ? 'selected' : ''}"
                             onclick={() => selectedTeams = teamCount}
@@ -134,7 +140,7 @@
             </div>
 
             <div class="input-group">
-                <label>Country League</label>
+                <label for="selectedTeams">Country League</label>
                 <p class="field-description">Select which country's players will be available</p>
                 <div class="country-selector">
                     <button 
