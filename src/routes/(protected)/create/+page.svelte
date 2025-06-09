@@ -56,7 +56,7 @@
                 // Register with Lambda
                 const idToken = session.tokens?.idToken?.toString();
                 
-                const registerResponse = await axios.post(REGISTER_LEAGUE_URL, {
+                const registerResponse = await axios.put(REGISTER_LEAGUE_URL, {
                     leagueId: league.id.toString(),
                     creationToken: leagueState.creationToken
                 }, {

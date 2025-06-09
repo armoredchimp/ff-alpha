@@ -63,6 +63,7 @@
       }
   }
   
+  
   async function registerUser(values){
     try {
       const { isSignUpComplete, userId, nextStep } = await signUp({
