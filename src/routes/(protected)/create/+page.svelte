@@ -3,7 +3,7 @@
 	import { getLeagueState } from "$lib/stores/league.svelte";
     import { supabaseScaling } from "$lib/supabase/supaClient";
 	import { fetchAuthSession } from "aws-amplify/auth";
-	import axios from "axios";
+    import axios from "axios";
 
     const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL
 
@@ -52,7 +52,7 @@
                 }
                 
                 console.log('League created in Supabase:', league);
-                
+               
                 // Register with Lambda
                 const idToken = session.tokens?.idToken?.toString();
                 

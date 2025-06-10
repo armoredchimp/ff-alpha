@@ -21,7 +21,7 @@
     } = $props();
     
     const sortedTeams = $derived.by(() => {
-        const teamsArray = Object.values(teams);
+        const teamsArray = Object.values(teams).filter(team => team.name !== '');
         const allTeams = [...teamsArray, playerTeam];
         
         // Check if all teams have zero points

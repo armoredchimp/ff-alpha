@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from 'svelte';
     import axios from 'axios';
     import '../../../app.css';
     import { allPlayers } from '$lib/stores/generic.svelte';
@@ -8,7 +9,7 @@
       organizeDraftOrder,
       generateClubTraits,
       playerName,
-	  delay,
+	    delay,
       getRandomItem
     } from '$lib/utils/utils';
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
@@ -21,12 +22,19 @@
     import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
     import DraftTeam from '$lib/DraftTeam.svelte';
     import { countryMap, getCountry } from '$lib/data/countries';
-    import { supabase } from '$lib/supabase/supaClient';
+    import { supabase, supabaseScaling } from '$lib/supabase/supaClient';
     import { managers } from "$lib/stores/generic.svelte";
+    import { getLeagueState } from '$lib/stores/league.svelte';
   
+    // League info from /create
+    let leagueData = $state(null);
+    let loading = $state(true);
+
     // Local Draft Variables
     const localDraftState = getSetDraft();
     const localDraftReference = $state(draft)
+    let totalTeams = $state(14); 
+    let countriesCode = $state(1)
     let numberPool = $state(Array.from({ length: 14 }, (_, i) => i + 1));
     let selectedNames = $state({});
     let clubsWithRivals = $state({});
@@ -34,6 +42,21 @@
     // Caching getTraitEffects
     const traitEffectsCache = new Map();
   
+    onMount(async () => {
+        loading = true;
+        leagueData = await fetchLeagueData();
+        loading = false;
+        
+        // Check if draft is already complete
+        if (leagueData?.draftComplete) {
+            console.log('Draft already completed, redirecting...');
+            goto('/teams/player/main');
+        }
+    });
+
+
+
+
     const getTraitEffects = (traits = []) => {
       const traitsKey = JSON.stringify(traits.sort());
       if (traitEffectsCache.has(traitsKey)) {
@@ -128,10 +151,57 @@
       }
     }
   
+    async function fetchLeagueData() {
+      const leagueState = getLeagueState();
+      
+      if (!leagueState.leagueId) {
+          console.error('No league ID found');
+          goto('/'); 
+          return;
+      }
+      
+      try {
+          const { data: league, error } = await supabaseScaling
+              .from('leagues')
+              .select('*')
+              .eq('id', leagueState.leagueId)
+              .single();
+              
+          if (error) {
+              console.error('Error fetching league:', error);
+              throw error;
+          }
+          
+          if (!league) {
+              console.error('League not found');
+              goto('/');
+              return;
+          }
+          
+          console.log('League data fetched:', league);
+          countriesCode = league.countries_code;
+          totalTeams = league.total_teams;
+          return {
+              id: league.id,
+              totalTeams: league.total_teams,
+              countriesCode: league.countries_code,
+              draftComplete: league.draft_complete,
+              creator: league.creator,
+              createdAt: league.created_at
+          };
+          
+
+      } catch (error) {
+          console.error('Failed to fetch league data:', error);
+          return null;
+      }
+  }
+
     async function draftSetup() {
       playerTeam.name = playerName();
       await getManagers()
-      for (let i = 1; i <= 13; i++) {
+      // totalTeams is number of teams minus the player 
+      for (let i = 1; i < totalTeams; i++) {
         const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
         teams[`team${i}`].name = name;
         if (!selectedNames[firstName]) {
@@ -701,12 +771,13 @@
         <PlayerDraftTeam team={playerTeam}/>
     </div>
     <div class="ai-teams-section">
-        <div class="teams-grid">
+      <div class="teams-grid">
             {#each Object.entries(teams)
-                .sort(([,a],[,b])=> a.draftOrder - b.draftOrder) as [key, team]}
+                .filter(([,team]) => team.name !== '')
+                .sort(([,a],[,b]) => a.draftOrder - b.draftOrder) as [key, team]}
                 <DraftTeam team={team} />
             {/each}
-        </div>
+      </div>
     </div>
     {/if}
  </div>

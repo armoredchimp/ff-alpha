@@ -713,7 +713,337 @@ export let teams = $state({
                 keeping: 0
             }
         }
-    }
+    },
+    team14: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
+    team15: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
+    team16: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
+    team17: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
+    team18: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
+    team19: {
+        name: '',
+        draftOrder: 0,
+        attackers: [],
+        midfielders: [],
+        defenders: [],
+        keepers: [],
+        selected: [],
+        subs: [],
+        unused: [],
+        playerCount: 0,
+        traits: [],
+        rivals: [],
+        transferBudget: 500000,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        formation: '4-4-2',
+        formationDisplayed: false,
+        manager: [],
+        scores: {
+            total: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0,
+                keeping: 0
+            },
+            attackers: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            midfielders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            defenders: {
+                attacking: 0,
+                possession: 0,
+                passing: 0,
+                defense: 0
+            },
+            keeper: {
+                passing: 0,
+                keeping: 0
+            }
+        }
+    },
 });
 
 export let playerTeam = $state({
