@@ -633,9 +633,9 @@
   }
 </script>
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
-<button onclick={getPlayerById(539961)}>getPlayerById</button>
+<!-- <button onclick={getPlayerById(539961)}>getPlayerById</button> -->
 <button onclick={getPremPlayersFromMini}>Get Players</button>
-<button onclick={getPremPlayers}>Get Players From API</button>
+<!-- <button onclick={getPremPlayers}>Get Players From API</button> -->
 
 
 <div class="draft-main-container">
