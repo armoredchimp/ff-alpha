@@ -4,6 +4,7 @@
   import { setRegStatus, userStore, setUser } from '$lib/stores/userStore.svelte';
   import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
 	import { goto } from '$app/navigation';
+  import { supabaseScaling } from '$lib/supabase/supaClient';
   
   const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -21,7 +22,6 @@
           leagueState.loading = true;
           leagueState.error = null;
           
-          // Get the auth session with ID token
           const session = await fetchAuthSession();
           const idToken = session.tokens?.idToken?.toString();
           
@@ -29,7 +29,6 @@
               throw new Error('No authentication token available');
           }
           
-          // Call your API Gateway endpoint with axios
           const response = await axios.get(`${POST_LOGIN_URL}`, {
               headers: {
                   'Authorization': idToken
@@ -46,15 +45,12 @@
           console.error('Error checking league status:', error);
           
           if (error.response) {
-              // Server responded with error status
               leagueState.error = `Server error: ${error.response.status}`;
               throw new Error(`Failed to check league status: ${error.response.status}`);
           } else if (error.request) {
-              // Request made but no response
               leagueState.error = 'No response from server';
               throw new Error('No response from server');
           } else {
-              // Other error
               leagueState.error = error.message;
               throw error;
           }
@@ -80,6 +76,26 @@
       console.error("Error during registration:", error);
     }
   }
+
+  async function loadLeagueData(){
+    const leagueState = getLeagueState()
+    const { data: league, error } = await supabaseScaling
+        .from('leagues')
+        .select()
+        .eq('league_id', leagueState.leagueId)
+        .single()
+    
+    if (error) {
+        console.error('Error loading league data:', error)
+        return null
+    }
+    
+    if(league.draft_complete === false){
+      goto('/draft')
+    } else {
+      goto('/teams/player/main')
+    }
+}
 
   async function signUserIn(values){
     try {
@@ -120,8 +136,9 @@
                   passwordValue = '';
                   console.log(`Successfully logged in!`, currentUser);
 
-                  if (leagueInfo.status === 'HAS_LEAGUE'){
-                    goto('teams/player/main')
+                  if (leagueInfo.status === 'HAS_LEAGUE' ){
+                    await loadLeagueData()
+                    return;
                   } else if (leagueInfo.status === 'CAN_CREATE_LEAGUE') {
                     goto('/create')
                   }

@@ -5,7 +5,7 @@
 	import { onMount } from "svelte";
     import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
-    import { supabase } from "$lib/supabase/supaClient";
+    import { supabase, supabaseScaling } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils/utils";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";

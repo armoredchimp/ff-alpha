@@ -203,7 +203,7 @@ async function fetchLeagueData() {
         } = await supabaseScaling
             .from('leagues')
             .select('*')
-            .eq('id', leagueState.leagueId)
+            .eq('league_id', leagueState.leagueId)
             .single();
 
         if (error) {
