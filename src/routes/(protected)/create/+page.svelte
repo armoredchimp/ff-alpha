@@ -76,7 +76,7 @@
                     leagueState.creationToken = null;
                     
                     // Navigate to main app
-                    goto('/teams/player/main');
+                    goto('/draft')
                 } else {
                     throw new Error('Failed to register league');
                 }
@@ -138,7 +138,6 @@
                     {/each}
                 </div>
             </div>
-
             <div class="input-group">
                 <label for="selectedTeams">Country League</label>
                 <p class="field-description">Select which country's players will be available</p>
@@ -148,14 +147,14 @@
                         onclick={() => selectedCountry = 'england'}
                         disabled={isCreating}
                     >
-                        <span class="flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>
+                        <img class="flag-icon" src="https://flagcdn.com/w20/gb-eng.png" alt="England Flag">
                         England - Premier League
                     </button>
                     <button 
                         class="country-option disabled"
                         disabled
                     >
-                        <span class="flag">🇪🇸</span>
+                        <img class="flag-icon" src="https://flagcdn.com/w20/es.png" alt="Spain Flag">
                         Spain - La Liga
                         <span class="coming-soon">Coming Soon</span>
                     </button>
@@ -163,7 +162,7 @@
                         class="country-option disabled"
                         disabled
                     >
-                        <span class="flag">🇩🇪</span>
+                        <img class="flag-icon" src="https://flagcdn.com/w20/de.png" alt="Germany Flag">
                         German Bundesliga
                         <span class="coming-soon">Coming Soon</span>
                     </button>
@@ -171,7 +170,7 @@
                         class="country-option disabled"
                         disabled
                     >
-                        <span class="flag">🇫🇷</span>
+                        <img class="flag-icon" src="https://flagcdn.com/w20/fr.png" alt="France Flag">
                         France - Ligue 1
                         <span class="coming-soon">Coming Soon</span>
                     </button>
@@ -179,13 +178,12 @@
                         class="country-option disabled"
                         disabled
                     >
-                        <span class="flag">🇮🇹</span>
+                        <img class="flag-icon" src="https://flagcdn.com/w20/it.png" alt="Italy Flag">
                         Italy - Serie A
                         <span class="coming-soon">Coming Soon</span>
                     </button>
                 </div>
             </div>
-
             <button 
                 type="submit" 
                 class="confirm-button"
@@ -385,4 +383,6 @@ header h1 {
     background-color: #93bbf9;
     cursor: not-allowed;
 }
+
+
 </style>

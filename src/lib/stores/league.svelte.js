@@ -26,7 +26,9 @@ export function setLeagueStatus(data) {
     }
 }
 
-
+export function setLeagueId(id){
+    leagueState.leagueId = id;
+}
 
 export function clearLeagueState() {
     leagueState = {
