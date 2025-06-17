@@ -72,18 +72,18 @@ let clubsWithRivals = $state({});
 // Caching getTraitEffects
 const traitEffectsCache = new Map();
 
-onMount(async () => {
-    loading = true;
-    leagueData = await fetchLeagueData();
-    console.log(leagueData)
-    loading = false;
+// onMount(async () => {
+//     loading = true;
+//     leagueData = await fetchLeagueData();
+//     console.log(leagueData)
+//     loading = false;
 
-    // Check if draft is already complete
-    if (leagueData?.draftComplete) {
-        console.log('Draft already completed, redirecting...');
-        goto('/teams/player/main');
-    }
-});
+//     // Check if draft is already complete
+//     if (leagueData?.draftComplete) {
+//         console.log('Draft already completed, redirecting...');
+//         goto('/teams/player/main');
+//     }
+// });
 
 const getTraitEffects = (traits = []) => {
     const traitsKey = JSON.stringify(traits.sort());
@@ -187,55 +187,55 @@ async function getPremPlayers() {
     }
 }
 
-async function fetchLeagueData() {
-    const leagueState = getLeagueState();
+// async function fetchLeagueData() {
+//     const leagueState = getLeagueState();
 
-    if (!leagueState.leagueId) {
-        console.error('No league ID found');
-        goto('/');
-        return;
-    }
+//     if (!leagueState.leagueId) {
+//         console.error('No league ID found');
+//         goto('/');
+//         return;
+//     }
 
-    try {
-        const {
-            data: league,
-            error
-        } = await supabaseScaling
-            .from('leagues')
-            .select('*')
-            .eq('league_id', leagueState.leagueId)
-            .single();
+//     try {
+//         const {
+//             data: league,
+//             error
+//         } = await supabaseScaling
+//             .from('leagues')
+//             .select('*')
+//             .eq('league_id', leagueState.leagueId)
+//             .single();
 
-        if (error) {
-            console.error('Error fetching league:', error);
-            throw error;
-        }
+//         if (error) {
+//             console.error('Error fetching league:', error);
+//             throw error;
+//         }
 
-        if (!league) {
-            console.error('League not found');
-            goto('/');
-            return;
-        }
+//         if (!league) {
+//             console.error('League not found');
+//             goto('/');
+//             return;
+//         }
 
-        console.log('League data fetched:', league);
-        countriesCode = league.countries_code;
-        totalTeams = league.total_teams;
-        numberPool = Array.from({length: totalTeams}, (_, i) => i + 1)
-        setLeagueId(league.id);
-        return {
-            id: league.id,
-            totalTeams: league.total_teams,
-            countriesCode: league.countries_code,
-            draftComplete: league.draft_complete,
-            creator: league.creator,
-            createdAt: league.created_at
-        };
+//         console.log('League data fetched:', league);
+//         countriesCode = league.countries_code;
+//         totalTeams = league.total_teams;
+//         numberPool = Array.from({length: totalTeams}, (_, i) => i + 1)
+//         setLeagueId(league.id);
+//         return {
+//             id: league.id,
+//             totalTeams: league.total_teams,
+//             countriesCode: league.countries_code,
+//             draftComplete: league.draft_complete,
+//             creator: league.creator,
+//             createdAt: league.created_at
+//         };
 
-    } catch (error) {
-        console.error('Failed to fetch league data:', error);
-        return null;
-    }
-}
+//     } catch (error) {
+//         console.error('Failed to fetch league data:', error);
+//         return null;
+//     }
+// }
 
 async function draftSetup() {
     playerTeam.name = playerName();

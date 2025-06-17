@@ -5,7 +5,7 @@
 	import { onMount } from "svelte";
     import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
-    import { supabase, supabaseScaling } from "$lib/supabase/supaClient";
+    import { supabase } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils/utils";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
@@ -14,7 +14,7 @@
 	import Page from "./+page.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
-	import { goto } from "$app/navigation";
+	import { goto, invalidateAll } from "$app/navigation";
 	
     
 
@@ -50,18 +50,29 @@
         }
     }
 
-    async function signUserOut(){
-        try{
-            await signOut()
+   async function signUserOut() {
+        try {
+            // Sign out from Amplify
+            await signOut();
+            
+            // Reset local store
             resetUserStore();
-
-            await fetch('/api/auth/session', {
-                method: 'DELETE'
-            });
-            console.log('Logged out')
-            goto('/')
-        }catch(error){
-            console.error(error)
+            
+            // Delete server session
+            await axios.delete('/api/auth/session');
+            
+            console.log('Logged out');
+            
+            // This forces all load functions to re-run
+            await invalidateAll();
+            
+            // Navigate to home
+            goto('/');
+            
+        } catch(error) {
+            console.error('Logout error:', error);
+            await invalidateAll();
+            goto('/');
         }
     }
 
