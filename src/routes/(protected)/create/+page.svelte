@@ -4,6 +4,7 @@
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
     import { enhance } from '$app/forms';
+    import { invalidateAll } from '$app/navigation';
 
     const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL
 
@@ -57,6 +58,9 @@
                         leagueState.leagueId = result.data.league.id;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
+                        
+                        // IMPORTANT: Invalidate all data so the session is refreshed
+                        await invalidateAll();
                         
                         // Navigate to draft
                         goto('/draft');

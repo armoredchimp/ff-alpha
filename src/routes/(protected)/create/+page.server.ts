@@ -44,15 +44,20 @@ export const actions: Actions = {
             }
             
             // Update the session with the new league ID directly
-            await updateSession(cookies, { 
+            const updated = await updateSession(cookies, { 
                 leagueId: league.league_id.toString() 
             });
+            
+            if (!updated) {
+                console.error('Failed to update session with league ID');
+                // But continue anyway since league was created
+            }
             
             // Return the league data for the client to register with Lambda
             return {
                 success: true,
                 league: {
-                    id: league.league_id,
+                    id: league.league_id.toString(),
                     name: league.league_name,
                     totalTeams: league.total_teams
                 }
@@ -76,7 +81,7 @@ export const actions: Actions = {
             const { error } = await supabaseScaling
                 .from('leagues')
                 .delete()
-                .eq('id', leagueId);
+                .eq('league_id', leagueId);
                 
             if (error) {
                 console.error('Error deleting league:', error);
