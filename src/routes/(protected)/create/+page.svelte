@@ -1,9 +1,9 @@
 <script>
 	import { goto } from "$app/navigation";
 	import { getLeagueState } from "$lib/stores/league.svelte";
-    import { supabaseScaling } from "$lib/supabase/supaClient";
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
+    import { enhance } from '$app/forms';
 
     const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL
 
@@ -11,98 +11,81 @@
     let selectedCountry = $state('england');
     let leagueName = $state('');
     let isCreating = $state(false);
+    let userId = $state('');
+    let creationToken = $state('');
 
-    async function handleCreateLeague() {
-            if (!leagueName.trim()) {
-                alert('Please enter a league name');
-                return;
-            }
-            
-            const leagueState = getLeagueState();
-            
-            if (!leagueState.creationToken) {
-                alert('Not authorized to create a league. Please refresh and try again.');
-                goto('/');
-                return;
-            }
-            
-            isCreating = true;
-            
-            try {
-                // Get user info
-                const session = await fetchAuthSession();
-                const userId = session.tokens?.idToken?.payload?.sub;
-                
-                // Create league in Supabase
-                const { data: league, error: supabaseError } = await supabaseScaling
-                    .from('leagues')
-                    .insert({
-                        creator: userId,
-                        league_name: leagueName,
-                        total_teams: selectedTeams,
-                        countries_code: 1, // England = 1 for now
-                        draft_complete: false
-                    })
-                    .select()
-                    .single();
-                    
-                if (supabaseError) {
-                    console.error('Supabase error:', supabaseError);
-                    throw new Error('Failed to create league in database');
-                }
-                
-                console.log('League created in Supabase:', league);
-               
-                // Register with Lambda
-                const idToken = session.tokens?.idToken?.toString();
-                
-                const registerResponse = await axios.put(REGISTER_LEAGUE_URL, {
-                    leagueId: league.id.toString(),
-                    creationToken: leagueState.creationToken
-                }, {
-                    headers: {
-                        'Authorization': idToken,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (registerResponse.data.success) {
-                    console.log('League registered successfully!');
-                    
-                    // Update local state
-                    leagueState.hasLeague = true;
-                    leagueState.leagueId = league.id.toString();
-                    leagueState.canCreateLeague = false;
-                    leagueState.creationToken = null;
-                    
-                    // Navigate to main app
-                    goto('/draft')
-                } else {
-                    throw new Error('Failed to register league');
-                }
-                
-            } catch (error) {
-                console.error('Error creating league:', error);
-                
-                // Clean up if needed
-                if (league?.id && error.message.includes('register')) {
-                    console.log('Cleaning up failed league creation...');
-                    await supabaseScaling
-                        .from('leagues')
-                        .delete()
-                        .eq('id', league.id);
-                }
-                
-                if (error.response?.status === 403) {
-                    alert('Your session has expired or you already have a league. Please refresh and try again.');
-                    goto('/');
-                } else {
-                    alert('Failed to create league. Please try again.');
-                }
-            } finally {
-                isCreating = false;
-            }
+    // Get user info on mount
+    $effect(async () => {
+        const leagueState = getLeagueState();
+        const session = await fetchAuthSession();
+        userId = session.tokens?.idToken?.payload?.sub || '';
+        creationToken = leagueState.creationToken || '';
+        
+        if (!creationToken) {
+            alert('Not authorized to create a league. Please refresh and try again.');
+            goto('/');
         }
+    });
+
+    async function handleFormSubmit({ form, data, action, cancel }) {
+        isCreating = true;
+        
+        // Let the form submit to server action
+        return async ({ result, update }) => {
+            if (result.type === 'success' && result.data?.success) {
+                // League created in Supabase, now register with Lambda
+                try {
+                    const session = await fetchAuthSession();
+                    const idToken = session.tokens?.idToken?.toString();
+                    
+                    const registerResponse = await axios.put(REGISTER_LEAGUE_URL, {
+                        leagueId: result.data.league.id,
+                        creationToken: creationToken
+                    }, {
+                        headers: {
+                            'Authorization': idToken,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (registerResponse.data.success) {
+                        console.log('League registered successfully!');
+                        
+                        // Update local state
+                        const leagueState = getLeagueState();
+                        leagueState.hasLeague = true;
+                        leagueState.leagueId = result.data.league.id;
+                        leagueState.canCreateLeague = false;
+                        leagueState.creationToken = null;
+                        
+                        // Navigate to draft
+                        goto('/draft');
+                    } else {
+                        throw new Error('Failed to register league');
+                    }
+                } catch (error) {
+                    console.error('Error registering league:', error);
+                    
+                    // Clean up the created league
+                    const deleteForm = new FormData();
+                    deleteForm.append('leagueId', result.data.league.id);
+                    
+                    await axios.post('?/deleteLeague', deleteForm);
+                    
+                    if (error.response?.status === 403) {
+                        alert('Your session has expired or you already have a league. Please refresh and try again.');
+                        goto('/');
+                    } else {
+                        alert('Failed to register league. Please try again.');
+                    }
+                }
+            } else if (result.type === 'failure') {
+                alert(result.data?.error || 'Failed to create league');
+            }
+            
+            isCreating = false;
+        };
+    }
 </script>
 
 <div class="create-league-container">
@@ -112,86 +95,102 @@
         </header>
 
         <main class="create-league-section">
-            <div class="input-group">
-                <label for="leagueName">League Name</label>
-                <input 
-                    type="text" 
-                    id="leagueName" 
-                    bind:value={leagueName}
-                    placeholder="Enter your league name"
-                    disabled={isCreating}
-                />
-            </div>
+            <form method="POST" action="?/createLeague" use:enhance={handleFormSubmit}>
+                <input type="hidden" name="userId" value={userId} />
+                <input type="hidden" name="creationToken" value={creationToken} />
+                <input type="hidden" name="selectedTeams" value={selectedTeams} />
+                <input type="hidden" name="selectedCountry" value={selectedCountry} />
+                
+                <div class="input-group">
+                    <label for="leagueName">League Name</label>
+                    <input 
+                        type="text" 
+                        id="leagueName"
+                        name="leagueName" 
+                        bind:value={leagueName}
+                        placeholder="Enter your league name"
+                        disabled={isCreating}
+                        required
+                    />
+                </div>
 
-            <div class="input-group">
-                <label for="selectedTeams">Total Teams</label>
-                <p class="field-description">Select the number of teams in your league (including yours)</p>
-                <div class="teams-selector">
-                   {#each [14, 16, 18, 20] as teamCount}
+                <div class="input-group">
+                    <label for="selectedTeams">Total Teams</label>
+                    <p class="field-description">Select the number of teams in your league (including yours)</p>
+                    <div class="teams-selector">
+                       {#each [14, 16, 18, 20] as teamCount}
+                            <button 
+                                type="button"
+                                class="team-option {selectedTeams === teamCount ? 'selected' : ''}"
+                                onclick={() => selectedTeams = teamCount}
+                                disabled={isCreating}
+                            >
+                                {teamCount}
+                            </button>
+                        {/each}
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="selectedTeams">Country League</label>
+                    <p class="field-description">Select which country's players will be available</p>
+                    <div class="country-selector">
                         <button 
-                            class="team-option {selectedTeams === teamCount ? 'selected' : ''}"
-                            onclick={() => selectedTeams = teamCount}
+                            type="button"
+                            class="country-option {selectedCountry === 'england' ? 'selected' : ''}"
+                            onclick={() => selectedCountry = 'england'}
                             disabled={isCreating}
                         >
-                            {teamCount}
+                            <img class="flag-icon" src="https://flagcdn.com/w20/gb-eng.png" alt="England Flag">
+                            England - Premier League
                         </button>
-                    {/each}
+                        <button 
+                            type="button"
+                            class="country-option disabled"
+                            disabled
+                        >
+                            <img class="flag-icon" src="https://flagcdn.com/w20/es.png" alt="Spain Flag">
+                            Spain - La Liga
+                            <span class="coming-soon">Coming Soon</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="country-option disabled"
+                            disabled
+                        >
+                            <img class="flag-icon" src="https://flagcdn.com/w20/de.png" alt="Germany Flag">
+                            German Bundesliga
+                            <span class="coming-soon">Coming Soon</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="country-option disabled"
+                            disabled
+                        >
+                            <img class="flag-icon" src="https://flagcdn.com/w20/fr.png" alt="France Flag">
+                            France - Ligue 1
+                            <span class="coming-soon">Coming Soon</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="country-option disabled"
+                            disabled
+                        >
+                            <img class="flag-icon" src="https://flagcdn.com/w20/it.png" alt="Italy Flag">
+                            Italy - Serie A
+                            <span class="coming-soon">Coming Soon</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="input-group">
-                <label for="selectedTeams">Country League</label>
-                <p class="field-description">Select which country's players will be available</p>
-                <div class="country-selector">
-                    <button 
-                        class="country-option {selectedCountry === 'england' ? 'selected' : ''}"
-                        onclick={() => selectedCountry = 'england'}
-                        disabled={isCreating}
-                    >
-                        <img class="flag-icon" src="https://flagcdn.com/w20/gb-eng.png" alt="England Flag">
-                        England - Premier League
-                    </button>
-                    <button 
-                        class="country-option disabled"
-                        disabled
-                    >
-                        <img class="flag-icon" src="https://flagcdn.com/w20/es.png" alt="Spain Flag">
-                        Spain - La Liga
-                        <span class="coming-soon">Coming Soon</span>
-                    </button>
-                    <button 
-                        class="country-option disabled"
-                        disabled
-                    >
-                        <img class="flag-icon" src="https://flagcdn.com/w20/de.png" alt="Germany Flag">
-                        German Bundesliga
-                        <span class="coming-soon">Coming Soon</span>
-                    </button>
-                    <button 
-                        class="country-option disabled"
-                        disabled
-                    >
-                        <img class="flag-icon" src="https://flagcdn.com/w20/fr.png" alt="France Flag">
-                        France - Ligue 1
-                        <span class="coming-soon">Coming Soon</span>
-                    </button>
-                    <button 
-                        class="country-option disabled"
-                        disabled
-                    >
-                        <img class="flag-icon" src="https://flagcdn.com/w20/it.png" alt="Italy Flag">
-                        Italy - Serie A
-                        <span class="coming-soon">Coming Soon</span>
-                    </button>
-                </div>
-            </div>
-            <button 
-                type="submit" 
-                class="confirm-button"
-                onclick={handleCreateLeague}
-                disabled={isCreating || !leagueName.trim()}
-            >
-                {isCreating ? 'Creating League...' : 'Create League'}
-            </button>
+                
+                <button 
+                    type="submit" 
+                    class="confirm-button"
+                    disabled={isCreating || !leagueName.trim()}
+                >
+                    {isCreating ? 'Creating League...' : 'Create League'}
+                </button>
+            </form>
         </main>
     </div>
 </div>
@@ -383,6 +382,4 @@ header h1 {
     background-color: #93bbf9;
     cursor: not-allowed;
 }
-
-
 </style>
