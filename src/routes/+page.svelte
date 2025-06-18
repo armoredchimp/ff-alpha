@@ -8,12 +8,12 @@
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
     let registering = $state(false);
-    let displayConfirmCodes = $state(false)
+    let displayConfirmCodes = $state(false);
     let emailValue = $state('');
     let passwordValue = $state('');
     let confirmationCodeDigits = $state(['', '', '', '', '', '']);
     let codeInputs = [];
-    let tempPassword = ''; // Store password temporarily during registration
+    let tempPassword = ''; 
 
     async function checkUserLeagueStatus() {
         const leagueState = getLeagueState();

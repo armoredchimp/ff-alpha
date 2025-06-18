@@ -56,9 +56,7 @@ import {
     setLeagueId
 } from '$lib/stores/league.svelte';
 
-// League info from /create
-let leagueData = $state(null);
-let loading = $state(true);
+const { data } = $props()
 
 // Local Draft Variables
 const localDraftState = getSetDraft();
@@ -72,18 +70,26 @@ let clubsWithRivals = $state({});
 // Caching getTraitEffects
 const traitEffectsCache = new Map();
 
-// onMount(async () => {
-//     loading = true;
-//     leagueData = await fetchLeagueData();
-//     console.log(leagueData)
-//     loading = false;
+onMount(async () => {
+    // Populate allPlayers from server data
+    if (data.players && data.players.length > 0) {
+        for (const player of data.players) {
+            allPlayers.push(player);
+        }
+        console.log(`Loaded ${data.players.length} players`);
+        localDraftState.setGate0(true);
+    }
+    
+    // Populate managers from server data
+    if (data.managers && data.managers.length > 0) {
+        for (const manager of data.managers) {
+            managers.push(manager);
+        }
+        console.log(`Loaded ${data.managers.length} managers`);
+    }
 
-//     // Check if draft is already complete
-//     if (leagueData?.draftComplete) {
-//         console.log('Draft already completed, redirecting...');
-//         goto('/teams/player/main');
-//     }
-// });
+    numberPool = Array.from({length: totalTeams}, (_, i) => i + 1);
+});
 
 const getTraitEffects = (traits = []) => {
     const traitsKey = JSON.stringify(traits.sort());
@@ -110,136 +116,95 @@ const getTraitEffects = (traits = []) => {
 };
 
 async function getPlayerById(id) {
-    let {
-        data: row,
-        error
-    } = await supabase
-        .from('prem_stats_2425')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-    if (error) {
-        console.error(error);
-    } else {
-        console.log(row);
-    }
-}
-
-async function getPremPlayersFromMini() {
-    let {
-        data: players,
-        error
-    } = await supabase
-        .from('prem_mini_2425')
-        .select('*')
-        .order('transfer_value', {
-            ascending: false
-        });
-
-    if (error) {
-        console.error(error);
-    }
-
-    for (const player of players) {
-        allPlayers.push(player);
-    }
-
-    console.log(allPlayers);
-    localDraftState.setGate0(true);
-}
-
-async function getPremPlayers() {
-    let lads = [];
+    const formData = new FormData();
+    formData.append('playerId', id);
+    
     try {
-        const premRes = await axios.get('/api/teams/seasons/23614', {
-            params: {
-                include: 'players.player.detailedPosition;players.player.position',
-            },
+        const response = await fetch('?/getPlayerById', {
+            method: 'POST',
+            body: formData
         });
-        lads = premRes.data.data;
-        console.log(lads);
-        console.log(`Lads total: ${lads.length}`);
-        for (const team of lads) {
-            if (team.players && team.players.length > 0) {
-                for (const player of team.players) {
-                    if (player.player.date_of_birth !== null) {
-                        const position = player.player.position.name;
-                        let dPosition = null;
-                        if (player.player.detailedposition && player.player.detailedposition.name) {
-                            dPosition = player.player.detailedposition.name;
-                        }
-                        const nation = await getCountry(player.player.country_id);
-                        allPlayers.push({
-                            ...player.player,
-                            position: position,
-                            detailedPosition: dPosition,
-                            nationality: nation,
-                            team_name: team.name,
-                        });
-                    }
-                }
-            }
+        
+        const result = await response.json();
+        
+        if (result.type === 'success' && result.data) {
+            console.log(result.data.player);
+            return result.data.player;
+        } else {
+            console.error('Failed to fetch player');
+            return null;
         }
-        console.log(allPlayers);
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
+        return null;
     }
 }
+// async function getPremPlayersFromMini() {
+//     let {
+//         data: players,
+//         error
+//     } = await supabase
+//         .from('prem_mini_2425')
+//         .select('*')
+//         .order('transfer_value', {
+//             ascending: false
+//         });
 
-// async function fetchLeagueData() {
-//     const leagueState = getLeagueState();
-
-//     if (!leagueState.leagueId) {
-//         console.error('No league ID found');
-//         goto('/');
-//         return;
+//     if (error) {
+//         console.error(error);
 //     }
 
+//     for (const player of players) {
+//         allPlayers.push(player);
+//     }
+
+//     console.log(allPlayers);
+//     localDraftState.setGate0(true);
+// }
+
+// async function getPremPlayers() {
+//     let lads = [];
 //     try {
-//         const {
-//             data: league,
-//             error
-//         } = await supabaseScaling
-//             .from('leagues')
-//             .select('*')
-//             .eq('league_id', leagueState.leagueId)
-//             .single();
-
-//         if (error) {
-//             console.error('Error fetching league:', error);
-//             throw error;
+//         const premRes = await axios.get('/api/teams/seasons/23614', {
+//             params: {
+//                 include: 'players.player.detailedPosition;players.player.position',
+//             },
+//         });
+//         lads = premRes.data.data;
+//         console.log(lads);
+//         console.log(`Lads total: ${lads.length}`);
+//         for (const team of lads) {
+//             if (team.players && team.players.length > 0) {
+//                 for (const player of team.players) {
+//                     if (player.player.date_of_birth !== null) {
+//                         const position = player.player.position.name;
+//                         let dPosition = null;
+//                         if (player.player.detailedposition && player.player.detailedposition.name) {
+//                             dPosition = player.player.detailedposition.name;
+//                         }
+//                         const nation = await getCountry(player.player.country_id);
+//                         allPlayers.push({
+//                             ...player.player,
+//                             position: position,
+//                             detailedPosition: dPosition,
+//                             nationality: nation,
+//                             team_name: team.name,
+//                         });
+//                     }
+//                 }
+//             }
 //         }
-
-//         if (!league) {
-//             console.error('League not found');
-//             goto('/');
-//             return;
-//         }
-
-//         console.log('League data fetched:', league);
-//         countriesCode = league.countries_code;
-//         totalTeams = league.total_teams;
-//         numberPool = Array.from({length: totalTeams}, (_, i) => i + 1)
-//         setLeagueId(league.id);
-//         return {
-//             id: league.id,
-//             totalTeams: league.total_teams,
-//             countriesCode: league.countries_code,
-//             draftComplete: league.draft_complete,
-//             creator: league.creator,
-//             createdAt: league.created_at
-//         };
-
-//     } catch (error) {
-//         console.error('Failed to fetch league data:', error);
-//         return null;
+//         console.log(allPlayers);
+//     } catch (err) {
+//         console.error(err);
 //     }
 // }
 
+
 async function draftSetup() {
     playerTeam.name = playerName();
-    await getManagers()
+    // Remove await getManagers() - managers are already loaded from server
+    
     for (let i = 1; i < totalTeams; i++) {
         const {
             name,
@@ -310,21 +275,25 @@ async function draftSetup() {
     }
 
     console.log('Teams to insert:', JSON.stringify(teamsToInsert, null, 2));
-    // Insert all teams to Supabase
+    
+    // Replace direct Supabase call with server action
     try {
-        const {
-            data,
-            error: supabaseError
-        } = await supabaseScaling
-            .from('teams')
-            .insert(teamsToInsert);
-
-        if (supabaseError) {
-            console.error('Error inserting teams:', supabaseError);
-            throw supabaseError;
+        const formData = new FormData();
+        formData.append('teams', JSON.stringify(teamsToInsert));
+        
+        const response = await fetch('?/insertTeams', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.type === 'success') {
+            console.log('Teams successfully uploaded to Supabase');
+        } else {
+            console.error('Error inserting teams:', result.data?.error);
+            throw new Error(result.data?.error || 'Failed to insert teams');
         }
-
-        console.log('Teams successfully uploaded to Supabase:', data);
     } catch (error) {
         console.error('Failed to upload teams to Supabase:', error);
     }
@@ -792,7 +761,7 @@ async function skipToPlayerPick() {
 
 <!-- <button onclick={getTeamsList}>Get Teams</button> -->
 <!-- <button onclick={getPlayerById(539961)}>getPlayerById</button> -->
-<button onclick={getPremPlayersFromMini}>Get Players</button>
+<!-- <button onclick={getPremPlayersFromMini}>Get Players</button> -->
 <!-- <button onclick={getPremPlayers}>Get Players From API</button> -->
 
 <div class="draft-main-container">
