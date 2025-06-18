@@ -59,6 +59,18 @@ export const actions: Actions = {
         try {
             const teams = JSON.parse(teamsJson);
             
+            // Delete any existing teams for this league first
+            const { error: deleteError } = await supabaseScaling
+                .from('teams')
+                .delete()
+                .eq('league_id', leagueId);
+            
+            if (deleteError) {
+                console.error('Error deleting existing teams:', deleteError);
+                // Continue anyway - maybe there were no teams to delete
+            }
+            
+            // Now insert the new teams
             const { data, error: supabaseError } = await supabaseScaling
                 .from('teams')
                 .insert(teams);
