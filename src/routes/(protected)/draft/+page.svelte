@@ -2,7 +2,6 @@
 // Imports
 import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
-import axios from 'axios';
 import '../../../app.css';
 import { allPlayers } from '$lib/stores/generic.svelte';
 import {
@@ -23,8 +22,6 @@ import DraftPlayer from '$lib/DraftPlayer.svelte';
 import DraftTicker from '$lib/DraftTicker.svelte';
 import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
 import DraftTeam from '$lib/DraftTeam.svelte';
-import { countryMap, getCountry } from '$lib/data/countries';
-import { supabase, supabaseScaling } from '$lib/supabase/supaClient';
 import { managers } from "$lib/stores/generic.svelte";
 import { getLeagueState, setLeagueId } from '$lib/stores/league.svelte';
 
@@ -39,9 +36,6 @@ let countriesCode = $state(1)
 let numberPool = $state(null)
 let selectedNames = $state({});
 let clubsWithRivals = $state({});
-let singleNameFirsts = new Map();
-let doubleNameFirsts = new Map();
-let usedSecondParts = new Set();
 
 // Caching
 const traitEffectsCache = new Map();

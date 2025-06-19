@@ -4,6 +4,7 @@
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
+    import { loadTeamsData } from '$lib/utils/teams/loadTeams.js'
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -78,8 +79,12 @@
 
     async function checkLeagueDraftStatus(){
         try {
-            const response = await axios.get('/api/supabase');
+            const response = await axios.get('/api/supabase/draft_check');
             
+            if (response.data.draftComplete) {
+              await loadTeamsData()
+            }
+
             if (response.data.redirect) {
                 goto(response.data.redirect);
             }
