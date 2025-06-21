@@ -1090,7 +1090,7 @@ function toggleDevBar() {
 
 <div class="dev-bar-toggle">
     <button class="dev-button" onclick={toggleDevBar}>Toggle Dev Bar</button>
-  </div>
+</div>
   
 
 

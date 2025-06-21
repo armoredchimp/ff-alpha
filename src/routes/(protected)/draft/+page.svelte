@@ -30,36 +30,51 @@ const { data } = $props()
 
 // State Variables
 const localDraftState = getSetDraft();
-const localDraftReference = $state(draft)
+const localDraftReference = $state(draft);
 let totalTeams = $state(14);
 let countriesCode = $state(1)
 let numberPool = $state(null)
 let selectedNames = $state({});
 let clubsWithRivals = $state({});
+let clubsWithoutMoney = $state({
+    total: 0,
+    clubNumbers: []
+})
 
 // Caching
 const traitEffectsCache = new Map();
 
 // Lifecycle
 onMount(async () => {
-    // Populate allPlayers from server data
-    if (data.players && data.players.length > 0) {
-        for (const player of data.players) {
-            allPlayers.push(player);
+    if(!draft.loaded){
+        // Populate allPlayers from server data
+        if (data.players && data.players.length > 0) {
+            for (const player of data.players) {
+                allPlayers.push(player);
+            }
+            console.log(`Loaded ${data.players.length} players`);
+            localDraftState.setGate0(true);
         }
-        console.log(`Loaded ${data.players.length} players`);
-        localDraftState.setGate0(true);
-    }
+        
+        // Set number of teams from value in league table
+        if (data.numOfTeams && data.numOfTeams >= 14) {
+                totalTeams = data.numOfTeams;
+                console.log('total teams value', totalTeams)
+            } else {
+                console.log('Condition failed - using default 14'); // Add this
+            }
+        
+        // Populate managers from server data
+        if (data.managers && data.managers.length > 0) {
+            for (const manager of data.managers) {
+                managers.push(manager);
+            }
+            console.log(`Loaded ${data.managers.length} managers`);
+        }
     
-    // Populate managers from server data
-    if (data.managers && data.managers.length > 0) {
-        for (const manager of data.managers) {
-            managers.push(manager);
-        }
-        console.log(`Loaded ${data.managers.length} managers`);
+        numberPool = Array.from({length: totalTeams}, (_, i) => i + 1);
+        localDraftState.setLoaded(true)
     }
-
-    numberPool = Array.from({length: totalTeams}, (_, i) => i + 1);
 });
 
 // Server Actions
@@ -112,7 +127,7 @@ async function draftSetup() {
             if (teams[`team${i}`].manager.preferred_formation !== null) {
                 teams[`team${i}`].formation = teams[`team${i}`].manager.preferred_formation
             }
-            console.log('manager: ', teams[`team${i}`].manager)
+            // console.log('manager: ', teams[`team${i}`].manager)
         }
         if (sameCity) {
             assignRivals(firstName, true, i);
@@ -215,7 +230,7 @@ function assignRivals(firstName, bool, index) {
     for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
         const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
 
-        if (index === 14) {
+        if (index === totalTeams) {
             if ((clubsWithRivals[potentialRivalIndex] || []).length <= 1) {
                 playerTeam.rivals.push({
                     name: teams[`team${potentialRivalIndex}`].name,
@@ -333,10 +348,20 @@ async function executePick(teamId, isPlayer, player = null, transferVal = null) 
     const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
     const traits = pickingTeam.traits || [];
 
+    if (clubsWithoutMoney.clubNumbers.includes(teamId)){
+        return false;
+    }
     if (!isPlayer) {
         const affordablePlayers = draft.availablePlayers.filter(
             (p) => p.transfer_value <= pickingTeam.transferBudget
         );
+        
+        if (affordablePlayers.length < 15) {
+            console.log('Club is running low on funds, adding to broke list');
+            clubsWithoutMoney.clubNumbers.push(teamId);
+            clubsWithoutMoney.total += 1;
+            return false;
+        }
 
         if (affordablePlayers.length < 1) {
             console.log('No affordable players available');

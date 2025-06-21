@@ -7,6 +7,7 @@ export function load({ data }) {
     
     return {
         leagueId: data.leagueId,
+        numOfTeams: data.numOfTeams,
         players: data.players,
         managers: data.managers
     };

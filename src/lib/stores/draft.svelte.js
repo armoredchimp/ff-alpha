@@ -1,4 +1,5 @@
 export let draft = $state({
+    loaded: false,
     started: false,
     complete: false,
     currentRound: 1,
@@ -14,11 +15,15 @@ export let draft = $state({
 
 export function getSetDraft() {
     return {
+        get loaded() { return draft.loaded; },
+        get started() { return draft.started; },
         get complete() { return draft.complete; },
         get orderList() { return draft.orderList; },
         get gate0() { return draft.gate0; },
         get gate1() { return draft.gate1; },
         // get availablePlayers() { return draft.availablePlayers; },
+        setLoaded(value) { draft.loaded = value; },
+        setStarted(value) { draft.started = value; },
         setComplete(value) { draft.complete = value; },
         setOrderList(value) { draft.orderList = value },
         setGate0(value) { draft.gate0 = value; },

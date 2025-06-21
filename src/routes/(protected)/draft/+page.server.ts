@@ -21,6 +21,21 @@ export const load: PageServerLoad = async ({ cookies }) => {
             console.error('Error loading players:', playersError);
         }
         
+        // Load number of teams
+        const { data: leagueData, error: numOfTeamsError }  = await supabaseScaling
+            .from('leagues')
+            .select('*')
+            .eq('league_id', parseInt(leagueId))
+            .single()
+
+            console.log('League query result:', { leagueData, numOfTeamsError });
+
+            if (numOfTeamsError) {
+                console.error('Error fetching league:', numOfTeamsError);
+            }
+
+            const numOfTeams = leagueData?.total_teams || 14;
+
         // Load managers
         const { data: managers, error: managersError } = await supabase
             .from('active_managers')
@@ -29,13 +44,20 @@ export const load: PageServerLoad = async ({ cookies }) => {
         if (managersError) {
             console.error('Error loading managers:', managersError);
         }
-        
+            
+        console.log('About to return:', {  // Add this
+            leagueId,
+            numOfTeams,
+            players: players?.length || 0,
+            managers: managers?.length || 0
+        });
+            
         return {
             leagueId,
+            numOfTeams,
             players: players || [],
             managers: managers || []
         };
-        
     } catch (error) {
         console.error('Error in draft load:', error);
         return {
