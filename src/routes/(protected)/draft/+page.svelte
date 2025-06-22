@@ -147,7 +147,7 @@ async function draftSetup() {
 
     localDraftState.setPlayers(allPlayers)
     playerTeam.draftOrder = assignDraftOrder(numberPool);
-    localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams));
+    localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams, draft.totalTeams));
     localDraftState.setGate1(true);
 
     // Prepare teams data for Supabase insertion
@@ -231,7 +231,7 @@ function assignRivals(firstName, bool, index) {
 
     const attempts = 3;
     for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
-        const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
+        const potentialRivalIndex = Math.floor(Math.random() * (draft.totalTeams - 1)) + 1;
 
         if (index === draft.totalTeams ) {
             if ((clubsWithRivals[potentialRivalIndex] || []).length <= 1) {

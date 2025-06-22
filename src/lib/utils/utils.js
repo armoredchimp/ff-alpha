@@ -70,40 +70,47 @@ export function assignDraftOrder(numberPool) {
     return numberPool.splice(randomIndex, 1)[0];
 }
 
-export function organizeDraftOrder(playerTeam, teams) {
-    // Avoid iterating through entire teams state object
-    const teamEntries = [];
-    for (let i = 1; i < draft.totalTeams; i++) {
-        if (teams[`team${i}`]) {
-            teamEntries.push([`team${i}`, teams[`team${i}`]]);
-        }
-    }
-    // Get all teams including player team
+export function organizeDraftOrder(playerTeam, teams, totalTeams) {
+    // Get only the teams that should be active (team1 through team[totalTeams-1])
+    const activeTeamEntries = Object.entries(teams)
+        .filter(([key, team]) => {
+            const teamNumber = parseInt(key.replace('team', ''));
+            return teamNumber < totalTeams && team.name !== ''; // Only include initialized teams
+        });
+    
     const allTeams = [
         { id: 'player', ...playerTeam },
-        ...teamEntries.map(([key, team]) => ({ id: key, ...team }))
+        ...activeTeamEntries.map(([key, team]) => ({ id: key, ...team }))
     ];
 
     // Sort by draft order
     allTeams.sort((a, b) => a.draftOrder - b.draftOrder);
 
-    // Create snake draft order for totalTeams # of rounds
+    // Create snake draft order
     const fullDraftOrder = [];
-    for (let round = 0; round < draftUtilsRef.totalTeams +1; round++) {
+    const teamCount = allTeams.length;
+    
+    for (let round = 0; round < totalTeams + 1; round++) {
         if (round % 2 === 0) {
             // Forward order
-            fullDraftOrder.push(...allTeams.map(team => ({
-                ...team,
-                round: round + 1,
-                pick: round % 2 === 0 ? allTeams.indexOf(team) + 1 : allTeams.length - allTeams.indexOf(team)
-            })));
+            allTeams.forEach((team, index) => {
+                fullDraftOrder.push({
+                    ...team,
+                    round: round + 1,
+                    pick: index + 1,
+                    overallPick: round * teamCount + index + 1
+                });
+            });
         } else {
             // Reverse order
-            fullDraftOrder.push(...[...allTeams].reverse().map(team => ({
-                ...team,
-                round: round + 1,
-                pick: round % 2 === 0 ? allTeams.indexOf(team) + 1 : allTeams.length - allTeams.indexOf(team)
-            })));
+            [...allTeams].reverse().forEach((team, index) => {
+                fullDraftOrder.push({
+                    ...team,
+                    round: round + 1,
+                    pick: index + 1,
+                    overallPick: round * teamCount + index + 1
+                });
+            });
         }
     }
 

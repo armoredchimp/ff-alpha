@@ -19,6 +19,7 @@ export function getSetDraft() {
         get loaded() { return draft.loaded; },
         get started() { return draft.started; },
         get complete() { return draft.complete; },
+        get totalTeams() { return draft.totalTeams; },
         get orderList() { return draft.orderList; },
         get gate0() { return draft.gate0; },
         get gate1() { return draft.gate1; },
