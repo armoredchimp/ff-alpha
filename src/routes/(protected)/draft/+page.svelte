@@ -31,7 +31,8 @@ const { data } = $props()
 // State Variables
 const localDraftState = getSetDraft();
 const localDraftReference = $state(draft);
-let totalTeams = $state(14);
+let totalTeamsRef = localDraftReference.totalTeams;
+let halfOfTeams = $derived(totalTeamsRef / 2)
 let countriesCode = $state(1)
 let numberPool = $state(null)
 let selectedNames = $state({});
@@ -57,9 +58,9 @@ onMount(async () => {
         }
         
         // Set number of teams from value in league table
-        if (data.numOfTeams && data.numOfTeams >= 14) {
-                totalTeams = data.numOfTeams;
-                console.log('total teams value', totalTeams)
+        if (data.numOfTeams && data.numOfTeams > 14) {
+                localDraftState.setTotalTeams(data.numOfTeams)
+                console.log('total teams value', localDraftState.totalTeams )
             } else {
                 console.log('Condition failed - using default 14'); // Add this
             }
@@ -72,7 +73,7 @@ onMount(async () => {
             console.log(`Loaded ${data.managers.length} managers`);
         }
     
-        numberPool = Array.from({length: totalTeams}, (_, i) => i + 1);
+        numberPool = Array.from({length: draft.totalTeams }, (_, i) => i + 1);
         localDraftState.setLoaded(true)
     }
 });
@@ -106,8 +107,9 @@ async function getPlayerById(id) {
 // Draft Setup Functions
 async function draftSetup() {
     playerTeam.name = playerName();
-    
-    for (let i = 1; i < totalTeams; i++) {
+    console.log('About to create teams, totalTeams:', draft.totalTeams);
+    for (let i = 1; i < draft.totalTeams ; i++) {
+        console.log('Creating team', i);
         const {
             name,
             sameCity,
@@ -122,6 +124,7 @@ async function draftSetup() {
         }
         teams[`team${i}`].traits = generateClubTraits();
         teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
+        console.log(`number pool:`, numberPool.length)
         if (managers.length > 0) {
             teams[`team${i}`].manager = getRandomItem(managers)
             if (teams[`team${i}`].manager.preferred_formation !== null) {
@@ -134,7 +137,7 @@ async function draftSetup() {
         }
     }
 
-    for (let i = totalTeams; i > 0; i--) {
+    for (let i = draft.totalTeams ; i > 0; i--) {
         if ((clubsWithRivals[i] || []).length < 2) {
             assignRivals('', false, i);
         }
@@ -161,7 +164,7 @@ async function draftSetup() {
     });
 
     // Add AI teams
-    for (let i = 1; i < totalTeams; i++) {
+    for (let i = 1; i < draft.totalTeams ; i++) {
         const team = teams[`team${i}`];
         teamsToInsert.push({
             league_id: leagueState.leagueId,
@@ -230,7 +233,7 @@ function assignRivals(firstName, bool, index) {
     for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
         const potentialRivalIndex = Math.floor(Math.random() * 13) + 1;
 
-        if (index === totalTeams) {
+        if (index === draft.totalTeams ) {
             if ((clubsWithRivals[potentialRivalIndex] || []).length <= 1) {
                 playerTeam.rivals.push({
                     name: teams[`team${potentialRivalIndex}`].name,
@@ -278,10 +281,10 @@ function beginDraft() {
         draft.started = true;
         draft.currentRound = 1;
         draft.currentPick = 1;
-
+        console.log('order list', draft.orderList)
         let currPick = draft.orderList[0];
         let nextPick = draft.orderList[1];
-
+        console.log(currPick)
         draft.currentTeam = currPick.id === 'player' ? playerTeam.name : currPick.name;
         console.log('currentTeam: ', draft.currentTeam);
         draft.nextTeam = nextPick.id === 'player' ? playerTeam.name : nextPick.name;
@@ -289,9 +292,13 @@ function beginDraft() {
 }
 
 function advanceDraft() {
-    let pickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
+    let pickIndex = (draft.currentRound - 1) * draft.totalTeams  + (draft.currentPick - 1);
 
-    if (draft.currentPick === 14) {
+    if (clubsWithoutMoney.total >= halfOfTeams){
+        draft.complete = true;
+    }
+
+    if (draft.currentPick === draft.totalTeams) {
         draft.currentRound++;
         draft.currentPick = 1;
     } else {
@@ -303,7 +310,7 @@ function advanceDraft() {
         return;
     }
 
-    let nextPickIndex = (draft.currentRound - 1) * 14 + (draft.currentPick - 1);
+    let nextPickIndex = (draft.currentRound - 1) * draft.totalTeams + (draft.currentPick - 1);
 
     draft.currentTeam = draft.orderList[nextPickIndex].id === 'player' ?
         playerTeam.name : draft.orderList[nextPickIndex].name;
@@ -318,7 +325,7 @@ async function skipToPlayerPick() {
     while (!draft.complete &&
         draft.currentTeam !== playerTeam.name) {
         const currentTeamId = draft.orderList[
-            (draft.currentRound - 1) * 14 + (draft.currentPick - 1)
+            (draft.currentRound - 1) * draft.totalTeams + (draft.currentPick - 1)
         ].id;
 
         await executePick(currentTeamId, false);
@@ -332,16 +339,20 @@ async function skipToPlayerPick() {
 
 // Draft Pick Handlers
 function handleAIPick(teamId) {
-    executePick(teamId, false);
-    advanceDraft()
+    if(!draft.complete){
+        executePick(teamId, false);
+        advanceDraft()
+    }
 }
 
 function handlePlayerPick(player, e) {
-    if (!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null) {
-        player.image_path = e
+    if(!draft.complete){
+        if (!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null) {
+            player.image_path = e
+        }
+        executePick('player', true, player)
+        advanceDraft()
     }
-    executePick('player', true, player)
-    advanceDraft()
 }
 
 async function executePick(teamId, isPlayer, player = null, transferVal = null) {
@@ -757,13 +768,13 @@ function getPlayerValue(index, player, traits) {
             </div>
             {/if}
 
-            {#if draft.started}
+            {#if draft.started && !draft.complete}
             {#if draft.currentTeam !== playerTeam.name}
             <div class="draft-buttons">
                 <!-- {draft.currPick.id}
                 {draft.currPick.name} -->
                 <button
-                    onclick={() => handleAIPick(localDraftReference.orderList[(localDraftReference.currentRound - 1) * 14 +(localDraftReference.currentPick -1)].id)}
+                    onclick={() => handleAIPick(localDraftReference.orderList[(localDraftReference.currentRound - 1) * draft.totalTeams +(localDraftReference.currentPick -1)].id)}
                     class="advance-btn">Advance Draft
                 </button>
                 <button
@@ -775,33 +786,36 @@ function getPlayerValue(index, player, traits) {
             {/if}
             </div>
 
-            <div class="page-container">
-                <div class="players-section">
-                    <h3>Prem Players: {draft.availablePlayers.length}</h3>
-                    <div class="player-list">
-                        {#each draft.availablePlayers as player (player.id)}
-                        <DraftPlayer player={player}
-                            onDraft={(e)=> handlePlayerPick(player, e)}
-                            />
+            {#if !draft.complete}
+                <div class="page-container">
+                    <div class="players-section">
+                        <h3>Prem Players: {draft.availablePlayers.length}</h3>
+                        <div class="player-list">
+                            {#each draft.availablePlayers as player (player.id)}
+                            <DraftPlayer player={player}
+                                onDraft={(e)=> handlePlayerPick(player, e)}
+                                />
+                                {/each}
+                        </div>
+                    </div>
+                    {#if draft.gate1}
+                    <div class="player-team-section">
+                        <PlayerDraftTeam team={playerTeam}/>
+                    </div>
+                    <div class="ai-teams-section">
+                        <div class="teams-grid">
+                            {#each Object.entries(teams)
+                            .filter(([,team]) => team.name !== '')
+                            .sort(([,a],[,b]) => a.draftOrder - b.draftOrder) as [key, team]}
+                            <DraftTeam team={team} />
                             {/each}
-                            </div>
-                            </div>
-                            {#if draft.gate1}
-                            <div class="player-team-section">
-                                <PlayerDraftTeam team={playerTeam}/>
-                                    </div>
-                                    <div class="ai-teams-section">
-                                        <div class="teams-grid">
-                                            {#each Object.entries(teams)
-                                            .filter(([,team]) => team.name !== '')
-                                            .sort(([,a],[,b]) => a.draftOrder - b.draftOrder) as [key, team]}
-                                            <DraftTeam team={team} />
-                                            {/each}
-                                        </div>
-                                    </div>
-                                    {/if}
-                                    </div>
-
+                        </div>
+                    </div>
+                    {/if}
+                </div>
+            {:else}
+                <h1>Draft Complete!</h1>
+            {/if}
 <style>
 button {
     background-color: blue;

@@ -1,9 +1,10 @@
 import { formationConfig } from "$lib/data/formationConfig";
+import { draft, getSetDraft } from "$lib/stores/draft.svelte";
 
 let singleNameFirsts = new Map();  // Track count of first names used alone
 let doubleNameFirsts = new Map();  // Track count of first names used in combinations
 let usedSecondParts = new Set();
-
+let draftUtilsRef = getSetDraft()
 
 ////////////////////
 //Draft Functions//
@@ -70,18 +71,25 @@ export function assignDraftOrder(numberPool) {
 }
 
 export function organizeDraftOrder(playerTeam, teams) {
+    // Avoid iterating through entire teams state object
+    const teamEntries = [];
+    for (let i = 1; i < draft.totalTeams; i++) {
+        if (teams[`team${i}`]) {
+            teamEntries.push([`team${i}`, teams[`team${i}`]]);
+        }
+    }
     // Get all teams including player team
     const allTeams = [
         { id: 'player', ...playerTeam },
-        ...Object.entries(teams).map(([key, team]) => ({ id: key, ...team }))
+        ...teamEntries.map(([key, team]) => ({ id: key, ...team }))
     ];
 
     // Sort by draft order
     allTeams.sort((a, b) => a.draftOrder - b.draftOrder);
 
-    // Create snake draft order for 15 rounds
+    // Create snake draft order for totalTeams # of rounds
     const fullDraftOrder = [];
-    for (let round = 0; round < 15; round++) {
+    for (let round = 0; round < draftUtilsRef.totalTeams +1; round++) {
         if (round % 2 === 0) {
             // Forward order
             fullDraftOrder.push(...allTeams.map(team => ({
