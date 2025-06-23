@@ -79,9 +79,13 @@ onMount(async () => {
 });
 
 
-$effect(()=>{
-    
-})
+$effect(() => {
+    if (draft.complete && !draftUploaded) {
+        finalizeAndUploadDraft();
+    }
+});
+
+
 // Server Actions
 async function getPlayerById(id) {
     const formData = new FormData();
