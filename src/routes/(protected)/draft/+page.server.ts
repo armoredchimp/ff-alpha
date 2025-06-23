@@ -119,55 +119,72 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to process teams data' });
         }
     },
-    
     uploadTeamPlayers: async ({ request, cookies }) => {
-        const leagueId = getLeagueId(cookies);
-        if (!leagueId) {
-            return fail(401, { error: 'No league ID found' });
-        }
-        
-        const formData = await request.formData();
-        const teamPlayersJson = formData.get('teamPlayers') as string;
-        
-        try {
-            const teamPlayers = JSON.parse(teamPlayersJson);
-            
-            // Add league_id to each team player record
-            const teamPlayersWithLeagueId = teamPlayers.map(tp => ({
-                ...tp,
-                league_id: parseInt(leagueId)
-            }));
-            
-            // Delete any existing team_players for this league first
-            const { error: deleteError } = await supabaseScaling
-                .from('team_players')
-                .delete()
-                .eq('league_id', leagueId);
-            
-            if (deleteError) {
-                console.error('Error deleting existing team players:', deleteError);
-                // Continue anyway - maybe there were no team players to delete
-            }
-            
-            // Insert new team players
-            const { data, error } = await supabaseScaling
-                .from('team_players')
-                .insert(teamPlayersWithLeagueId);
-            
-            if (error) {
-                console.error('Error inserting team players:', error);
-                return fail(500, { error: 'Failed to insert team players' });
-            }
-            
-            console.log('Team players successfully uploaded:', data);
-            return { success: true };
-            
-        } catch (error) {
-            console.error('Failed to process team players data:', error);
-            return fail(500, { error: 'Failed to process team players data' });
-        }
-    },
+    const leagueId = getLeagueId(cookies);
+    if (!leagueId) {
+        return fail(401, { error: 'No league ID found' });
+    }
     
+    console.log('League ID from cookie:', leagueId, typeof leagueId);
+    
+    const formData = await request.formData();
+    const teamPlayersJson = formData.get('teamPlayers') as string;
+    
+    console.log('Received teamPlayers JSON:', teamPlayersJson);
+    
+    try {
+        const teamPlayers = JSON.parse(teamPlayersJson);
+        
+        console.log('Parsed teamPlayers:', teamPlayers);
+        
+        // Add league_id to each team player record
+        const teamPlayersWithLeagueId = teamPlayers.map(tp => ({
+            ...tp,
+            league_id: parseInt(leagueId)
+        }));
+        
+        console.log('Team players with league ID:', JSON.stringify(teamPlayersWithLeagueId, null, 2));
+        
+        // Log the first record to see its structure
+        if (teamPlayersWithLeagueId.length > 0) {
+            console.log('First record structure:', {
+                league_id: teamPlayersWithLeagueId[0].league_id,
+                league_id_type: typeof teamPlayersWithLeagueId[0].league_id,
+                team_id: teamPlayersWithLeagueId[0].team_id,
+                team_id_type: typeof teamPlayersWithLeagueId[0].team_id,
+                keys: Object.keys(teamPlayersWithLeagueId[0])
+            });
+        }
+        
+        // Delete any existing team_players for this league first
+        const { error: deleteError } = await supabaseScaling
+            .from('team_players')
+            .delete()
+            .eq('league_id', parseInt(leagueId));
+        
+        if (deleteError) {
+            console.error('Error deleting existing team players:', deleteError);
+        }
+        
+        // Insert new team players
+        const { data, error } = await supabaseScaling
+            .from('team_players')
+            .insert(teamPlayersWithLeagueId);
+        
+        if (error) {
+            console.error('Error inserting team players:', error);
+            console.error('Failed data:', teamPlayersWithLeagueId);
+            return fail(500, { error: 'Failed to insert team players' });
+        }
+        
+        console.log('Team players successfully uploaded:', data);
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Failed to process team players data:', error);
+        return fail(500, { error: 'Failed to process team players data' });
+    }
+},
     draftTeamsFinalize: async ({ request, cookies }) => {
         const leagueId = getLeagueId(cookies);
         if (!leagueId) {

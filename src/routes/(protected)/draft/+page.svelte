@@ -201,28 +201,46 @@ async function draftSetup() {
             body: formData
         });
         
-        const result = await response.json();
-        console.log('Server response:', result);
+        const responseText = await response.text();
+        console.log('RAW response text:', responseText);
+
+        const result = JSON.parse(responseText);
+        console.log('Parsed result:', result);
         
         // SvelteKit wraps successful responses in { type: 'success', data: ... }
         if (result.type === 'success' && result.data) {
-            const teamIdMap = JSON.parse(result.data)
+            // Parse the data if it's a string
+            let parsedData = typeof result.data === 'string' 
+                ? JSON.parse(result.data) 
+                : result.data;
             
-            // Store player team ID (frontend_number 0)
-            playerTeam.dbId = teamIdMap[0];
+            console.log('Parsed data:', parsedData);
+            
+            // The parsed data is an array where the first element is the teamIdMap
+            let teamIdMap;
+            if (Array.isArray(parsedData)) {
+                teamIdMap = parsedData[0];  // Get the first element which is the actual map
+            } else {
+                teamIdMap = parsedData;
+            }
+            
+            console.log('Extracted teamIdMap:', teamIdMap);
+            
+            // Now use the teamIdMap to assign IDs
+            playerTeam.dbId = teamIdMap["0"];
             console.log('Player team dbId stored:', playerTeam.dbId);
             
             // Store AI team IDs
             for (let i = 1; i < draft.totalTeams; i++) {
-                teams[`team${i}`].dbId = teamIdMap[i];
+                teams[`team${i}`].dbId = teamIdMap[i.toString()];
                 console.log(`Team ${i} dbId stored:`, teams[`team${i}`].dbId);
             }
             
             console.log('All team IDs stored in frontend state');
-        } else {
-            console.error('Failed to insert teams:', result.data?.error || 'Unknown error');
-            throw new Error(result.data?.error || 'Failed to insert teams');
-        }
+    } else {
+        console.error('Failed to insert teams:', result.data?.error || 'Unknown error');
+        throw new Error(result.data?.error || 'Failed to insert teams');
+    }
     } catch (error) {
         console.error('Failed to upload teams to Supabase:', error);
     }
