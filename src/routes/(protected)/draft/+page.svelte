@@ -32,15 +32,16 @@ const { data } = $props()
 const localDraftState = getSetDraft();
 const localDraftReference = $state(draft);
 let totalTeamsRef = localDraftReference.totalTeams;
-let halfOfTeams = $derived(totalTeamsRef / 2)
-let countriesCode = $state(1)
-let numberPool = $state(null)
+let halfOfTeams = $derived(totalTeamsRef / 2);
+let countriesCode = $state(1);
+let numberPool = $state(null);
+let draftUploaded = $state(false);
 let selectedNames = $state({});
 let clubsWithRivals = $state({});
 let clubsWithoutMoney = $state({
     total: 0,
     clubNumbers: []
-})
+});
 
 // Caching
 const traitEffectsCache = new Map();
@@ -112,7 +113,7 @@ async function getPlayerById(id) {
     }
 }
 
-// Draft Setup Functions
+
 async function draftSetup() {
     playerTeam.name = playerName();
     console.log('About to create teams, totalTeams:', draft.totalTeams);
@@ -161,17 +162,18 @@ async function draftSetup() {
     // Prepare teams data for Supabase insertion
     const teamsToInsert = [];
 
-    // Add player team
+    
     teamsToInsert.push({
         league_id: leagueState.leagueId,
         team_name: playerTeam.name,
         rivals: playerTeam.rivals || [],
         formation: playerTeam.formation || '4-4-2',
         transfer_budget: 50000,
-        player_count: 0
+        player_count: 0,
+        frontend_number: 0
     });
 
-    // Add AI teams
+    
     for (let i = 1; i < draft.totalTeams ; i++) {
         const team = teams[`team${i}`];
         teamsToInsert.push({
@@ -189,7 +191,7 @@ async function draftSetup() {
 
     console.log('Teams to insert:', JSON.stringify(teamsToInsert, null, 2));
     
-    // Replace direct Supabase call with server action
+    // Supabase server action
     try {
         const formData = new FormData();
         formData.append('teams', JSON.stringify(teamsToInsert));
@@ -200,17 +202,142 @@ async function draftSetup() {
         });
         
         const result = await response.json();
+        console.log('Server response:', result);
         
-        if (result.type === 'success') {
-            console.log('Teams successfully uploaded to Supabase');
+        // SvelteKit wraps successful responses in { type: 'success', data: ... }
+        if (result.type === 'success' && result.data) {
+            const teamIdMap = JSON.parse(result.data)
+            
+            // Store player team ID (frontend_number 0)
+            playerTeam.dbId = teamIdMap[0];
+            console.log('Player team dbId stored:', playerTeam.dbId);
+            
+            // Store AI team IDs
+            for (let i = 1; i < draft.totalTeams; i++) {
+                teams[`team${i}`].dbId = teamIdMap[i];
+                console.log(`Team ${i} dbId stored:`, teams[`team${i}`].dbId);
+            }
+            
+            console.log('All team IDs stored in frontend state');
         } else {
-            console.error('Error inserting teams:', result.data?.error);
+            console.error('Failed to insert teams:', result.data?.error || 'Unknown error');
             throw new Error(result.data?.error || 'Failed to insert teams');
         }
     } catch (error) {
         console.error('Failed to upload teams to Supabase:', error);
     }
 }
+
+async function finalizeAndUploadDraft() {
+    console.log('Draft completed, finalizing and uploading teams...');
+    
+    try {
+        // Prepare team players data using stored dbIds
+        const teamPlayersData = [];
+        
+        // Add player team
+        if (playerTeam.dbId) {
+            teamPlayersData.push({
+                team_id: playerTeam.dbId,
+                attackers: playerTeam.attackers || [],
+                midfielders: playerTeam.midfielders || [],
+                defenders: playerTeam.defenders || [],
+                keepers: playerTeam.keepers || [],
+                selected: [], 
+                subs: [], 
+                unused: [] 
+            });
+        } else {
+            console.error('Player team missing database ID');
+        }
+        
+        // Add AI teams
+        for (let i = 1; i < draft.totalTeams; i++) {
+            const team = teams[`team${i}`];
+            
+            if (team.dbId) {
+                teamPlayersData.push({
+                    team_id: team.dbId,
+                    attackers: team.attackers || [],
+                    midfielders: team.midfielders || [],
+                    defenders: team.defenders || [],
+                    keepers: team.keepers || [],
+                    selected: [], 
+                    subs: [], 
+                    unused: [] 
+                });
+            } else {
+                console.error(`Team ${i} missing database ID`);
+            }
+        }
+        
+        // Upload team players
+        const uploadFormData = new FormData();
+        uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
+        
+        const uploadResponse = await fetch('?/uploadTeamPlayers', {
+            method: 'POST',
+            body: uploadFormData
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (uploadResult.type === 'success') {
+            console.log('Team players successfully uploaded');
+            
+            // Finalize draft for teams table (transfer budget, player count)
+            const teamUpdates = [];
+            
+            // Player team update
+            if (playerTeam.dbId) {
+                teamUpdates.push({
+                    team_id: playerTeam.dbId,
+                    transfer_budget: playerTeam.transferBudget,
+                    player_count: playerTeam.playerCount
+                });
+            }
+            
+            // AI teams updates
+            for (let i = 1; i < draft.totalTeams; i++) {
+                const team = teams[`team${i}`];
+                
+                if (team.dbId) {
+                    teamUpdates.push({
+                        team_id: team.dbId,
+                        transfer_budget: team.transferBudget,
+                        player_count: team.playerCount
+                    });
+                }
+            }
+            
+           
+            const updateFormData = new FormData();
+            updateFormData.append('teamUpdates', JSON.stringify(teamUpdates));
+            
+            const updateResponse = await fetch('?/draftTeamsFinalize', {
+                method: 'POST',
+                body: updateFormData
+            });
+            
+            const updateResult = await updateResponse.json();
+            
+            if (updateResult.type === 'success') {
+                console.log('Draft teams finalized');
+                
+                draftUploaded = true;
+                
+            } else {
+                console.error('Failed to finalize draft teams:', updateResult.data?.error);
+            }
+        } else {
+            console.error('Failed to upload team players:', uploadResult.data?.error);
+        }
+        
+    } catch (error) {
+        console.error('Error finalizing draft:', error);
+    }
+}
+
 
 function assignRivals(firstName, bool, index) {
     clubsWithRivals[index] = clubsWithRivals[index] || [];

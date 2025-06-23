@@ -89,21 +89,30 @@ export const actions: Actions = {
             
             if (deleteError) {
                 console.error('Error deleting existing teams:', deleteError);
-                // Continue anyway - maybe there were no teams to delete
             }
             
-            // Now insert the new teams
             const { data, error: supabaseError } = await supabaseScaling
                 .from('teams')
-                .insert(teams);
-
+                .insert(teams)
+                .select('team_id, frontend_number'); 
+            
             if (supabaseError) {
                 console.error('Error inserting teams:', supabaseError);
                 return fail(500, { error: 'Failed to insert teams' });
             }
-
+            
+            // Create a map of frontend_number to team_id
+            const teamIdMap = {};
+            if (data) {
+                data.forEach(team => {
+                    teamIdMap[team.frontend_number] = team.team_id;
+                });
+            }
+            
             console.log('Teams successfully uploaded to Supabase:', data);
-            return { success: true };
+            console.log('Team ID map:', teamIdMap);
+            
+            return teamIdMap;
             
         } catch (error) {
             console.error('Failed to upload teams to Supabase:', error);
@@ -111,6 +120,95 @@ export const actions: Actions = {
         }
     },
     
+    uploadTeamPlayers: async ({ request, cookies }) => {
+        const leagueId = getLeagueId(cookies);
+        if (!leagueId) {
+            return fail(401, { error: 'No league ID found' });
+        }
+        
+        const formData = await request.formData();
+        const teamPlayersJson = formData.get('teamPlayers') as string;
+        
+        try {
+            const teamPlayers = JSON.parse(teamPlayersJson);
+            
+            // Add league_id to each team player record
+            const teamPlayersWithLeagueId = teamPlayers.map(tp => ({
+                ...tp,
+                league_id: parseInt(leagueId)
+            }));
+            
+            // Delete any existing team_players for this league first
+            const { error: deleteError } = await supabaseScaling
+                .from('team_players')
+                .delete()
+                .eq('league_id', leagueId);
+            
+            if (deleteError) {
+                console.error('Error deleting existing team players:', deleteError);
+                // Continue anyway - maybe there were no team players to delete
+            }
+            
+            // Insert new team players
+            const { data, error } = await supabaseScaling
+                .from('team_players')
+                .insert(teamPlayersWithLeagueId);
+            
+            if (error) {
+                console.error('Error inserting team players:', error);
+                return fail(500, { error: 'Failed to insert team players' });
+            }
+            
+            console.log('Team players successfully uploaded:', data);
+            return { success: true };
+            
+        } catch (error) {
+            console.error('Failed to process team players data:', error);
+            return fail(500, { error: 'Failed to process team players data' });
+        }
+    },
+    
+    draftTeamsFinalize: async ({ request, cookies }) => {
+        const leagueId = getLeagueId(cookies);
+        if (!leagueId) {
+            return fail(401, { error: 'No league ID found' });
+        }
+        
+        const formData = await request.formData();
+        const teamUpdatesJson = formData.get('teamUpdates') as string;
+        
+        try {
+            const teamUpdates = JSON.parse(teamUpdatesJson);
+            
+            // Update each team individually
+            const updatePromises = teamUpdates.map(update => 
+                supabaseScaling
+                    .from('teams')
+                    .update({
+                        transfer_budget: update.transfer_budget,
+                        player_count: update.player_count
+                    })
+                    .eq('team_id', update.team_id)
+                    .eq('league_id', leagueId)
+            );
+            
+            const results = await Promise.all(updatePromises);
+            
+            const failedUpdates = results.filter(result => result.error);
+            if (failedUpdates.length > 0) {
+                console.error('Some team updates failed:', failedUpdates);
+                return fail(500, { error: 'Some team updates failed' });
+            }
+            
+            console.log('Team stats successfully updated');
+            return { success: true };
+            
+        } catch (error) {
+            console.error('Failed to update team stats:', error);
+            return fail(500, { error: 'Failed to update team stats' });
+        }
+    },
+
     getPlayerById: async ({ request }) => {
         const data = await request.formData();
         const playerId = data.get('playerId') as string;
