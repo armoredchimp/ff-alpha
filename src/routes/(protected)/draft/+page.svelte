@@ -78,6 +78,10 @@ onMount(async () => {
     }
 });
 
+
+$effect(()=>{
+    
+})
 // Server Actions
 async function getPlayerById(id) {
     const formData = new FormData();
