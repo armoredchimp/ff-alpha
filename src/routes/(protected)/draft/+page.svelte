@@ -49,6 +49,7 @@ const traitEffectsCache = new Map();
 // Lifecycle
 onMount(async () => {
     if(!draft.loaded){
+        console.log('data: ', data)
         // Populate allPlayers from server data
         if (data.players && data.players.length > 0) {
             for (const player of data.players) {

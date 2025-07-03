@@ -61,16 +61,17 @@
     }
     
     async function registerUser(values){
+        tempPassword = values.password;
         try {
             const { isSignUpComplete, userId, nextStep } = await signUp({
                 username: values.email,
                 password: values.password
             });
             
-            if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-                // Store password for later use after confirmation
-                tempPassword = values.password;
-            }
+            // if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+            //     // Store password for later use after confirmation
+            //     tempPassword = values.password;
+            // }
         } catch(error){
             console.error("Error during registration:", error);
             alert(error.message || "Registration failed. Please try again.");

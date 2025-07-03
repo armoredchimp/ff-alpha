@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
         const { data: leagueData, error: numOfTeamsError }  = await supabaseScaling
             .from('leagues')
             .select('*')
-            .eq('league_id', parseInt(leagueId))
+            .eq('league_id', (leagueId))
             .single()
 
             console.log('League query result:', { leagueData, numOfTeamsError });
