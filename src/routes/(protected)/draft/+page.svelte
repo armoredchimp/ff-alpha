@@ -306,7 +306,7 @@ async function finalizeAndUploadDraft() {
             if (playerTeam.dbId) {
                 teamUpdates.push({
                     team_id: playerTeam.dbId,
-                    transfer_budget: playerTeam.transferBudget,
+                    transfer_budget: Math.round(playerTeam.transferBudget),
                     player_count: playerTeam.playerCount
                 });
             }
@@ -318,7 +318,7 @@ async function finalizeAndUploadDraft() {
                 if (team.dbId) {
                     teamUpdates.push({
                         team_id: team.dbId,
-                        transfer_budget: team.transferBudget,
+                        transfer_budget: Math.round(team.transferBudget),
                         player_count: team.playerCount
                     });
                 }
