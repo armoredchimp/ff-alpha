@@ -179,6 +179,22 @@ export function playerName() {
 }
 ////////////////////
 //Generic Utils////
+export function parseTeamIdMap(parsedData) {
+    if (Array.isArray(parsedData)) {
+        // Skip the first element (index 0) which contains a strange object likely from a serialization issue 
+        // Start from index 1 and create the correct mapping
+        const teamIdMap = {};
+        
+        for (let i = 1; i < parsedData.length; i++) {
+            teamIdMap[(i - 1).toString()] = parsedData[i];
+        }
+        
+        return teamIdMap;
+    }
+    
+    return parsedData;
+}
+
 export function calculateAge(date_of_birth) {
     const dob = new Date(date_of_birth);
     const today = new Date();

@@ -9,6 +9,7 @@ import {
     assignDraftOrder,
     organizeDraftOrder,
     generateClubTraits,
+    parseTeamIdMap,
     playerName,
     delay,
     getRandomItem
@@ -217,13 +218,7 @@ async function draftSetup() {
             
             console.log('Parsed data:', parsedData);
             
-            // The parsed data is an array where the first element is the teamIdMap
-            let teamIdMap;
-            if (Array.isArray(parsedData)) {
-                teamIdMap = parsedData[0];  // Get the first element which is the actual map
-            } else {
-                teamIdMap = parsedData;
-            }
+            let teamIdMap = parseTeamIdMap(parsedData)
             
             console.log('Extracted teamIdMap:', teamIdMap);
             
