@@ -51,31 +51,34 @@ const traitEffectsCache = new Map();
 onMount(async () => {
     if(!draft.loaded){
         console.log('data: ', data)
-        // Populate allPlayers from server data
-        if (data.players && data.players.length > 0) {
-            for (const player of data.players) {
-                allPlayers.push(player);
-            }
-            console.log(`Loaded ${data.players.length} players`);
+        
+        // Check if players are loaded in the store
+        if (allPlayers.length > 0) {
+            console.log(`Using ${allPlayers.length} pre-loaded players`);
             localDraftState.setGate0(true);
+        } else {
+            console.log('No players loaded - this should not happen');
+            // Optionally reload players if somehow missing
+            // await loadPlayersData();
         }
         
-        // Set number of teams from value in league table
+        // Set number of teams
         if (data.numOfTeams && data.numOfTeams > 14) {
-                localDraftState.setTotalTeams(data.numOfTeams)
-                console.log('total teams value', localDraftState.totalTeams )
-            } else {
-                console.log('Condition failed - using default 14'); // Add this
-            }
+            localDraftState.setTotalTeams(data.numOfTeams)
+            console.log('total teams value', localDraftState.totalTeams)
+        } else {
+            console.log('Condition failed - using default 14');
+        }
         
-        // Populate managers from server data
+        // Load managers if needed
         if (data.managers && data.managers.length > 0) {
+            managers.length = 0;
             for (const manager of data.managers) {
                 managers.push(manager);
             }
             console.log(`Loaded ${data.managers.length} managers`);
         }
-    
+        
         numberPool = Array.from({length: draft.totalTeams }, (_, i) => i + 1);
         localDraftState.setLoaded(true)
     }

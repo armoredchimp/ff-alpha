@@ -5,6 +5,8 @@
     import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/utils/teams/loadTeams.js'
+    import { loadPlayersData } from '$lib/utils/players/loadPlayers.js'
+    import { loadManagersData } from '$lib/utils/managers/loadManagers.js'
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -125,10 +127,13 @@
                       passwordValue = '';
                       console.log(`Successfully logged in!`, currentUser);
                       
-                      // IMPORTANT: Use invalidateAll to refresh all load functions
-                      // This ensures the layout sees the new session
                       await invalidateAll();
                       
+                      await Promise.all([
+                        loadPlayersData(),
+                        loadManagersData()
+                      ]);
+
                       // Navigate based on league status
                       if (leagueInfo.status === 'HAS_LEAGUE' && leagueInfo.leagueId) {
                           await checkLeagueDraftStatus();
@@ -149,7 +154,6 @@
           alert(err.message || 'Login failed. Please try again.');
       }
   }
-
     async function triggerRegistration() {
         if (!emailValue || !passwordValue) {
             alert('Please enter both email and password');

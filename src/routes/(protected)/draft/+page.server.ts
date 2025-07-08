@@ -3,70 +3,53 @@ import { getLeagueId } from '$lib/server/auth';
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
     const leagueId = getLeagueId(cookies);
     
     if (!leagueId) {
-        throw redirect(303, '/create');
+        throw redirect(303, '/');
     }
     
     try {
-        // Load players from mini table
-        const { data: players, error: playersError } = await supabase
-            .from('prem_mini_2425')
-            .select('*')
-            .order('transfer_value', { ascending: false });
-            
-        if (playersError) {
-            console.error('Error loading players:', playersError);
+        // Use the existing draft_check endpoint
+        const draftCheckResponse = await fetch('/api/supabase/draft_check');
+        const draftCheckData = await draftCheckResponse.json();
+        
+        if (draftCheckData.draftComplete) {
+            throw redirect(303, draftCheckData.redirect);
         }
         
-        // Load number of teams
-        const { data: leagueData, error: numOfTeamsError }  = await supabaseScaling
+        // Only load league data to get number of teams
+        const { data: leagueData, error: leagueError } = await supabaseScaling
             .from('leagues')
-            .select('*')
-            .eq('league_id', (leagueId))
-            .single()
+            .select('total_teams')
+            .eq('league_id', leagueId)
+            .single();
 
-            console.log('League query result:', { leagueData, numOfTeamsError });
-
-            if (numOfTeamsError) {
-                console.error('Error fetching league:', numOfTeamsError);
-            }
-
-            const numOfTeams = leagueData?.total_teams || 14;
-
-        // Load managers
-        const { data: managers, error: managersError } = await supabase
-            .from('active_managers')
-            .select('*');
-            
-        if (managersError) {
-            console.error('Error loading managers:', managersError);
+        if (leagueError) {
+            console.error('Error fetching league:', leagueError);
         }
-            
-        console.log('About to return:', {  // Add this
-            leagueId,
-            numOfTeams,
-            players: players?.length || 0,
-            managers: managers?.length || 0
-        });
+
+        const numOfTeams = leagueData?.total_teams || 14;
             
         return {
             leagueId,
-            numOfTeams,
-            players: players || [],
-            managers: managers || []
+            numOfTeams
         };
     } catch (error) {
         console.error('Error in draft load:', error);
+        // Re-throw redirects
+        if (error instanceof Response && error.status >= 300 && error.status < 400) {
+            throw error;
+        }
         return {
             leagueId,
-            players: [],
-            managers: []
+            numOfTeams: 14
         };
     }
 };
+
+
 
 export const actions: Actions = {
     insertTeams: async ({ request, cookies }) => {
