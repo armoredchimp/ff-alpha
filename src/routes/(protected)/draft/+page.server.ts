@@ -227,7 +227,31 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to update team stats' });
         }
     },
-
+    draftUploaded: async ({ cookies }) => {
+        const leagueId = getLeagueId(cookies);
+        if (!leagueId) {
+            return fail(401, { error: 'No league ID found' });
+        }
+        
+        try {
+            const { error } = await supabaseScaling
+                .from('leagues')
+                .update({ draft_complete: true })
+                .eq('league_id', leagueId);
+                
+            if (error) {
+                console.error('Failed to update draft status:', error);
+                return fail(500, { error: 'Failed to update draft status' });
+            }
+            
+            console.log('Draft status successfully updated to complete');
+            return { success: true };
+            
+        } catch (error) {
+            console.error('Failed to update draft status:', error);
+            return fail(500, { error: 'Failed to update draft status' });
+        }
+    },
     getPlayerById: async ({ request }) => {
         const data = await request.formData();
         const playerId = data.get('playerId') as string;

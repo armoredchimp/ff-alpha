@@ -36,17 +36,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
             teams[teamKey] = {
                 name: dbTeam.team_name || '',
                 draftOrder: dbTeam.frontend_number || 0,
-                attackers: [],
-                midfielders: [],
-                defenders: [],
-                keepers: [],
-                selected: [],
-                subs: [],
-                unused: [],
                 playerCount: dbTeam.player_count || 0,
                 traits: dbTeam.traits || [],
                 rivals: dbTeam.rivals || [],
-                transferBudget: dbTeam.transfer_budget || 500000,
+                transferBudget: dbTeam.transfer_budget,
                 wins: dbTeam.wins || 0,
                 draws: dbTeam.draws || 0,
                 losses: dbTeam.losses || 0,
@@ -55,6 +48,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 goalsAgainst: dbTeam.goals_against || 0,
                 formation: dbTeam.formation || '4-4-2',
             };
+
+            console.log(teams[teamKey])
         });
         
         return json({ teams, success: true });

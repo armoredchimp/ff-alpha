@@ -339,7 +339,17 @@ async function finalizeAndUploadDraft() {
                 console.log('Draft teams finalized');
                 
                 draftUploaded = true;
+
+                const draftFinalizedResponse = await fetch('?/draftUploaded',{
+                    method: 'POST',
+                    body: new FormData()
+                })
                 
+                const draftFinalized = await draftFinalizedResponse.json()
+
+                if (draftFinalized.type === 'success'){
+                    console.log('Draft marked as complete in leagues DB')
+                }
             } else {
                 console.error('Failed to finalize draft teams:', updateResult.data?.error);
             }
