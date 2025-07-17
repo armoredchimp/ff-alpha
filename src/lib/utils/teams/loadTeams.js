@@ -1,4 +1,4 @@
-import { teams } from '$lib/stores/teams.svelte.js';
+import { teams, playerTeam } from '$lib/stores/teams.svelte.js';
 
 /**
  * One-time load of teams data 
@@ -23,6 +23,12 @@ export async function loadTeamsData() {
                 }
             });
             
+        // Handle playerTeam separately
+        if (data.playerTeam) {
+            Object.assign(playerTeam, data.playerTeam);
+            console.log('Player team loaded successfully');
+        }
+        
             console.log('Teams loaded successfully');
             return true;
         }

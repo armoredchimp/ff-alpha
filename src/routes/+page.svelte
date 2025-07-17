@@ -2,6 +2,7 @@
 	import axios from 'axios';
     import { signUp, confirmSignUp, signIn, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
+    import { draft,getSetDraft } from '../lib/stores/draft.svelte';
     import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/utils/teams/loadTeams.js'
@@ -11,6 +12,7 @@
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
     let registering = $state(false);
+    let localDraftRef = getSetDraft()
     let displayConfirmCodes = $state(false);
     let emailValue = $state('');
     let passwordValue = $state('');
@@ -85,6 +87,9 @@
             const response = await axios.get('/api/supabase/draft_check');
             
             if (response.data.draftComplete) {
+              localDraftRef.setGate0(true);
+              localDraftRef.setGate1(true);
+              localDraftRef.setComplete(true);
               await loadTeamsData()
             }
 

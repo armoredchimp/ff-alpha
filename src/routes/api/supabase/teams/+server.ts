@@ -29,11 +29,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
         
         // Create teams object formatted for the frontend
         const teams: Record<string, any> = {};
-        
-        teamsData.forEach(dbTeam => {
-            const teamKey = `team${dbTeam.frontend_number}`;
-            
-            teams[teamKey] = {
+        let playerTeam: any = null;
+
+       teamsData.forEach(dbTeam => {
+            const teamData = {
                 name: dbTeam.team_name || '',
                 draftOrder: dbTeam.frontend_number || 0,
                 playerCount: dbTeam.player_count || 0,
@@ -48,11 +47,17 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 goalsAgainst: dbTeam.goals_against || 0,
                 formation: dbTeam.formation || '4-4-2',
             };
-
-            console.log(teams[teamKey])
+            
+            if (dbTeam.frontend_number === 0) {
+                // Assign to playerTeam instead of teams
+                playerTeam = teamData;
+            } else {
+                const teamKey = `team${dbTeam.frontend_number}`;
+                teams[teamKey] = teamData;
+            }
         });
         
-        return json({ teams, success: true });
+        return json({ teams, playerTeam, success: true });
         
     } catch (error) {
         console.error('Error in teams endpoint:', error);

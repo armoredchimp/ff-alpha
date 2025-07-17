@@ -1,5 +1,6 @@
 <script>
 	import axios from "axios";
+    import '../app.css';
     import { Amplify } from 'aws-amplify';
     import amplifyConfig from "$lib/api/aws/amplifyConfig";
 	import { onMount } from "svelte";
