@@ -27,11 +27,48 @@ export const GET: RequestHandler = async ({ cookies }) => {
             return json({ error: 'No teams found for this league' }, { status: 404 });
         }
         
+        // Load team players from database
+        const { data: teamPlayersData, error: playersError } = await supabaseScaling
+            .from('team_players')
+            .select('*')
+            .eq('league_id', leagueId)
+
+         if (playersError) {
+            console.error('Error loading team players:', playersError);
+            return json({ error: 'Failed to load team players' }, { status: 500 });
+        }
+
+        const teamPlayersMap = new Map();
+        if (teamPlayersData) {
+            teamPlayersData.forEach(tp => {
+                teamPlayersMap.set(tp.team_id, {
+                    attackers: tp.attackers || [],
+                    midfielders: tp.midfielders || [],
+                    defenders: tp.defenders || [],
+                    keepers: tp.keepers || [],
+                    selected: tp.selected || [],
+                    subs: tp.subs || [],
+                    unused: tp.unused || []
+                })
+            })
+        }
+
         // Create teams object formatted for the frontend
         const teams: Record<string, any> = {};
         let playerTeam: any = null;
 
        teamsData.forEach(dbTeam => {
+            // Link player data for this team
+            const playerData = teamPlayersMap.get(dbTeam.team_id) || {
+                attackers: [],
+                midfielders: [],
+                defenders: [],
+                keepers: [],
+                selected: [],
+                subs: [],
+                unused: []
+            }
+
             const teamData = {
                 name: dbTeam.team_name || '',
                 teamID: dbTeam.team_id,
@@ -47,6 +84,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 goalsFor: dbTeam.goals_for || 0,
                 goalsAgainst: dbTeam.goals_against || 0,
                 formation: dbTeam.formation || '4-4-2',
+                // Add player IDs
+                attackers: playerData.attackers,
+                midfielders: playerData.midfielders,
+                defenders: playerData.defenders,
+                keepers: playerData.keepers,
+                selected: playerData.selected,
+                subs: playerData.subs,
+                unused: playerData.unused
             };
             
             if (dbTeam.frontend_number === 0) {
