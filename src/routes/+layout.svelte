@@ -8,6 +8,7 @@
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     import { supabase } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils/utils";
+    import { getPlayerPicture } from "../lib/api/sportsmonk/utils/apiUtils.svelte";
     import { countryMap, getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
 	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
@@ -30,7 +31,7 @@
 	let { children } = $props();
    
     let weightsFetched = $state(false)
-    let devBarVisible = $state(true)
+    let devBarVisible = $state(false)
 
     function capScore(score) {
         return Math.min(score, 5000);
@@ -165,6 +166,47 @@
         ])
 
         weightsFetched = true
+    }
+
+    async function getPlayerImages(miniDB) {
+        try {
+            let { data: players, error } = await supabase
+                .from('prem_stats_2425')
+                .select('*')
+
+            if (error) {
+                console.error('Error fetching players:', error);
+                return;
+            }
+
+            console.log(`Fetched ${players.length} players.`);
+
+            for (const player of players) {
+
+                console.log(`Getting image for player: ${player["Player Name"]}`);
+
+                const imageURL = await getPlayerPicture(player["id"])
+
+                const { error: upsertError } = await supabase
+                    .from(miniDB)
+                    .upsert({
+                        id: player.id,
+                        image_path: imageURL
+                    }, {
+                        onConflict: 'id'
+                    })
+
+                    if (upsertError) {
+                        console.error(`Error upserting image for player ${player["Player Name"]}:`, upsertError);
+                    } else {
+                        console.log(`Successfully updated image_path for ${player["Player Name"]}`);
+                    }
+
+                await delay(400)
+            }
+        } catch (err){
+            console.error(err)
+        }
     }
 
     async function getPlayersThenScore(miniDB) {
@@ -386,6 +428,7 @@
             console.error(err)
         }
     }
+
 
     async function insertPer90s(id, p90s){
         const { data, error } = await supabase
@@ -1106,6 +1149,8 @@ function toggleDevBar() {
         <button onclick={statRankings}>Stat Rankings</button>
         <button onclick={getCoachesToDB}>Managers to DB</button>
         <button onclick={getNations}>Nations</button>
+        <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
+        <button onclick={getPlayerImages('prem_mini_2425')}>Player Images to Mini</button>
     </div>  
 {/if}
 {#if userStore.user}

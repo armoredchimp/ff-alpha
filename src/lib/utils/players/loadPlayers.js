@@ -19,10 +19,12 @@ export async function loadPlayersData() {
             
             // Create KVP object for quick lookups
             for (const player of response.data.players) {
-                playersByID[player.player_id] = player;
+                playersByID[player.id] = player;
             }
             
             console.log(`Loaded ${response.data.players.length} players`);
+            console.log(JSON.parse(JSON.stringify(allPlayers)))
+            console.log('playersByID:', JSON.parse(JSON.stringify(playersByID)));
             return true;
         }
         

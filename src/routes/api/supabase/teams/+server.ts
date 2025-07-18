@@ -34,6 +34,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
        teamsData.forEach(dbTeam => {
             const teamData = {
                 name: dbTeam.team_name || '',
+                teamID: dbTeam.team_id,
                 draftOrder: dbTeam.frontend_number || 0,
                 playerCount: dbTeam.player_count || 0,
                 traits: dbTeam.traits || [],
