@@ -1,5 +1,5 @@
 <script>
-    import { playerTeam, teams } from "$lib/stores/teams.svelte";
+    import { playerTeam } from "$lib/stores/teams.svelte";
     import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
     import SelectedList from "$lib/SelectedList.svelte";
@@ -7,12 +7,15 @@
     import TeamScores from "$lib/TeamScores.svelte";
 	  import { onMount } from "svelte";
     import { createFormationStructure, resetScores, populateLineup } from "$lib/utils/utils";
+	  import { delay } from "../../../../../lib/utils/utils";
 
 
     onMount(()=>{
         if(playerTeam.selected.length <1){
             playerTeam.selected = createFormationStructure(playerTeam.formation)
         }
+        delay(400)
+        populateLineup(playerTeam)
     })
 
     function formationChange(e){

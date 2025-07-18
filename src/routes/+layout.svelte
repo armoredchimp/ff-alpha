@@ -1158,7 +1158,9 @@ function toggleDevBar() {
     <button onclick={signUserOut}>Logout</button>
 {/if}
 <button><a href="/">Home</a></button>
+{#if !draft.complete}
 <button><a href="/draft">To Draft</a></button>
+{/if}
 {#if draft.gate1}
   <button>
     <a

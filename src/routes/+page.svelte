@@ -6,8 +6,10 @@
     import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/utils/teams/loadTeams.js'
+    import { hydratePlayers } from '$lib/utils/players/hydratePlayers.js'
     import { loadPlayersData } from '$lib/utils/players/loadPlayers.js'
     import { loadManagersData } from '$lib/utils/managers/loadManagers.js'
+	  import { delay } from '../lib/utils/utils';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -90,12 +92,18 @@
               localDraftRef.setGate0(true);
               localDraftRef.setGate1(true);
               localDraftRef.setComplete(true);
-              await loadTeamsData()
-            }
 
-            if (response.data.redirect) {
-                goto(response.data.redirect);
+            // Load teams and wait for it to complete
+            const teamsLoaded = await loadTeamsData();
+            
+            if (teamsLoaded && response.data.redirect) {
+              delay(100);
+              await hydratePlayers();
+              goto(response.data.redirect);
             }
+        } else if (response.data.redirect) {
+            goto(response.data.redirect);
+        }
         } catch (error) {
             console.error('Error checking league draft status:', error);
             // Default to draft page if there's an error

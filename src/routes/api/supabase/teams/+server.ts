@@ -58,7 +58,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
         let playerTeam: any = null;
 
        teamsData.forEach(dbTeam => {
-            // Link player data for this team
+            // Link player data for this team by team_id
             const playerData = teamPlayersMap.get(dbTeam.team_id) || {
                 attackers: [],
                 midfielders: [],
