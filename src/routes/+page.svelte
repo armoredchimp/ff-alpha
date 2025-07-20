@@ -9,7 +9,7 @@
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
     import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
-	  import { delay } from '../lib/utils/utils';
+	  import { delay } from '../lib/utils';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 

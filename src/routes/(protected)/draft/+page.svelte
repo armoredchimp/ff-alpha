@@ -13,7 +13,7 @@ import {
     playerName,
     delay,
     getRandomItem
-} from '$lib/utils/utils';
+} from '$lib/utils';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
 import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
 import { getSetDraft, draft } from '$lib/stores/draft.svelte';

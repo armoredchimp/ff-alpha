@@ -6,8 +6,8 @@
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
 	  import { onMount } from "svelte";
-    import { createFormationStructure, resetScores, populateLineup } from "$lib/utils/utils";
-	  import { delay } from "../../../../../lib/utils/utils";
+    import { createFormationStructure, resetScores, populateLineup, delay } from "$lib/utils";
+	  
 
 
     onMount(()=>{

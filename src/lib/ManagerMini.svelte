@@ -1,6 +1,6 @@
 <script>
     import { getCountry } from "./data/countries";
-    import { calculateAge } from "./utils/utils";
+    import { calculateAge } from "./utils";
 
     let {
         manager = {}

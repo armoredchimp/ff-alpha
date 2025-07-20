@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
     import { outfieldAverages, keeperAverages } from "./stores/generic.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
-    import { formatStatKey } from "./utils/utils";
+    import { formatStatKey } from "./utils";
 
     let {
         name = '',

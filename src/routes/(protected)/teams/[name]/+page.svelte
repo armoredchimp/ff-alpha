@@ -5,7 +5,7 @@
   import Formation from "$lib/Formation.svelte";
   import { formationConfig } from "$lib/data/formationConfig";
   import SelectedList from "$lib/SelectedList.svelte";
-  import { createFormationStructure, populateLineup } from "$lib/utils/utils.js";
+  import { createFormationStructure, populateLineup } from "$lib/utils";
 
   let { data } = $props();
 

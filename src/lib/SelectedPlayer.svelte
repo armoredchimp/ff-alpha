@@ -1,5 +1,5 @@
 <script>
-    import { positionAbbrev } from './utils/utils';
+    import { positionAbbrev } from './utils';
 
     let {
         player = {},
