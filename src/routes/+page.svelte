@@ -5,10 +5,10 @@
     import { draft,getSetDraft } from '../lib/stores/draft.svelte';
     import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
-    import { loadTeamsData } from '$lib/utils/teams/loadTeams.js'
-    import { hydratePlayers } from '$lib/utils/players/hydratePlayers.js'
-    import { loadPlayersData } from '$lib/utils/players/loadPlayers.js'
-    import { loadManagersData } from '$lib/utils/managers/loadManagers.js'
+    import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
+    import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
+    import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
+    import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
 	  import { delay } from '../lib/utils/utils';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
