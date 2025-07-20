@@ -7,10 +7,12 @@
     import TeamScores from "$lib/TeamScores.svelte";
 	  import { onMount } from "svelte";
     import { createFormationStructure, resetScores, populateLineup, delay } from "$lib/utils";
+	  import { calculateTotalScores } from "../../../../../lib/utils";
 	  
 
 
     onMount(()=>{
+        calculateTotalScores(playerTeam)
         if(playerTeam.selected.length <1){
             playerTeam.selected = createFormationStructure(playerTeam.formation)
         }

@@ -28,3 +28,41 @@ export function resetScores(team) {
     team.scores.defenders    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
     team.scores.keeper       = { passing: 0, keeping: 0 };
 }
+
+export function calculateTotalScores(team) {
+    // Reset total scores to 0
+    team.scores.total = {
+        attacking: 0,
+        defense: 0,
+        possession: 0,
+        passing: 0,
+        keeping: 0
+    };
+    
+    // Define position groups to iterate through
+    const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
+    
+    // Iterate through each position group
+    positionGroups.forEach(group => {
+        const players = team[group] || [];
+        
+        // For each player in the group, add their scores to the total
+        players.forEach(player => {
+            if (player.attacking_score) {
+                team.scores.total.attacking += player.attacking_score;
+            }
+            if (player.defensive_score) {
+                team.scores.total.defense += player.defensive_score;
+            }
+            if (player.possession_score) {
+                team.scores.total.possession += player.possession_score;
+            }
+            if (player.passing_score) {
+                team.scores.total.passing += player.passing_score;
+            }
+            if (player.keeper_score) {
+                team.scores.total.keeping += player.keeper_score;
+            }
+        });
+    });
+}

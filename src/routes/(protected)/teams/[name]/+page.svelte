@@ -6,12 +6,14 @@
   import { formationConfig } from "$lib/data/formationConfig";
   import SelectedList from "$lib/SelectedList.svelte";
   import { createFormationStructure, populateLineup } from "$lib/utils";
+	import { calculateTotalScores } from "../../../../lib/utils/team.js";
 
   let { data } = $props();
 
   onMount(() => {
     // prepare structure and then fill positions
     data.team.selected = createFormationStructure(data.team.formation);
+    calculateTotalScores(data.team)
     populateLineup(data.team);
     console.log("FINAL selected:", data.team.selected);
   });
