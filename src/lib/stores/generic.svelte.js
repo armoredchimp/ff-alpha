@@ -4,6 +4,7 @@ export let playersByID = $state({})
 export let playerCall = $state(false)
 
 export let managers = $state([])
+export let managersByID = $state({})
 
 export let defenseWeightMap = $state({})
 export let passingWeightMap = $state({})

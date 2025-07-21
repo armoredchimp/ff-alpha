@@ -3,6 +3,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 import { getLeagueId } from "$lib/server/auth";
 import { supabaseScaling } from "$lib/supabase/supaClient";
 
+// Load teams from teams table, then players from team_players table, prep data for teams hydration
 export const GET: RequestHandler = async ({ cookies }) => {
     try {
         const leagueId = getLeagueId(cookies);
@@ -84,6 +85,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 goalsFor: dbTeam.goals_for || 0,
                 goalsAgainst: dbTeam.goals_against || 0,
                 formation: dbTeam.formation || '4-4-2',
+                manager: dbTeam.manager_id,
                 // Add player IDs
                 attackers: playerData.attackers,
                 midfielders: playerData.midfielders,

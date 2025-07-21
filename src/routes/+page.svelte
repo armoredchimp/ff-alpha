@@ -9,6 +9,7 @@
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
     import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
+    import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
 	  import { delay } from '../lib/utils';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
@@ -99,6 +100,8 @@
             if (teamsLoaded && response.data.redirect) {
               delay(100);
               await hydratePlayers();
+              delay(100);
+              await hydrateManagers();
               goto(response.data.redirect);
             }
         } else if (response.data.redirect) {

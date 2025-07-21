@@ -2,7 +2,7 @@ import { playersByID } from '$lib/stores/generic.svelte';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
 
 export function hydratePlayers() {
-    console.log('Starting hydration...');
+    console.log('Starting player hydration...');
     
     // Define the position arrays for hydration
     const positionArrays = ['attackers', 'midfielders', 'defenders', 'keepers', 'selected', 'subs', 'unused'];

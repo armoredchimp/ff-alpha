@@ -24,6 +24,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h1 class="team-name">{team.name}</h1>
+                    <h2>{team.manager}</h2>
                     <div class="stats-container">
                         <span class="stat-item">
                             <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">

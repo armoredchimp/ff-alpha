@@ -1,4 +1,4 @@
-import { managers } from '$lib/stores/generic.svelte';
+import { managers, managersByID } from '$lib/stores/generic.svelte';
 import axios from 'axios';
 
 export async function loadManagersData() {
@@ -18,7 +18,12 @@ export async function loadManagersData() {
                 managers.push(manager);
             }
             
+             for (const manager of response.data.managers) {
+                managersByID[manager.id] = manager;
+            }
+
             console.log(`Loaded ${response.data.managers.length} managers`);
+            console.log(JSON.parse(JSON.stringify(managersByID)))
             return true;
         }
         

@@ -1,7 +1,7 @@
 import { teams, playerTeam } from '$lib/stores/teams.svelte.js';
 
 /**
- * One-time load of teams data 
+ * Loads teams and hydrates players 
  */
 export async function loadTeamsData() {
     try {
@@ -34,7 +34,7 @@ export async function loadTeamsData() {
                     teams[teamKey].goalsFor = teamData.goalsFor;
                     teams[teamKey].goalsAgainst = teamData.goalsAgainst;
                     teams[teamKey].formation = teamData.formation;
-                    
+                    teams[teamKey].manager = teamData.manager;
                     // Update player arrays
                     teams[teamKey].attackers = teamData.attackers || [];
                     teams[teamKey].midfielders = teamData.midfielders || [];
