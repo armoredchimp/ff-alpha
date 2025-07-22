@@ -12,7 +12,7 @@
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state(0);
 
-    onMount(()=>{
+     onMount(()=>{
         calculateTotalScores(playerTeam)
         if(playerTeam.selected.length <1){
             playerTeam.selected = createFormationStructure(playerTeam.formation)
@@ -20,6 +20,18 @@
         delay(400)
         populateLineup(playerTeam)
         console.log(playerTeam)
+        
+        // Listen for player swap events from FormationPlayer components
+        const handlePlayerSwap = () => {
+            console.log('player swap event')
+            formationKey++;
+        };
+        document.addEventListener('playerSwapped', handlePlayerSwap);
+        
+        // Cleanup listener on component destroy
+        return () => {
+            document.removeEventListener('playerSwapped', handlePlayerSwap);
+        };
     })
 
     function formationChange(e){

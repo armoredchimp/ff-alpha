@@ -129,6 +129,9 @@
         currentSlot.player = replacementPlayer;
         
         console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
+ 
+        // Dispatch event to trigger re-render
+        import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
       }
       
       // Reset dropdown
