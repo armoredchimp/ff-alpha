@@ -17,6 +17,9 @@
   let eligibleReplacements = $state([])
   let showDropdown = $state(false)
   let selectedReplacement = $state('')
+  let dropdownTimeout = null;
+  let fadeTimeout = null;
+  let dropdownFading = $state(false);
 
   const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
 
@@ -143,15 +146,44 @@
     }
   }
 
-  function handleDropdownChange(event) {
-    const selectedPlayerName = event.target.value;
-    if (selectedPlayerName) {
-      const replacement = eligibleReplacements.find(p => p.player_name === selectedPlayerName);
-      if (replacement) {
-        replacePlayer(replacement);
-      }
+  function handleDropdownMouseEnter() {
+    if (dropdownTimeout) {
+      clearTimeout(dropdownTimeout);
+      dropdownTimeout = null;
+    }
+    if (fadeTimeout) {
+      clearTimeout(fadeTimeout);
+      fadeTimeout = null;
+    }
+    dropdownFading = false;
+  }
+
+  function handleDropdownMouseLeave() {
+    dropdownTimeout = setTimeout(() => {
+      dropdownFading = true;
+      fadeTimeout = setTimeout(() => {
+        showDropdown = false;
+        dropdownFading = false;
+      }, 200); // Match the CSS transition duration
+    }, 1000);
+  }
+
+  function toggleDropdown() {
+    showDropdown = !showDropdown;
+    if (showDropdown && dropdownTimeout) {
+      clearTimeout(dropdownTimeout);
+      dropdownTimeout = null;
     }
   }
+
+  // Cleanup on component destroy
+  $effect(() => {
+    return () => {
+      if (dropdownTimeout) {
+        clearTimeout(dropdownTimeout);
+      }
+    };
+  });
 </script>
 
 <div class="formation-player">
@@ -167,31 +199,51 @@
   <!-- Replacement Dropdown -->
   {#if eligibleReplacements.length > 0}
     <div class="replacement-dropdown-container">
+      <!-- Remove Player Button (X) -->
       <button 
-        class="dropdown-toggle" 
-        onclick={() => showDropdown = !showDropdown}
-        aria-label="Replace player"
+        class="remove-player-btn" 
+        onclick={() => console.log('Remove player - TODO')}
+        aria-label="Remove player"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       </button>
       
+      <!-- Swap Players Dropdown -->
       {#if showDropdown}
-        <select 
+        <div 
           class="replacement-dropdown"
-          onchange={handleDropdownChange}
-          value={selectedReplacement}
+          class:fade-out={dropdownFading}
+          onmouseenter={handleDropdownMouseEnter}
+          onmouseleave={handleDropdownMouseLeave}
         >
-          <option value="">Select replacement</option>
           {#each eligibleReplacements as replacement}
-            <option value={replacement.player_name}>
-              {replacement.player_name}
-            </option>
+            <button 
+              class="replacement-option"
+              onclick={() => replacePlayer(replacement)}
+            >
+              <PlayerMini player={replacement} showPopup={false} />
+              <span class="player-name-option">{replacement.player_name}</span>
+            </button>
           {/each}
-        </select>
+        </div>
       {/if}
     </div>
+    
+    <!-- Dropdown Toggle Button -->
+    <button 
+      class="dropdown-toggle" 
+      onclick={toggleDropdown}
+      onmouseenter={handleDropdownMouseEnter}
+      onmouseleave={handleDropdownMouseLeave}
+      aria-label="Swap players"
+    >
+      Swap Player
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </button>
   {/if}
 
   <!-- Hover popup -->
@@ -301,6 +353,7 @@
     cursor: default;
     transition: transform 0.1s ease;
   }
+  
   .formation-player:hover {
     transform: translateY(-4px);
   }
@@ -346,13 +399,13 @@
     z-index: 20;
   }
 
-  .dropdown-toggle {
-    background: rgba(0, 0, 0, 0.7);
+  .remove-player-btn {
+    background: rgba(220, 38, 38, 0.8);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -361,42 +414,87 @@
     opacity: 0;
   }
 
+  .formation-player:hover .remove-player-btn {
+    opacity: 1;
+  }
+
+  .remove-player-btn:hover {
+    background: rgba(220, 38, 38, 1);
+    transform: scale(1.1);
+  }
+
+  .dropdown-toggle {
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    white-space: nowrap;
+  }
+
   .formation-player:hover .dropdown-toggle {
     opacity: 1;
   }
 
   .dropdown-toggle:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.1);
-  }
-
-  .dropdown-toggle svg {
-    transform: rotate(45deg);
+    background: #1d4ed8;
   }
 
   .replacement-dropdown {
     position: absolute;
-    top: 28px;
-    right: 0;
+    top: calc(100% + 2.5rem);
+    left: 50%;
+    transform: translateX(-50%);
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
     padding: 0.5rem;
-    min-width: 180px;
-    max-height: 200px;
+    min-width: 220px;
+    max-height: 300px;
     overflow-y: auto;
-    font-size: 0.85rem;
+    opacity: 1;
+    transition: opacity 0.2s ease-out;
+  }
+  
+  .replacement-dropdown.fade-out {
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .replacement-dropdown option {
-    padding: 0.25rem 0.5rem;
+  .replacement-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    text-align: left;
   }
 
-  .replacement-dropdown option:hover {
-    background-color: #f0f0f0;
+  .replacement-option:hover {
+    background-color: #f3f4f6;
+  }
+
+  .player-name-option {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #333;
   }
 
   /* Popup styling positioned above-right (northeast) */

@@ -1,25 +1,23 @@
 <script>
-	// import { onMount } from "svelte";
 
     let {
-        player = {}
+        player = {},
+        showPopup = true
     } = $props();
 
-    // onMount(()=>{
-    //     if(player.image_path === '' || player.image_path === undefined){
-
-    //     }
-    // })
+ 
 </script>
 
 <div class="player-image-container">
     <img src={player.image_path} alt={player.player_name} class="player-photo" />
-    <div class="player-popup">
-        <h5>{player.player_name}</h5>
-        <p>Position: {player.detailed_position}</p>
-        <p>Age: {player.player_age}</p>
-        <p>Nationality: {player.nationality}</p>
-    </div>
+    {#if showPopup}
+        <div class="player-popup">
+            <h5>{player.player_name}</h5>
+            <p>Position: {player.detailed_position}</p>
+            <p>Age: {player.player_age}</p>
+            <p>Nationality: {player.nationality}</p>
+        </div>
+    {/if}
 </div>
 
 <style>
