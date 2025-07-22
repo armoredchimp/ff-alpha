@@ -76,18 +76,17 @@
 
   function scanPlayersForPos(position){
     for (const group of positionGroups) {
-      // console.log('group', group)
-      // console.log('pT', playerTeam[group])
       if (playerTeam[group] && playerTeam[group].length > 0){
         for(let i = 0; i < playerTeam[group].length; i++) {
           if(playerTeam[group][i].detailed_position && playerTeam[group][i].detailed_position === position) {
-            eligibleReplacements.push(playerTeam[group][i].player_name)
+            if (playerTeam[group][i].player_name !== player.player_name){
+              eligibleReplacements.push(playerTeam[group][i].player_name)
+            }
           }
         }
       }
 
   }
-  // console.log('eligREP: ', eligibleReplacements, 'position: ', position)
 }
 </script>
 
