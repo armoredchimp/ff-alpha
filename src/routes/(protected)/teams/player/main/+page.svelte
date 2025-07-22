@@ -18,6 +18,7 @@
         }
         delay(400)
         populateLineup(playerTeam)
+        console.log(playerTeam)
     })
 
     function formationChange(e){
