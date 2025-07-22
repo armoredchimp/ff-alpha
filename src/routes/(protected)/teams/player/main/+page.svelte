@@ -9,7 +9,8 @@
     import { createFormationStructure, resetScores, populateLineup, delay } from "$lib/utils";
 	  import { calculateTotalScores } from "../../../../../lib/utils";
 	  
-
+    // Key for #key to force formation to re-render and all its child components
+    let formationKey = $state(0);
 
     onMount(()=>{
         calculateTotalScores(playerTeam)
@@ -25,8 +26,14 @@
         playerTeam.formation = e.target.value;
         resetScores(playerTeam)
         playerTeam.selected = createFormationStructure(playerTeam.formation)
+
+        formationKey++;
     }
 
+    function autoPick(){
+      populateLineup(playerTeam)
+      formationKey++
+    }
 </script>
 
 <div class="page-container">
@@ -53,12 +60,14 @@
             </select>
         </div>
 
-    <button onclick={()=> populateLineup(playerTeam)}>Auto-Pick Team</button>
+    <button onclick={()=> autoPick()}>Auto-Pick Team</button>
 
         
             <div class="content-wrapper">
-                <Formation team={playerTeam} />
-                <SelectedList team={playerTeam} />
+                {#key formationKey}
+                  <Formation team={playerTeam} />
+                  <SelectedList team={playerTeam} />
+                {/key}
             </div>
     </div>
 </div>

@@ -4,7 +4,7 @@
   import { getFallbackPos } from "./data/fallbackOrder"
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
-	import { onMount } from "svelte";
+  import { onMount } from "svelte";
 
   let {
     player = {},
@@ -14,44 +14,45 @@
   let currentSlot = $state({})
   let eligiblePositions = $state([])
   let eligibleReplacements = $state([])
+  let showDropdown = $state(false)
+  let selectedReplacement = $state('')
 
   const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
 
   onMount(()=> {
     if(player && player.id){
       currentSlot = getSelectedSlot()
+      console.log('currSlot', currentSlot)
       getEligiblePositions()
       console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
       getEligiblePlayers()
       console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
     }
-
   })
 
   function getSelectedSlot(){
     if (player.id){
-
-    for (const group of positionGroups) {
-      const detailedPositions = Object.keys(playerTeam.selected[group]);
-
-      for (const detailedPos of detailedPositions) {
-        if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
-          const playersArray = playerTeam.selected[group][detailedPos].players;
-
-          for (let i = 0; i < playersArray.length; i++){
-            if (playersArray[i].id === player.id) {
-              const data = {
-                positionGroup: group,
-                detailedPosition: detailedPos,
-                playerIndex: i,
+      for (const group of positionGroups) {
+        const detailedPositions = Object.keys(playerTeam.selected[group]);
+        for (const detailedPos of detailedPositions) {
+          if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
+            const playersArray = playerTeam.selected[group][detailedPos].players;
+            for (let i = 0; i < playersArray.length; i++){
+              if (playersArray[i].id === player.id) {
+                const data = {
+                  positionGroup: group,
+                  detailedPosition: detailedPos,
+                  playerIndex: i,
+                  path: ['selected', group, detailedPos, 'players', i],
+                  player: playersArray[i]
+                }
+                console.log(data)
+                return data;
               }
-              console.log(data)
-              return data;
             }
           }
         }
       }
-    }
     }
   }
 
@@ -61,7 +62,6 @@
     if (currentPosition !== 'Goalkeeper'){
       const fallbacks = getFallbackPos(currentPosition)
       eligiblePositions.push(...fallbacks)
-      // console.log('elig', eligiblePositions)
     }
   }
 
@@ -80,14 +80,72 @@
         for(let i = 0; i < playerTeam[group].length; i++) {
           if(playerTeam[group][i].detailed_position && playerTeam[group][i].detailed_position === position) {
             if (playerTeam[group][i].player_name !== player.player_name){
-              eligibleReplacements.push(playerTeam[group][i].player_name)
+              eligibleReplacements.push(playerTeam[group][i])
             }
           }
         }
       }
-
+    }
   }
-}
+
+  function findReplacementSlot(replacementPlayer) {
+    for (const group of positionGroups) {
+      const detailedPositions = Object.keys(playerTeam.selected[group]);
+      for (const detailedPos of detailedPositions) {
+        if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
+          const playersArray = playerTeam.selected[group][detailedPos].players;
+          for (let i = 0; i < playersArray.length; i++){
+            if (playersArray[i].id === replacementPlayer.id) {
+              return {
+                positionGroup: group,
+                detailedPosition: detailedPos,
+                playerIndex: i,
+                player: playersArray[i]
+              };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function replacePlayer(replacementPlayer) {
+    if (currentSlot && currentSlot.path && replacementPlayer) {
+      // Find the replacement player's current slot
+      const replacementSlot = findReplacementSlot(replacementPlayer);
+      
+      if (replacementSlot) {
+        // Get the current players
+        const currentPlayer = playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex];
+        const swapPlayer = playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex];
+        
+        // Perform the swap
+        playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
+        playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex] = currentPlayer;
+        
+        // Update local state to reflect the change
+        player = replacementPlayer;
+        currentSlot.player = replacementPlayer;
+        
+        console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
+      }
+      
+      // Reset dropdown
+      showDropdown = false;
+      selectedReplacement = '';
+    }
+  }
+
+  function handleDropdownChange(event) {
+    const selectedPlayerName = event.target.value;
+    if (selectedPlayerName) {
+      const replacement = eligibleReplacements.find(p => p.player_name === selectedPlayerName);
+      if (replacement) {
+        replacePlayer(replacement);
+      }
+    }
+  }
 </script>
 
 <div class="formation-player">
@@ -97,19 +155,46 @@
   {:else}
     <div class="player-name">Empty</div>
     <div class="player-placeholder">No Player Selected</div>
-    {/if}
+  {/if}
   <div class="player-position">{currentPosition}</div>
 
-   <!-- Hover popup -->
+  <!-- Replacement Dropdown -->
+  {#if eligibleReplacements.length > 0}
+    <div class="replacement-dropdown-container">
+      <button 
+        class="dropdown-toggle" 
+        onclick={() => showDropdown = !showDropdown}
+        aria-label="Replace player"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+      
+      {#if showDropdown}
+        <select 
+          class="replacement-dropdown"
+          onchange={handleDropdownChange}
+          value={selectedReplacement}
+        >
+          <option value="">Select replacement</option>
+          {#each eligibleReplacements as replacement}
+            <option value={replacement.player_name}>
+              {replacement.player_name}
+            </option>
+          {/each}
+        </select>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Hover popup -->
   {#if player}  
   {#if player.detailed_position !== "Goalkeeper"}
    <div class="player-popup">
     <div class="popup-upper-section">
         <div class="popup-info">
-            <!-- <div><strong>{player.player_name}</strong></div> -->
-            <!-- <div><strong>Nationality: </strong>   {player.nationality}</div> -->
             <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-            
             <div><strong>Age: </strong>   {player.player_age} yrs</div>
         </div>
         <div class="nation-image">
@@ -214,7 +299,6 @@
     transform: translateY(-4px);
   }
 
-
   .player-name {
     font-weight: bold;
     margin-bottom: 0.5rem;
@@ -248,6 +332,67 @@
     margin-bottom: 0.5rem;
   }
 
+  /* Replacement Dropdown Styles */
+  .replacement-dropdown-container {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    z-index: 20;
+  }
+
+  .dropdown-toggle {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+  }
+
+  .formation-player:hover .dropdown-toggle {
+    opacity: 1;
+  }
+
+  .dropdown-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+
+  .dropdown-toggle svg {
+    transform: rotate(45deg);
+  }
+
+  .replacement-dropdown {
+    position: absolute;
+    top: 28px;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 0.5rem;
+    min-width: 180px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+  }
+
+  .replacement-dropdown option {
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .replacement-dropdown option:hover {
+    background-color: #f0f0f0;
+  }
+
   /* Popup styling positioned above-right (northeast) */
   .player-popup {
     display: none;
@@ -274,7 +419,7 @@
   }
 
   .popup-upper-section {
-    position: relative;    /* make this the containing block */
+    position: relative;
     display: flex;
     align-items: center;
   }
@@ -296,7 +441,7 @@
   .nation-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;      /* fill the circle cleanly */
+    object-fit: cover;
     display: block;
   }
 
