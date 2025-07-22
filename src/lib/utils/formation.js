@@ -1,5 +1,6 @@
 import { formationConfig } from "$lib/data/formationConfig";
 import { resetScores } from "./team";
+import { getFallbackPos } from "$lib/data/fallbackOrder";
 
 export function createFormationStructure(formationName) {
     const config = formationConfig[formationName];
@@ -39,24 +40,9 @@ export function populateLineup(team) {
     const getAvailablePlayer = (players, detailedPosition) =>
         players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id));
 
-    // Fallback mapping for secondary position assignments
-    const fallbackOrder = {
-        "Centre Forward":       ["Left Wing", "Right Wing"],
-        "Left Wing":            ["Right Wing", "Centre Forward","Attacking Midfield"],
-        "Right Wing":           ["Left Wing", "Centre Forward","Attacking Midfield"],
-        "Left-Mid":             ["Left Wing", "Central Midfield", "Centre Forward","Attacking Midfield"],
-        "Right-Mid":            ["Right Wing", "Central Midfield", "Centre Forward","Attacking Midfield"],
-        "Central Midfield":     ["Attacking Midfield", "Defensive Midfield"],
-        "Attacking Midfield":   ["Central Midfield", "Left Wing", "Right Wing", "Centre Forward"],
-        "Defensive Midfield":   ["Centre Back", "Central Midfield", "Left Back", "Right Back"],
-        "Centre Back":          ["Left Back", "Right Back"],
-        "Left Back":            ["Right Back", "Centre Back"],
-        "Right Back":           ["Left Back", "Centre Back"]
-      };
-
     // Helper: attempt a fallback assignment for a specified position
     const getFallbackPlayer = pos => {
-        for (const alt of (fallbackOrder[pos] || [])) {
+        for (const alt of (getFallbackPos(pos) || [])) {
           const candidate = allPlayers.find(p => p.detailed_position === alt && !usedIds.has(p.id)); // Explicitly search allPlayers for fallback
           if (candidate) return candidate;
         }

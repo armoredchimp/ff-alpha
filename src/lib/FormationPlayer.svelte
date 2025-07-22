@@ -1,11 +1,94 @@
 <script>
   import { positionAbbrev } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
+  import { getFallbackPos } from "./data/fallbackOrder"
+  import PlayerMini from "./PlayerMini.svelte";
+  import { playerTeam } from "$lib/stores/teams.svelte";
+	import { onMount } from "svelte";
 
   let {
     player = {},
     currentPosition
   } = $props();
+
+  let currentSlot = $state({})
+  let eligiblePositions = $state([])
+  let eligibleReplacements = $state([])
+
+  const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
+
+  onMount(()=> {
+    if(player && player.id){
+      currentSlot = getSelectedSlot()
+      getEligiblePositions()
+      console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
+      getEligiblePlayers()
+      console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
+    }
+
+  })
+
+  function getSelectedSlot(){
+    if (player.id){
+
+    for (const group of positionGroups) {
+      const detailedPositions = Object.keys(playerTeam.selected[group]);
+
+      for (const detailedPos of detailedPositions) {
+        if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
+          const playersArray = playerTeam.selected[group][detailedPos].players;
+
+          for (let i = 0; i < playersArray.length; i++){
+            if (playersArray[i].id === player.id) {
+              const data = {
+                positionGroup: group,
+                detailedPosition: detailedPos,
+                playerIndex: i,
+              }
+              console.log(data)
+              return data;
+            }
+          }
+        }
+      }
+    }
+    }
+  }
+
+  function getEligiblePositions(){
+    console.log(player.player_name)
+    eligiblePositions.push(currentPosition)
+    if (currentPosition !== 'Goalkeeper'){
+      const fallbacks = getFallbackPos(currentPosition)
+      eligiblePositions.push(...fallbacks)
+      // console.log('elig', eligiblePositions)
+    }
+  }
+
+  function getEligiblePlayers(){
+    if(eligiblePositions && eligiblePositions.length > 0){
+      console.log('ding')
+      eligiblePositions.forEach(pos => {
+        scanPlayersForPos(pos)
+      })
+    }
+  }
+
+  function scanPlayersForPos(position){
+    for (const group of positionGroups) {
+      // console.log('group', group)
+      // console.log('pT', playerTeam[group])
+      if (playerTeam[group] && playerTeam[group].length > 0){
+        for(let i = 0; i < playerTeam[group].length; i++) {
+          if(playerTeam[group][i].detailed_position && playerTeam[group][i].detailed_position === position) {
+            eligibleReplacements.push(playerTeam[group][i].player_name)
+          }
+        }
+      }
+
+  }
+  // console.log('eligREP: ', eligibleReplacements, 'position: ', position)
+}
 </script>
 
 <div class="formation-player">
@@ -27,6 +110,7 @@
             <!-- <div><strong>{player.player_name}</strong></div> -->
             <!-- <div><strong>Nationality: </strong>   {player.nationality}</div> -->
             <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
+            
             <div><strong>Age: </strong>   {player.player_age} yrs</div>
         </div>
         <div class="nation-image">
