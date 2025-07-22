@@ -198,7 +198,13 @@
 
   <!-- Replacement Dropdown -->
   {#if eligibleReplacements.length > 0}
-    <div class="replacement-dropdown-container">
+    <div 
+        class="replacement-dropdown-container"
+        onmouseenter={handleDropdownMouseEnter}
+        onmouseleave={handleDropdownMouseLeave}
+        role="list"
+        aria-label="Swap players dropdown"
+      >
       <!-- Remove Player Button (X) -->
       <button 
         class="remove-player-btn" 
@@ -215,13 +221,18 @@
         <div 
           class="replacement-dropdown"
           class:fade-out={dropdownFading}
+          role="menu"
+          tabindex="0"
           onmouseenter={handleDropdownMouseEnter}
-          onmouseleave={handleDropdownMouseLeave}
+          onmouseleave={handleDropdownMouseLeave}  
+          aria-label="Swap players dropdown"
         >
           {#each eligibleReplacements as replacement}
             <button 
               class="replacement-option"
               onclick={() => replacePlayer(replacement)}
+              role="menuitem"
+              aria-label="Replace player with {replacement.player_name}"
             >
               <PlayerMini player={replacement} showPopup={false} />
               <span class="player-name-option">{replacement.player_name}</span>
