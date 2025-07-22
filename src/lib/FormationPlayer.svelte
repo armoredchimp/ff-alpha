@@ -1,7 +1,8 @@
 <script>
   import { positionAbbrev } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
-  import { getFallbackPos } from "./data/fallbackOrder"
+  import { getFallbackPos } from "./data/fallbackOrder";
+  import { recalculateSectionScores } from "./utils";
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
   import { onMount } from "svelte";
@@ -22,11 +23,12 @@
   onMount(()=> {
     if(player && player.id){
       currentSlot = getSelectedSlot()
-      console.log('currSlot', currentSlot)
+      // console.log('currSlot', currentSlot)
       getEligiblePositions()
-      console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
+      // console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
       getEligiblePlayers()
-      console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
+      // console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
+      console.log('selekta: ', playerTeam.selected)
     }
   })
 
@@ -67,7 +69,6 @@
 
   function getEligiblePlayers(){
     if(eligiblePositions && eligiblePositions.length > 0){
-      console.log('ding')
       eligiblePositions.forEach(pos => {
         scanPlayersForPos(pos)
       })
@@ -130,6 +131,8 @@
         
         console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
  
+        recalculateSectionScores(playerTeam)
+
         // Dispatch event to trigger re-render
         import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
       }

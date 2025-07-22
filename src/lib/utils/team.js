@@ -1,3 +1,5 @@
+const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
+
 export function playerName() {
     const name = prompt("Please enter a name for your team:");
     if (name !== null) {
@@ -39,9 +41,6 @@ export function calculateTotalScores(team) {
         keeping: 0
     };
     
-    // Define position groups to iterate through
-    const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
-    
     // Iterate through each position group
     positionGroups.forEach(group => {
         const players = team[group] || [];
@@ -65,4 +64,35 @@ export function calculateTotalScores(team) {
             }
         });
     });
+}
+
+export function recalculateSectionScores(team) {
+    resetScores(team);
+
+    // Iterate through selected which has variable structure depending on formation, 
+    // find all player objects and add their scores to appropriate section
+    positionGroups.forEach(group => {
+        if(team.selected[group]) {
+            Object.values(team.selected[group]).forEach(p=>{
+                if(p.players && Array.isArray(p.players)) {
+                    p.players.forEach(player => {
+                        if (player) {
+                            const scoreKey = group === 'keepers' ? 'keeper' : group;
+                            if (team.scores[scoreKey]) {
+                                if (player.detailed_position === 'Goalkeeper') {
+                                    team.scores.keeper.passing += player.passing_score || 0;
+                                    team.scores.keeper.keeping += player.keeper_score || 0;
+                                } else {
+                                    team.scores[scoreKey].attacking += player.attacking_score || 0;
+                                    team.scores[scoreKey].defense += player.defensive_score || 0;
+                                    team.scores[scoreKey].possession += player.possession_score || 0;
+                                    team.scores[scoreKey].passing += player.passing_score || 0;
+                                }
+                            }
+                        }
+                    })
+                }
+            } )
+        }
+    })
 }
