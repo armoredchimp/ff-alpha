@@ -11,7 +11,7 @@
     player = {},
     currentPosition,
     zone = null,
-    focusing = true
+    hide = false
   } = $props();
 
   let currentSlot = $state({})
@@ -182,7 +182,10 @@
       // Dispatch focus event when dropdown opens
       const event = new CustomEvent('focusplayer', { 
         bubbles: true, 
-        detail: { zone: zone } 
+        detail: { 
+          zone: zone,
+          dropdownActive: true
+        } 
       });
       const fieldElement = document.querySelector('.field');
       if (fieldElement) {
@@ -213,15 +216,15 @@
   });
 </script>
 
-<div class="formation-player" style="opacity: {focusing ? 1 : 0}; transition: opacity 0.2s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
+<div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
   {#if player}
-    <div class="player-name" style="opacity: {focusing ? 1 : 0}">{player.player_name}</div>
-    <img class="player-image" src={player.image_path} alt={player.player_name} />
+    <div class="player-name">{player.player_name}</div>
+    <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={player.image_path} alt={player.player_name} />
   {:else}
     <div class="player-name">Empty</div>
     <div class="player-placeholder">No Player Selected</div>
   {/if}
-  <div class="player-position" style="opacity: {focusing ? 1: 0}">{currentPosition}</div>
+  <div class="player-position">{currentPosition}</div>
 
   <!-- Replacement Dropdown -->
   {#if eligibleReplacements.length > 0}

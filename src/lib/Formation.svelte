@@ -10,19 +10,26 @@
 
     let activeTab = $state(null)
     let focusedZone = $state(null) // Track which player by zone is focused. The rest will have reduced z-index
+    let dropdownActive = $state(false) 
 
     function setActiveTab(tab){
         activeTab = tab;
     }
 
+ 
+
     // Handle focus event from FormationPlayer
     function handlePlayerFocus(event) {
         focusedZone = event.detail.zone;
+        dropdownActive = true;
+        console.log(dropdownActive)
     }
 
     // Handle blur event from FormationPlayer
     function handlePlayerBlur() {
         focusedZone = null;
+        dropdownActive = false;
+        console.log(dropdownActive)
     }
 
     // Helper: Gets current number of players in current formation positional group
@@ -127,8 +134,8 @@
         </div>
       </div>
     {/if}
+
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
-    <!-- focusing={focusedPlayerId === null || focusedPlayerId === slot.player?.id} -->
     {#if getSlotsByZone(15).length}
       <div class="zone zone-15" style="z-index: {focusedZone !== 15 ? 5 : 100}">
         {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
@@ -136,7 +143,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={15}
-           
+            hide={focusedZone !== 15 && dropdownActive}
           />
         {/each}
       </div>
@@ -148,7 +155,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={16}
-  
+            hide={focusedZone !== 16 && dropdownActive}
           />
         {/each}
       </div>
@@ -160,20 +167,19 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={17}
-       
+            hide={focusedZone !== 17 && dropdownActive}
           />
         {/each}
       </div>
     {/if}
-
-    {#if getSlotsByZone(12).length}
+ {#if getSlotsByZone(12).length}
       <div class="zone zone-12" style="z-index: {focusedZone !== 12 ? 5 : 100}">
         {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
           <FormationPlayer
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={12}
-         
+            hide={focusedZone !== 12 && dropdownActive}
           />
         {/each}
       </div>
@@ -185,7 +191,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={13}
-          
+            hide={focusedZone !== 13 && dropdownActive}
           />
         {/each}
       </div>
@@ -197,7 +203,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={14}
-        
+            hide={focusedZone !== 14 && dropdownActive}
           />
         {/each}
       </div>
@@ -210,7 +216,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={9}
-       
+            hide={focusedZone !== 9 && dropdownActive}
           />
         {/each}
       </div>
@@ -222,7 +228,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={10}
-            
+            hide={focusedZone !== 10 && dropdownActive}
           />
         {/each}
       </div>
@@ -234,7 +240,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={11}
-         
+            hide={focusedZone !== 11 && dropdownActive}
           />
         {/each}
       </div>
@@ -247,7 +253,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={6}
-          
+            hide={focusedZone !== 6 && dropdownActive}
           />
         {/each}
       </div>
@@ -259,7 +265,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={7}
-           
+            hide={focusedZone !== 7 && dropdownActive}
           />
         {/each}
       </div>
@@ -271,7 +277,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={8}
-            
+            hide={focusedZone !== 8 && dropdownActive}
           />
         {/each}
       </div>
@@ -284,7 +290,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={3}
-          
+            hide={focusedZone !== 3 && dropdownActive}
           />
         {/each}
       </div>
@@ -296,7 +302,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={4}
-          
+            hide={focusedZone !== 4 && dropdownActive}
           />
         {/each}
       </div>
@@ -308,7 +314,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={5}
-            
+            hide={focusedZone !== 5 && dropdownActive}
           />
         {/each}
       </div>
@@ -321,7 +327,7 @@
             player={slot.player}
             currentPosition={slot.currentPosition}
             zone={1}
-            
+            hide={focusedZone !== 1 && dropdownActive}
           />
         {/each}
       </div>
