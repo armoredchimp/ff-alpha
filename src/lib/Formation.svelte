@@ -22,14 +22,12 @@
     function handlePlayerFocus(event) {
         focusedZone = event.detail.zone;
         dropdownActive = true;
-        console.log(dropdownActive)
     }
 
     // Handle blur event from FormationPlayer
     function handlePlayerBlur() {
         focusedZone = null;
         dropdownActive = false;
-        console.log(dropdownActive)
     }
 
     // Helper: Gets current number of players in current formation positional group

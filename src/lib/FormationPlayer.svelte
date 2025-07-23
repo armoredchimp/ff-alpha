@@ -33,7 +33,7 @@
       // console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
       getEligiblePlayers()
       // console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
-      console.log('selekta: ', playerTeam.selected)
+      console.log('selekta: ', playerTeam.selected, 'subs:', playerTeam.subs)
     }
   })
 
@@ -106,8 +106,20 @@
                 positionGroup: group,
                 detailedPosition: detailedPos,
                 playerIndex: i,
-                player: playersArray[i]
+                player: playersArray[i],
+                sub: false
               };
+            }
+          }
+        } 
+        if (playerTeam.subs){
+          for (let i = 0; i < playerTeam.subs.length; i++){
+            if (playerTeam.subs[i].id === replacementPlayer.id) {      
+              return {
+                playerIndex: i,
+                player: playerTeam.subs[i],
+                sub: true
+              }
             }
           }
         }
@@ -118,12 +130,35 @@
 
   function replacePlayer(replacementPlayer) {
     if (currentSlot && currentSlot.path && replacementPlayer) {
+
+      const currentPlayer = playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex];
+
       // Find the replacement player's current slot
       const replacementSlot = findReplacementSlot(replacementPlayer);
-      
+
+       if (!replacementSlot) {
+        console.error('Replacement player not found in any slot');
+        return;
+      }
+      if (replacementSlot.sub) {
+        const swapPlayer = playerTeam.subs[replacementSlot.playerIndex]
+
+        playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
+        playerTeam.subs[replacementSlot.playerIndex] = currentPlayer;
+
+        player = replacementPlayer;
+        currentSlot.player = replacementPlayer;
+
+        console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
+
+        recalculateSectionScores(playerTeam)
+
+        // Dispatch event to trigger re-render
+        import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
+      }
+
       if (replacementSlot) {
-        // Get the current players
-        const currentPlayer = playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex];
+        
         const swapPlayer = playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex];
         
         // Perform the swap
