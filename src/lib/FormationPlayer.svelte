@@ -9,7 +9,9 @@
 
   let {
     player = {},
-    currentPosition
+    currentPosition,
+    zone = null,
+    focusing = true
   } = $props();
 
   let currentSlot = $state({})
@@ -164,15 +166,40 @@
       fadeTimeout = setTimeout(() => {
         showDropdown = false;
         dropdownFading = false;
+        // Dispatch blur event
+        const event = new CustomEvent('blurplayer', { bubbles: true });
+        const fieldElement = document.querySelector('.field');
+        if (fieldElement) {
+          fieldElement.dispatchEvent(event);
+        }
       }, 200); // Match the CSS transition duration
     }, 1000);
   }
 
   function toggleDropdown() {
     showDropdown = !showDropdown;
-    if (showDropdown && dropdownTimeout) {
-      clearTimeout(dropdownTimeout);
-      dropdownTimeout = null;
+    if (showDropdown) {
+      // Dispatch focus event when dropdown opens
+      const event = new CustomEvent('focusplayer', { 
+        bubbles: true, 
+        detail: { zone: zone } 
+      });
+      const fieldElement = document.querySelector('.field');
+      if (fieldElement) {
+        fieldElement.dispatchEvent(event);
+      }
+      
+      if (dropdownTimeout) {
+        clearTimeout(dropdownTimeout);
+        dropdownTimeout = null;
+      }
+    } else {
+      // Dispatch blur event when dropdown closes
+      const event = new CustomEvent('blurplayer', { bubbles: true });
+      const fieldElement = document.querySelector('.field');
+      if (fieldElement) {
+        fieldElement.dispatchEvent(event);
+      }
     }
   }
 
@@ -186,15 +213,15 @@
   });
 </script>
 
-<div class="formation-player">
+<div class="formation-player" style="opacity: {focusing ? 1 : 0}; transition: opacity 0.2s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
   {#if player}
-    <div class="player-name">{player.player_name}</div>
+    <div class="player-name" style="opacity: {focusing ? 1 : 0}">{player.player_name}</div>
     <img class="player-image" src={player.image_path} alt={player.player_name} />
   {:else}
     <div class="player-name">Empty</div>
     <div class="player-placeholder">No Player Selected</div>
   {/if}
-  <div class="player-position">{currentPosition}</div>
+  <div class="player-position" style="opacity: {focusing ? 1: 0}">{currentPosition}</div>
 
   <!-- Replacement Dropdown -->
   {#if eligibleReplacements.length > 0}
@@ -362,8 +389,10 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     font-size: 0.8rem;
     cursor: default;
-    transition: transform 0.1s ease;
+    transition: transform 0.1s ease, border 0.2s ease;
   }
+  
+  
   
   .formation-player:hover {
     transform: translateY(-4px);
@@ -407,7 +436,7 @@
     position: absolute;
     top: 0.25rem;
     right: 0.25rem;
-    z-index: 20;
+    z-index: 100;
   }
 
   .remove-player-btn {
@@ -475,13 +504,26 @@
     min-width: 220px;
     max-height: 300px;
     overflow-y: auto;
+    overflow-x: hidden;
     opacity: 1;
     transition: opacity 0.2s ease-out;
+    z-index: 100;
   }
   
   .replacement-dropdown.fade-out {
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .replacement-dropdown::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .replacement-dropdown {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
   .replacement-option {

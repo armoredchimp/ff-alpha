@@ -9,9 +9,20 @@
 
 
     let activeTab = $state(null)
+    let focusedZone = $state(null) // Track which player by zone is focused. The rest will have reduced z-index
 
     function setActiveTab(tab){
         activeTab = tab;
+    }
+
+    // Handle focus event from FormationPlayer
+    function handlePlayerFocus(event) {
+        focusedZone = event.detail.zone;
+    }
+
+    // Handle blur event from FormationPlayer
+    function handlePlayerBlur() {
+        focusedZone = null;
     }
 
     // Helper: Gets current number of players in current formation positional group
@@ -44,7 +55,7 @@
   </script>
 
 
-  <div class="field">
+  <div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
     {#if zonesVisible}
     <div class="zone-lines">
       <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
@@ -117,132 +128,205 @@
       </div>
     {/if}
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
+    <!-- focusing={focusedPlayerId === null || focusedPlayerId === slot.player?.id} -->
     {#if getSlotsByZone(15).length}
-      <div class="zone zone-15">
+      <div class="zone zone-15" style="z-index: {focusedZone !== 15 ? 5 : 100}">
         {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={15}
+           
+          />
         {/each}
       </div>
-    {/if}
+{/if}
     {#if getSlotsByZone(16).length}
-      <div class="zone zone-16">
+      <div class="zone zone-16" style="z-index: {focusedZone !== 16 ? 5 : 100}">
         {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={16}
+  
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(17).length}
-      <div class="zone zone-17">
+      <div class="zone zone-17" style="z-index: {focusedZone !== 17 ? 5 : 100}">
         {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={17}
+       
+          />
         {/each}
       </div>
     {/if}
-  
-    <!-- AM/Winger Row (Row 5: Zones 12, 13, 14) -->
+
     {#if getSlotsByZone(12).length}
-      <div class="zone zone-12">
+      <div class="zone zone-12" style="z-index: {focusedZone !== 12 ? 5 : 100}">
         {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={12}
+         
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(13).length}
-      <div class="zone zone-13">
+      <div class="zone zone-13" style="z-index: {focusedZone !== 13 ? 5 : 100}">
         {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={13}
+          
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(14).length}
-      <div class="zone zone-14">
+      <div class="zone zone-14" style="z-index: {focusedZone !== 14 ? 5 : 100}">
         {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={14}
+        
+          />
         {/each}
       </div>
     {/if}
-  
-    <!-- Central Midfield Row (Row 4: Zones 9, 10, 11) -->
+
     {#if getSlotsByZone(9).length}
-      <div class="zone zone-9">
+      <div class="zone zone-9" style="z-index: {focusedZone !== 9 ? 5 : 100}">
         {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={9}
+       
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(10).length}
-      <div class="zone zone-10">
+      <div class="zone zone-10" style="z-index: {focusedZone !== 10 ? 5 : 100}">
         {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={10}
+            
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(11).length}
-      <div class="zone zone-11">
+      <div class="zone zone-11" style="z-index: {focusedZone !== 11 ? 5 : 100}">
         {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={11}
+         
+          />
         {/each}
       </div>
     {/if}
-  
-    <!-- Wing Back / DM Row (Row 3: Zones 6, 7, 8) -->
+
     {#if getSlotsByZone(6).length}
-      <div class="zone zone-6">
+      <div class="zone zone-6" style="z-index: {focusedZone !== 6 ? 5 : 100}">
         {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={6}
+          
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(7).length}
-      <div class="zone zone-7">
+      <div class="zone zone-7" style="z-index: {focusedZone !== 7 ? 5 : 100}">
         {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={7}
+           
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(8).length}
-      <div class="zone zone-8">
+      <div class="zone zone-8" style="z-index: {focusedZone !== 8 ? 5 : 100}">
         {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={8}
+            
+          />
         {/each}
       </div>
     {/if}
-  
-    <!-- Defender Row (Row 2: Zones 3, 4, 5) -->
+
     {#if getSlotsByZone(3).length}
-      <div class="zone zone-3">
+      <div class="zone zone-3" style="z-index: {focusedZone !== 3 ? 5 : 100}">
         {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={3}
+          
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(4).length}
-      <div class="zone zone-4">
+      <div class="zone zone-4" style="z-index: {focusedZone !== 4 ? 5 : 100}">
         {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={4}
+          
+          />
         {/each}
       </div>
     {/if}
     {#if getSlotsByZone(5).length}
-      <div class="zone zone-5">
+      <div class="zone zone-5" style="z-index: {focusedZone !== 5 ? 5 : 100}">
         {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={5}
+            
+          />
         {/each}
       </div>
     {/if}
-  
-    <!-- Keeper Row (Row 1, Bottom: Zone 1) -->
+
     {#if getSlotsByZone(1).length}
-      <div class="zone zone-1">
+      <div class="zone zone-1" style="z-index: {focusedZone !== 1 ? 5 : 100}">
         {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer player={slot.player} currentPosition={slot.currentPosition} />
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={1}
+            
+          />
         {/each}
       </div>
     {/if}
-  </div>
-
-
-
+</div>
   <style>
     .field {
       position: relative;
@@ -345,4 +429,3 @@
         pointer-events: auto;
     }
   </style>
-  
