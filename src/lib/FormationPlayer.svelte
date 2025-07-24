@@ -1,5 +1,5 @@
 <script>
-  import { positionAbbrev } from "./utils";
+  import { delay, positionAbbrev } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
   import { recalculateSectionScores } from "./utils";
@@ -322,7 +322,7 @@
     dropdownFading = false;
   }
 
-  function handleDropdownMouseLeave() {
+function handleDropdownMouseLeave() {
     dropdownTimeout = setTimeout(() => {
       dropdownFading = true;
       fadeTimeout = setTimeout(() => {
@@ -330,20 +330,20 @@
         dropdownFading = false;
         hoveredReplacement = null;
         showComparison = false;
-        // Dispatch blur event
-        const event = new CustomEvent('blurplayer', { bubbles: true });
+        const event = new CustomEvent('blurplayer', { 
+          bubbles: true,
+          detail: { zone: zone } 
+        });
         const fieldElement = document.querySelector('.field');
         if (fieldElement) {
           fieldElement.dispatchEvent(event);
         }
-      }, 200); // Match the CSS transition duration
+      }, 200);
     }, 1000);
-  }
-
-  function toggleDropdown() {
+}
+function toggleDropdown() {
     showDropdown = !showDropdown;
     if (showDropdown) {
-      // Dispatch focus event when dropdown opens
       const event = new CustomEvent('focusplayer', { 
         bubbles: true, 
         detail: { 
@@ -361,8 +361,10 @@
         dropdownTimeout = null;
       }
     } else {
-      // Dispatch blur event when dropdown closes
-      const event = new CustomEvent('blurplayer', { bubbles: true });
+      const event = new CustomEvent('blurplayer', { 
+        bubbles: true,
+        detail: { zone: zone }
+      });
       const fieldElement = document.querySelector('.field');
       if (fieldElement) {
         fieldElement.dispatchEvent(event);
@@ -370,7 +372,8 @@
       hoveredReplacement = null;
       showComparison = false;
     }
-  }
+}
+
 
   function handleReplacementHover(replacement) {
     hoveredReplacement = replacement;

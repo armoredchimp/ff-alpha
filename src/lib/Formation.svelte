@@ -10,26 +10,37 @@
 
     let activeTab = $state(null)
     let focusedZone = $state(null) // Track which player by zone is focused. The rest will have reduced z-index
+    let previousFocusedZone = $state(null)
     let dropdownActive = $state(false) 
+   
 
-    function setActiveTab(tab){
-        activeTab = tab;
-    }
-
- 
+  function setActiveTab(tab){
+      activeTab = tab;
+  }
 
     // Handle focus event from FormationPlayer
-    function handlePlayerFocus(event) {
-        focusedZone = event.detail.zone;
-        dropdownActive = true;
+function handlePlayerFocus(event) {
+    // Only update if it's a different zone
+    if (focusedZone !== event.detail.zone) {
+        previousFocusedZone = focusedZone; // Move current to previous
+        focusedZone = event.detail.zone; // Set new focused zone
     }
-
+    dropdownActive = true;
+}
     // Handle blur event from FormationPlayer
-    function handlePlayerBlur() {
-        focusedZone = null;
+function handlePlayerBlur(event) {
+    // Only clear dropdownActive if the blur is from the currently focused zone
+    if (event.detail && event.detail.zone === focusedZone) {
         dropdownActive = false;
     }
+    // previousFocusedZone stays until a new zone is focused
+}
 
+function getZoneZIndex(zone) {
+    if (focusedZone === zone) return 100;
+    if (previousFocusedZone === zone) return 90;
+    return 5;
+}
     // Helper: Gets current number of players in current formation positional group
     const playerCount = groupName =>
       Object.values(team.selected[groupName] || {})
@@ -135,202 +146,230 @@
     {/if}
 
     <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
-    {#if getSlotsByZone(15).length}
-      <div class="zone zone-15" style="z-index: {focusedZone !== 15 ? 5 : 100}">
-        {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={15}
-            hide={focusedZone !== 15 && dropdownActive}
-          />
-        {/each}
-      </div>
+    <!-- Zone 15 -->
+<!-- Zone 15 -->
+{#if getSlotsByZone(15).length}
+  <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
+    {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={15}
+        hide={focusedZone !== 15 && dropdownActive}
+      />
+    {/each}
+  </div>
 {/if}
-    {#if getSlotsByZone(16).length}
-      <div class="zone zone-16" style="z-index: {focusedZone !== 16 ? 5 : 100}">
-        {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={16}
-            hide={focusedZone !== 16 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(17).length}
-      <div class="zone zone-17" style="z-index: {focusedZone !== 17 ? 5 : 100}">
-        {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={17}
-            hide={focusedZone !== 17 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
- {#if getSlotsByZone(12).length}
-      <div class="zone zone-12" style="z-index: {focusedZone !== 12 ? 5 : 100}">
-        {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={12}
-            hide={focusedZone !== 12 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(13).length}
-      <div class="zone zone-13" style="z-index: {focusedZone !== 13 ? 5 : 100}">
-        {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={13}
-            hide={focusedZone !== 13 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(14).length}
-      <div class="zone zone-14" style="z-index: {focusedZone !== 14 ? 5 : 100}">
-        {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={14}
-            hide={focusedZone !== 14 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
 
-    {#if getSlotsByZone(9).length}
-      <div class="zone zone-9" style="z-index: {focusedZone !== 9 ? 5 : 100}">
-        {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={9}
-            hide={focusedZone !== 9 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(10).length}
-      <div class="zone zone-10" style="z-index: {focusedZone !== 10 ? 5 : 100}">
-        {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={10}
-            hide={focusedZone !== 10 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(11).length}
-      <div class="zone zone-11" style="z-index: {focusedZone !== 11 ? 5 : 100}">
-        {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={11}
-            hide={focusedZone !== 11 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 16 -->
+{#if getSlotsByZone(16).length}
+  <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
+    {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={16}
+        hide={focusedZone !== 16 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
 
-    {#if getSlotsByZone(6).length}
-      <div class="zone zone-6" style="z-index: {focusedZone !== 6 ? 5 : 100}">
-        {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={6}
-            hide={focusedZone !== 6 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(7).length}
-      <div class="zone zone-7" style="z-index: {focusedZone !== 7 ? 5 : 100}">
-        {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={7}
-            hide={focusedZone !== 7 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(8).length}
-      <div class="zone zone-8" style="z-index: {focusedZone !== 8 ? 5 : 100}">
-        {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={8}
-            hide={focusedZone !== 8 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 17 -->
+{#if getSlotsByZone(17).length}
+  <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
+    {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={17}
+        hide={focusedZone !== 17 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
 
-    {#if getSlotsByZone(3).length}
-      <div class="zone zone-3" style="z-index: {focusedZone !== 3 ? 5 : 100}">
-        {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={3}
-            hide={focusedZone !== 3 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(4).length}
-      <div class="zone zone-4" style="z-index: {focusedZone !== 4 ? 5 : 100}">
-        {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={4}
-            hide={focusedZone !== 4 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
-    {#if getSlotsByZone(5).length}
-      <div class="zone zone-5" style="z-index: {focusedZone !== 5 ? 5 : 100}">
-        {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={5}
-            hide={focusedZone !== 5 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 12 -->
+{#if getSlotsByZone(12).length}
+  <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
+    {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={12}
+        hide={focusedZone !== 12 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
 
-    {#if getSlotsByZone(1).length}
-      <div class="zone zone-1" style="z-index: {focusedZone !== 1 ? 5 : 100}">
-        {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={1}
-            hide={focusedZone !== 1 && dropdownActive}
-          />
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 13 -->
+{#if getSlotsByZone(13).length}
+  <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
+    {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={13}
+        hide={focusedZone !== 13 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 14 -->
+{#if getSlotsByZone(14).length}
+  <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
+    {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={14}
+        hide={focusedZone !== 14 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 9 -->
+{#if getSlotsByZone(9).length}
+  <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
+    {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={9}
+        hide={focusedZone !== 9 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 10 -->
+{#if getSlotsByZone(10).length}
+  <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
+    {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={10}
+        hide={focusedZone !== 10 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 11 -->
+{#if getSlotsByZone(11).length}
+  <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
+    {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={11}
+        hide={focusedZone !== 11 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 6 -->
+{#if getSlotsByZone(6).length}
+  <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
+    {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={6}
+        hide={focusedZone !== 6 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 7 -->
+{#if getSlotsByZone(7).length}
+  <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
+    {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={7}
+        hide={focusedZone !== 7 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 8 -->
+{#if getSlotsByZone(8).length}
+  <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
+    {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={8}
+        hide={focusedZone !== 8 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 3 -->
+{#if getSlotsByZone(3).length}
+  <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
+    {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={3}
+        hide={focusedZone !== 3 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 4 -->
+{#if getSlotsByZone(4).length}
+  <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
+    {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={4}
+        hide={focusedZone !== 4 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 5 -->
+{#if getSlotsByZone(5).length}
+  <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
+    {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={5}
+        hide={focusedZone !== 5 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
+
+<!-- Zone 1 -->
+{#if getSlotsByZone(1).length}
+  <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
+    {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
+      <FormationPlayer
+        player={slot.player}
+        currentPosition={slot.currentPosition}
+        zone={1}
+        hide={focusedZone !== 1 && dropdownActive}
+      />
+    {/each}
+  </div>
+{/if}
 </div>
   <style>
     .field {
