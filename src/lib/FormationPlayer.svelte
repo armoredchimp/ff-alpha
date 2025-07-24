@@ -22,49 +22,68 @@
   let dropdownTimeout = null;
   let fadeTimeout = null;
   let dropdownFading = $state(false);
-
   const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
 
-  onMount(()=> {
+  // Fixed: Better sub slot calculation that handles nulls properly
+  let subSlot = $derived.by(() => {
+    const subs = playerTeam.subs || [];
+    
+    // Find the first empty slot (null, undefined, or empty object)
+    for (let i = 0; i < subs.length; i++) {
+      const sub = subs[i];
+      if (!sub || !sub.player_name || !sub.id) {
+        return i;
+      }
+    }
+    
+    // If all slots are filled, return the length (next position)
+    return subs.length;
+  });
+
+  onMount(() => {
+    // Always get eligible positions based on currentPosition
+    getEligiblePositions();
+    // Always get eligible players, even if no player is selected
+    getEligiblePlayers();
+    
+    // Only get current slot if there's a player
     if(player && player.id){
-      currentSlot = getSelectedSlot()
-      // console.log('currSlot', currentSlot)
-      getEligiblePositions()
-      // console.log('eliggg', eligiblePositions, 'curr: ', currentPosition)
-      getEligiblePlayers()
-      // console.log('eligREP: ', eligibleReplacements, 'position: ', currentPosition)
-      console.log('selekta: ', playerTeam.selected, 'subs:', playerTeam.subs)
+      currentSlot = getSelectedSlot();
     }
   })
 
   function getSelectedSlot(){
-    if (player.id){
-      for (const group of positionGroups) {
-        const detailedPositions = Object.keys(playerTeam.selected[group]);
-        for (const detailedPos of detailedPositions) {
-          if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
-            const playersArray = playerTeam.selected[group][detailedPos].players;
-            for (let i = 0; i < playersArray.length; i++){
-              if (playersArray[i].id === player.id) {
-                const data = {
-                  positionGroup: group,
-                  detailedPosition: detailedPos,
-                  playerIndex: i,
-                  path: ['selected', group, detailedPos, 'players', i],
-                  player: playersArray[i]
-                }
-                console.log(data)
-                return data;
-              }
-            }
+    if (!player || !player.id) return null;
+    
+    for (const group of positionGroups) {
+      if (!playerTeam.selected[group]) continue;
+      
+      const detailedPositions = Object.keys(playerTeam.selected[group]);
+      for (const detailedPos of detailedPositions) {
+        const positionData = playerTeam.selected[group][detailedPos];
+        if (!positionData || !positionData.players) continue;
+        
+        const playersArray = positionData.players;
+        for (let i = 0; i < playersArray.length; i++){
+          // Fixed: Properly check for null/undefined players
+          const currentPlayer = playersArray[i];
+          if (currentPlayer && currentPlayer.id && currentPlayer.id === player.id) {
+            return {
+              positionGroup: group,
+              detailedPosition: detailedPos,
+              playerIndex: i,
+              path: ['selected', group, detailedPos, 'players', i],
+              player: currentPlayer
+            };
           }
         }
       }
     }
+    return null;
   }
 
   function getEligiblePositions(){
-    console.log(player.player_name)
+    eligiblePositions = []; // Reset the array
     eligiblePositions.push(currentPosition)
     if (currentPosition !== 'Goalkeeper'){
       const fallbacks = getFallbackPos(currentPosition)
@@ -73,6 +92,7 @@
   }
 
   function getEligiblePlayers(){
+    eligibleReplacements = [];
     if(eligiblePositions && eligiblePositions.length > 0){
       eligiblePositions.forEach(pos => {
         scanPlayersForPos(pos)
@@ -81,106 +101,209 @@
   }
 
   function scanPlayersForPos(position){
+    const foundPlayerIds = new Set(); // Track found players to avoid duplicates
+    
+    // Scan roster players
     for (const group of positionGroups) {
       if (playerTeam[group] && playerTeam[group].length > 0){
         for(let i = 0; i < playerTeam[group].length; i++) {
-          if(playerTeam[group][i].detailed_position && playerTeam[group][i].detailed_position === position) {
-            if (playerTeam[group][i].player_name !== player.player_name){
-              eligibleReplacements.push(playerTeam[group][i])
+          const rosterPlayer = playerTeam[group][i];
+          if(rosterPlayer && rosterPlayer.detailed_position === position && rosterPlayer.id) {
+            // Skip if this is the current player or already found
+            if ((!player || !player.id || rosterPlayer.id !== player.id) && !foundPlayerIds.has(rosterPlayer.id)){
+              foundPlayerIds.add(rosterPlayer.id);
+              eligibleReplacements.push(rosterPlayer);
             }
+          }
+        }
+      }
+    }
+    
+    // Also scan subs for eligible replacements
+    if (playerTeam.subs && playerTeam.subs.length > 0) {
+      for (let i = 0; i < playerTeam.subs.length; i++) {
+        const sub = playerTeam.subs[i];
+        if (sub && sub.detailed_position === position && sub.id) {
+          // Skip if this is the current player or already found
+          if ((!player || !player.id || sub.id !== player.id) && !foundPlayerIds.has(sub.id)) {
+            foundPlayerIds.add(sub.id);
+            eligibleReplacements.push(sub);
           }
         }
       }
     }
   }
 
+  function removePlayer() {
+    if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
+    
+    const removedPlayer = currentSlot.player;
+    const subIndex = subSlot;
+    
+    // Ensure subs array exists and has enough slots
+    if (!playerTeam.subs) {
+      playerTeam.subs = [];
+    }
+    
+    // Ensure we have at least subIndex + 1 slots
+    while (playerTeam.subs.length <= subIndex) {
+      playerTeam.subs.push(null);
+    }
+    
+    // Update the selected position to null
+    playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = null;
+    
+    // Move player to subs
+    playerTeam.subs[subIndex] = removedPlayer;
+    
+    // Update local state
+    player = null;
+    currentSlot = {};
+    
+    // Recalculate scores
+    recalculateSectionScores(playerTeam);
+    
+    // Close dropdown
+    showDropdown = false;
+    
+    // Dispatch event
+    import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
+  }
+
   function findReplacementSlot(replacementPlayer) {
+    if (!replacementPlayer || !replacementPlayer.id) return null;
+    
+    // Check selected positions
     for (const group of positionGroups) {
+      if (!playerTeam.selected[group]) continue;
+      
       const detailedPositions = Object.keys(playerTeam.selected[group]);
       for (const detailedPos of detailedPositions) {
-        if(playerTeam.selected[group][detailedPos] && playerTeam.selected[group][detailedPos].players){
-          const playersArray = playerTeam.selected[group][detailedPos].players;
-          for (let i = 0; i < playersArray.length; i++){
-            if (playersArray[i].id === replacementPlayer.id) {
-              return {
-                positionGroup: group,
-                detailedPosition: detailedPos,
-                playerIndex: i,
-                player: playersArray[i],
-                sub: false
-              };
-            }
-          }
-        } 
-        if (playerTeam.subs){
-          for (let i = 0; i < playerTeam.subs.length; i++){
-            if (playerTeam.subs[i].id === replacementPlayer.id) {      
-              return {
-                playerIndex: i,
-                player: playerTeam.subs[i],
-                sub: true
-              }
-            }
+        const positionData = playerTeam.selected[group][detailedPos];
+        if (!positionData || !positionData.players) continue;
+        
+        const playersArray = positionData.players;
+        for (let i = 0; i < playersArray.length; i++){
+          const currentPlayer = playersArray[i];
+          if (currentPlayer && currentPlayer.id === replacementPlayer.id) {
+            return {
+              positionGroup: group,
+              detailedPosition: detailedPos,
+              playerIndex: i,
+              player: currentPlayer,
+              sub: false
+            };
           }
         }
       }
     }
+    
+    // Check subs
+    if (playerTeam.subs && playerTeam.subs.length > 0) {
+      for (let i = 0; i < playerTeam.subs.length; i++){
+        const sub = playerTeam.subs[i];
+        if (sub && sub.id === replacementPlayer.id) {
+          return {
+            playerIndex: i,
+            player: sub,
+            sub: true
+          };
+        }
+      }
+    }
+    
     return null;
   }
 
   function replacePlayer(replacementPlayer) {
-    if (currentSlot && currentSlot.path && replacementPlayer) {
+    if (!replacementPlayer) return;
 
-      const currentPlayer = playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex];
-
-      // Find the replacement player's current slot
-      const replacementSlot = findReplacementSlot(replacementPlayer);
-
-       if (!replacementSlot) {
-        console.error('Replacement player not found in any slot');
-        return;
+    // If current slot is empty, we need to find where to place the replacement
+    if (!currentSlot || !currentSlot.path || !player) {
+      // Find the current component's position in the formation
+      for (const group of positionGroups) {
+        if (!playerTeam.selected[group]) continue;
+        
+        const detailedPositions = Object.keys(playerTeam.selected[group]);
+        for (const detailedPos of detailedPositions) {
+          if (detailedPos === currentPosition) {
+            const positionData = playerTeam.selected[group][detailedPos];
+            if (!positionData || !positionData.players) continue;
+            
+            // Find the first null slot in this position
+            for (let i = 0; i < positionData.players.length; i++) {
+              if (!positionData.players[i]) {
+                currentSlot = {
+                  positionGroup: group,
+                  detailedPosition: detailedPos,
+                  playerIndex: i,
+                  path: ['selected', group, detailedPos, 'players', i],
+                  player: null
+                };
+                break;
+              }
+            }
+            break;
+          }
+        }
+        if (currentSlot.path) break;
       }
-      if (replacementSlot.sub) {
-        const swapPlayer = playerTeam.subs[replacementSlot.playerIndex]
+    }
 
-        playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
+    if (!currentSlot || !currentSlot.path) {
+      console.error('Could not find valid slot for replacement');
+      return;
+    }
+
+    const currentPlayer = playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex];
+    const replacementSlot = findReplacementSlot(replacementPlayer);
+
+    if (!replacementSlot) {
+      console.error('Replacement player not found in any slot');
+      return;
+    }
+
+    if (replacementSlot.sub) {
+      // Replacement is coming from subs
+      const subPlayer = playerTeam.subs[replacementSlot.playerIndex];
+      
+      // Place sub in the current position
+      playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = subPlayer;
+      
+      if (currentPlayer) {
+        // If there was a player in the position, move them to subs
         playerTeam.subs[replacementSlot.playerIndex] = currentPlayer;
-
-        player = replacementPlayer;
-        currentSlot.player = replacementPlayer;
-
-        console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
-
-        recalculateSectionScores(playerTeam)
-
-        // Dispatch event to trigger re-render
-        import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
-      }
-
-      if (replacementSlot) {
-        
-        const swapPlayer = playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex];
-        
-        // Perform the swap
-        playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
-        playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex] = currentPlayer;
-        
-        // Update local state to reflect the change
-        player = replacementPlayer;
-        currentSlot.player = replacementPlayer;
-        
-        console.log(`Players swapped: ${currentPlayer.player_name} <-> ${replacementPlayer.player_name}`);
- 
-        recalculateSectionScores(playerTeam)
-
-        // Dispatch event to trigger re-render
-        import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
+      } else {
+        // If position was empty, clear the sub slot
+        playerTeam.subs[replacementSlot.playerIndex] = null;
       }
       
-      // Reset dropdown
-      showDropdown = false;
-      selectedReplacement = '';
+      // Update local state
+      player = replacementPlayer;
+      currentSlot.player = replacementPlayer;
+      
+    } else {
+      // Replacement is coming from another position
+      const swapPlayer = playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex];
+      
+      // Perform the swap
+      playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
+      playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex] = currentPlayer;
+      
+      // Update local state
+      player = replacementPlayer;
+      currentSlot.player = replacementPlayer;
     }
+    
+    // Recalculate scores
+    recalculateSectionScores(playerTeam);
+    
+    // Reset dropdown
+    showDropdown = false;
+    selectedReplacement = '';
+    
+    // Dispatch event
+    import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
   }
 
   function handleDropdownMouseEnter() {
@@ -247,6 +370,9 @@
       if (dropdownTimeout) {
         clearTimeout(dropdownTimeout);
       }
+      if (fadeTimeout) {
+        clearTimeout(fadeTimeout);
+      }
     };
   });
 </script>
@@ -273,7 +399,7 @@
       <!-- Remove Player Button (X) -->
       <button 
         class="remove-player-btn" 
-        onclick={() => console.log('Remove player - TODO')}
+        onclick={() => removePlayer()}
         aria-label="Remove player"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">

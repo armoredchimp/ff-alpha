@@ -13,21 +13,21 @@
 
 
 <div class="wrapper">
-  <div class="tab {groupClass} {player.player_name ? '' : 'empty'}">
+  <div class="tab {groupClass} {player?.player_name ? '' : 'empty'}">
     <span class="position">{positionAbbrev(position)}</span>
-    {#if player.player_name}
+    {#if player?.player_name}
       <span class="name">{player.player_name}</span>
     {:else}
       <span class="name">No Player Selected</span>
     {/if}
   </div>
 
-  {#if player.player_name && player.detailed_position !== "Goalkeeper"}
+  {#if player?.player_name && player?.detailed_position !== "Goalkeeper"}
     <div class="player-popup">
       <div><strong>{player.player_name}</strong></div>
-      <div><strong>Nationality:</strong> {player.nationality}</div>
-      <div><strong>Position:</strong> {positionAbbrev(player.detailed_position)}</div>
-      <div><strong>Age:</strong> {player.player_age} yrs</div>
+      <div><strong>Nationality:</strong> {player.nationality || 'Unknown'}</div>
+      <div><strong>Position:</strong> {positionAbbrev(player.detailed_position || '')}</div>
+      <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
 
       <div class="player-metrics">
         <div class="metric">
@@ -35,7 +35,7 @@
           <div class="metric-bar-container">
             <div
               class="metric-bar bar-def"
-              style="width: {(player.defensive_score / 5000) * 100}%"
+              style="width: {((player.defensive_score || 0) / 5000) * 100}%"
             ></div>
           </div>
         </div>
@@ -45,7 +45,7 @@
           <div class="metric-bar-container">
             <div
               class="metric-bar bar-poss"
-              style="width: {(player.possession_score / 5000) * 100}%"
+              style="width: {((player.possession_score || 0) / 5000) * 100}%"
             ></div>
           </div>
         </div>
@@ -55,7 +55,7 @@
           <div class="metric-bar-container">
             <div
               class="metric-bar bar-pass"
-              style="width: {(player.passing_score / 5000) * 100}%"
+              style="width: {((player.passing_score || 0) / 5000) * 100}%"
             ></div>
           </div>
         </div>
@@ -65,39 +65,39 @@
           <div class="metric-bar-container">
             <div
               class="metric-bar bar-attk"
-              style="width: {(player.attacking_score / 5000) * 100}%"
+              style="width: {((player.attacking_score || 0) / 5000) * 100}%"
             ></div>
           </div>
         </div>
       </div>
     </div>
-  {:else if player.detailed_position === "Goalkeeper"}
-  <div class="player-popup">
-    <div><strong>{player.player_name}</strong></div>
-    <div><strong>Nationality:</strong> {player.nationality}</div>
-    <div><strong>Position:</strong> {positionAbbrev(player.detailed_position)}</div>
-    <div><strong>Age:</strong> {player.player_age} yrs</div>
+  {:else if player?.player_name && player?.detailed_position === "Goalkeeper"}
+    <div class="player-popup">
+      <div><strong>{player.player_name}</strong></div>
+      <div><strong>Nationality:</strong> {player.nationality || 'Unknown'}</div>
+      <div><strong>Position:</strong> {positionAbbrev(player.detailed_position || '')}</div>
+      <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
 
-    <div class="metric">
-      <span class="metric-label">Passing</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-pass"
-          style="width: {(player.passing_score / 5000) * 100}%"
-        ></div>
+      <div class="metric">
+        <span class="metric-label">Passing</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-pass"
+            style="width: {((player.passing_score || 0) / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Keeping</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {((player.keeper_score || 0) / 5000) * 100}%"
+          ></div>
+        </div>
       </div>
     </div>
-
-    <div class="metric">
-      <span class="metric-label">Keeping</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-poss"
-          style="width: {(player.keeper_score / 5000) * 100}%"
-        ></div>
-      </div>
-    </div>
-  </div>
   {/if}
 </div>
 
