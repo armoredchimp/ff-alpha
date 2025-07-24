@@ -20,8 +20,11 @@
   let showDropdown = $state(false)
   let selectedReplacement = $state('')
   let dropdownTimeout = null;
+  let nationImage = $state(null)
   let fadeTimeout = null;
   let dropdownFading = $state(false);
+  let hoveredReplacement = $state(null);
+  let showComparison = $state(false);
   const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
 
   // Fixed: Better sub slot calculation that handles nulls properly
@@ -49,6 +52,7 @@
     // Only get current slot if there's a player
     if(player && player.id){
       currentSlot = getSelectedSlot();
+      nationImage = getCountryUrl(player.nationality)
     }
   })
 
@@ -324,6 +328,8 @@
       fadeTimeout = setTimeout(() => {
         showDropdown = false;
         dropdownFading = false;
+        hoveredReplacement = null;
+        showComparison = false;
         // Dispatch blur event
         const event = new CustomEvent('blurplayer', { bubbles: true });
         const fieldElement = document.querySelector('.field');
@@ -361,7 +367,19 @@
       if (fieldElement) {
         fieldElement.dispatchEvent(event);
       }
+      hoveredReplacement = null;
+      showComparison = false;
     }
+  }
+
+  function handleReplacementHover(replacement) {
+    hoveredReplacement = replacement;
+    showComparison = true;
+  }
+
+  function handleReplacementLeave() {
+    hoveredReplacement = null;
+    showComparison = false;
   }
 
   // Cleanup on component destroy
@@ -380,7 +398,7 @@
 <div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
   {#if player}
     <div class="player-name">{player.player_name}</div>
-    <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={player.image_path} alt={player.player_name} />
+    <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={nationImage} alt={player.player_name} />
   {:else}
     <div class="player-name">Empty</div>
     <div class="player-placeholder">No Player Selected</div>
@@ -422,6 +440,8 @@
             <button 
               class="replacement-option"
               onclick={() => replacePlayer(replacement)}
+              onmouseenter={() => handleReplacementHover(replacement)}
+              onmouseleave={handleReplacementLeave}
               role="menuitem"
               aria-label="Replace player with {replacement.player_name}"
             >
@@ -448,18 +468,18 @@
     </button>
   {/if}
 
-  <!-- Hover popup -->
+  <!-- Current Player Hover popup -->
   {#if player}  
   {#if player.detailed_position !== "Goalkeeper"}
-   <div class="player-popup">
+   <div class="player-popup" class:comparison-mode={showComparison}>
     <div class="popup-upper-section">
         <div class="popup-info">
             <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
             <div><strong>Age: </strong>   {player.player_age} yrs</div>
         </div>
-        <div class="nation-image">
-            <img src={getCountryUrl(player.nationality)} alt={player.nationality} />
-        </div>
+        
+        <div class="team-name">{player.player_team}</div>
+      
     </div>
      <!-- Metrics bar graph -->
      <div class="player-metrics">
@@ -505,15 +525,13 @@
      </div>
    </div>
    {:else if player.detailed_position === "Goalkeeper"}
-   <div class="player-popup">
+   <div class="player-popup" class:comparison-mode={showComparison}>
     <div class="popup-upper-section">
         <div class="popup-info">
             <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
             <div><strong>Age: </strong>   {player.player_age} yrs</div>
         </div>
-        <div class="nation-image">
-            <img src={getCountryUrl(player.nationality)} alt={player.nationality} />
-        </div>
+        <div class="team-name">{player.player_team}</div>
     </div>
      <div class="metric">
        <span class="metric-label">Passing</span>
@@ -536,7 +554,95 @@
      </div>
    </div>
    {/if}
-   {/if} 
+   {/if}
+
+   <!-- Replacement Player Hover popup -->
+   {#if hoveredReplacement}  
+   {#if hoveredReplacement.detailed_position !== "Goalkeeper"}
+    <div class="player-popup replacement-popup">
+      <div class="popup-upper-section">
+          <div class="popup-info">
+              <div><strong>Position: </strong>   {positionAbbrev(hoveredReplacement.detailed_position)}</div>
+              <div><strong>Age: </strong>   {hoveredReplacement.player_age} yrs</div>
+          </div>
+          
+          <div class="team-name">{hoveredReplacement.player_team}</div>
+        
+      </div>
+      <!-- Metrics bar graph -->
+      <div class="player-metrics">
+        <div class="metric">
+          <span class="metric-label">Def. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-def"
+              style="width: {(hoveredReplacement.defensive_score / 5000) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Poss. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-poss"
+              style="width: {(hoveredReplacement.possession_score / 5000 ) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Pass. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-pass"
+              style="width: {(hoveredReplacement.passing_score / 5000 ) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Att. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-attk"
+              style="width: {(hoveredReplacement.attacking_score / 5000 ) * 100}%"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {:else if hoveredReplacement.detailed_position === "Goalkeeper"}
+    <div class="player-popup replacement-popup">
+      <div class="popup-upper-section">
+          <div class="popup-info">
+              <div><strong>Position: </strong>   {positionAbbrev(hoveredReplacement.detailed_position)}</div>
+              <div><strong>Age: </strong>   {hoveredReplacement.player_age} yrs</div>
+          </div>
+          <div class="team-name">{hoveredReplacement.player_team}</div>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Passing</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-pass"
+            style="width: {(hoveredReplacement.passing_score / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+  
+      <div class="metric">
+        <span class="metric-label">Keeping</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {(hoveredReplacement.keeper_score / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+    </div>
+    {/if}
+    {/if}
  </div>
 
 <style>
@@ -555,8 +661,6 @@
     cursor: default;
     transition: transform 0.1s ease, border 0.2s ease;
   }
-  
-  
   
   .formation-player:hover {
     transform: translateY(-4px);
@@ -732,9 +836,35 @@
     white-space: nowrap;
     z-index: 10;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .formation-player:hover .player-popup {
+
+  /* Shift current player popup left when comparing */
+  .player-popup.comparison-mode {
+    transform: translateX(-13rem);
+    margin-left: 0;
+  }
+
+  /* Replacement popup styling */
+  .player-popup.replacement-popup {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+    animation: popupFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes popupFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .formation-player:hover .player-popup:not(.replacement-popup) {
     display: block;
     opacity: 1;
   }
@@ -742,44 +872,46 @@
   .popup-upper-section {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
   }
 
-  .nation-image {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 25%;
-    overflow: hidden;
-    border: 0.01rem solid #a0a0a091;
-    flex-shrink: 0;
-    position: absolute;    
-    right: 0.75rem;        
-    top: 50%;              
-    transform: translateY(-50%);
-    margin-left: 0; 
+  .popup-info {
+    flex: 1;
+    padding-right: 0.5rem;
   }
 
-  .nation-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  .team-name {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.65rem;
+    color: #666;
+    text-align: right;
+    max-width: 40%;
+    line-height: 1.2;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   /* Metrics bar chart styles */
   .player-metrics {
     margin-top: 0.5rem;
   }
+  
   .metric {
     display: flex;
     align-items: center;
     margin-bottom: 0.25rem;
   }
+  
   .metric-label {
     flex: 0 0 5.5rem;
     font-size: 0.7rem;
     color: #333;
   }
+  
   .metric-bar-container {
     flex: 1;
     height: 0.5rem;
@@ -787,18 +919,23 @@
     border-radius: 4px;
     overflow: hidden;
   }
+  
   .metric-bar {
     height: 100%;
   }
+  
   .bar-def {
     background-color: #e74c3c;
   }
+  
   .bar-poss {
     background-color: #3498db;
   }
+  
   .bar-pass {
     background-color: #2ecc71;
   }
+  
   .bar-attk {
     background-color: #f1c40f;
   }

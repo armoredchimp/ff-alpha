@@ -25,6 +25,7 @@
   {#if player?.player_name && player?.detailed_position !== "Goalkeeper"}
     <div class="player-popup">
       <div><strong>{player.player_name}</strong></div>
+      <div>{player.player_team || 'Unknown'}</div>
       <div><strong>Nationality:</strong> {player.nationality || 'Unknown'}</div>
       <div><strong>Position:</strong> {positionAbbrev(player.detailed_position || '')}</div>
       <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
@@ -74,6 +75,7 @@
   {:else if player?.player_name && player?.detailed_position === "Goalkeeper"}
     <div class="player-popup">
       <div><strong>{player.player_name}</strong></div>
+      <div>{player.player_team || 'Unknown'}</div>
       <div><strong>Nationality:</strong> {player.nationality || 'Unknown'}</div>
       <div><strong>Position:</strong> {positionAbbrev(player.detailed_position || '')}</div>
       <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>

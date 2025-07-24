@@ -1,15 +1,21 @@
 <script>
+	import { getCountryUrl } from "./data/countryImages";
+
 
     let {
         player = {},
         showPopup = true
     } = $props();
 
+    let nationImage = $state(null)
  
+    if(player && player.nationality){
+        nationImage = getCountryUrl(player.nationality)
+    }
 </script>
 
 <div class="player-image-container">
-    <img src={player.image_path} alt={player.player_name} class="player-photo" />
+    <img src={nationImage} alt={player.player_name} class="player-photo" />
     {#if showPopup}
         <div class="player-popup">
             <h5>{player.player_name}</h5>
@@ -23,8 +29,8 @@
 <style>
     .player-image-container {
         position: relative;
-        width: 50px;
-        height: 50px;
+        width: 35px;
+        height: 35px;
     }
     .player-photo {
         width: 100%;
