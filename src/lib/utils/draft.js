@@ -1,3 +1,11 @@
+import { firstParts, secondParts, commonNames } from "$lib/data/rngClubNames";
+
+
+const doubleNameFirsts = new Map(); // Tracks how many times a first part is used in double names
+const singleNameFirsts = new Map(); // Tracks first parts used as single names
+const usedSecondParts = new Set()
+
+
 export function generateClubName(firstParts, commonNames, secondParts) {
     const isDoubleName = Math.random() < 0.8; // 80% chance for double name
     
@@ -52,6 +60,7 @@ export function generateClubName(firstParts, commonNames, secondParts) {
 
 
 export function assignDraftOrder(numberPool) {
+    console.log('numb', numberPool)
     if (numberPool.length === 0) {
         return null;
     }
