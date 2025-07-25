@@ -28,6 +28,8 @@
         }
     });
 
+    console.log('fucking GH not pushing')
+
     async function handleFormSubmit({ form, data, action, cancel }) {
         isCreating = true;
         
@@ -59,7 +61,8 @@
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
                         
-                        // IMPORTANT: Invalidate all data so the session is refreshed
+                        // Occasional bug when going to /draft after league creation. 
+                        // have not been able to replicate but it is likely involving the cookie/leagueID
                         await invalidateAll();
                         
                         // Navigate to draft

@@ -322,57 +322,58 @@
     dropdownFading = false;
   }
 
-function handleDropdownMouseLeave() {
-    dropdownTimeout = setTimeout(() => {
-      dropdownFading = true;
-      fadeTimeout = setTimeout(() => {
-        showDropdown = false;
-        dropdownFading = false;
-        hoveredReplacement = null;
-        showComparison = false;
-        const event = new CustomEvent('blurplayer', { 
-          bubbles: true,
-          detail: { zone: zone } 
+  function handleDropdownMouseLeave() {
+      dropdownTimeout = setTimeout(() => {
+        dropdownFading = true;
+        fadeTimeout = setTimeout(() => {
+          showDropdown = false;
+          dropdownFading = false;
+          hoveredReplacement = null;
+          showComparison = false;
+          const event = new CustomEvent('blurplayer', { 
+            bubbles: true,
+            detail: { zone: zone } 
+          });
+          const fieldElement = document.querySelector('.field');
+          if (fieldElement) {
+            fieldElement.dispatchEvent(event);
+          }
+        }, 200);
+      }, 1000);
+  }
+
+  function toggleDropdown() {
+      showDropdown = !showDropdown;
+      if (showDropdown) {
+        const event = new CustomEvent('focusplayer', { 
+          bubbles: true, 
+          detail: { 
+            zone: zone,
+            dropdownActive: true
+          } 
         });
         const fieldElement = document.querySelector('.field');
         if (fieldElement) {
           fieldElement.dispatchEvent(event);
         }
-      }, 200);
-    }, 1000);
-}
-function toggleDropdown() {
-    showDropdown = !showDropdown;
-    if (showDropdown) {
-      const event = new CustomEvent('focusplayer', { 
-        bubbles: true, 
-        detail: { 
-          zone: zone,
-          dropdownActive: true
-        } 
-      });
-      const fieldElement = document.querySelector('.field');
-      if (fieldElement) {
-        fieldElement.dispatchEvent(event);
+        
+        if (dropdownTimeout) {
+          clearTimeout(dropdownTimeout);
+          dropdownTimeout = null;
+        }
+      } else {
+        const event = new CustomEvent('blurplayer', { 
+          bubbles: true,
+          detail: { zone: zone }
+        });
+        const fieldElement = document.querySelector('.field');
+        if (fieldElement) {
+          fieldElement.dispatchEvent(event);
+        }
+        hoveredReplacement = null;
+        showComparison = false;
       }
-      
-      if (dropdownTimeout) {
-        clearTimeout(dropdownTimeout);
-        dropdownTimeout = null;
-      }
-    } else {
-      const event = new CustomEvent('blurplayer', { 
-        bubbles: true,
-        detail: { zone: zone }
-      });
-      const fieldElement = document.querySelector('.field');
-      if (fieldElement) {
-        fieldElement.dispatchEvent(event);
-      }
-      hoveredReplacement = null;
-      showComparison = false;
-    }
-}
+  }
 
 
   function handleReplacementHover(replacement) {
@@ -396,6 +397,7 @@ function toggleDropdown() {
       }
     };
   });
+
 </script>
 
 <div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
@@ -560,7 +562,7 @@ function toggleDropdown() {
    {/if}
 
    <!-- Replacement Player Hover popup -->
-   {#if hoveredReplacement}  
+  {#if hoveredReplacement}  
    {#if hoveredReplacement.detailed_position !== "Goalkeeper"}
     <div class="player-popup replacement-popup">
       <div class="popup-upper-section">
@@ -645,8 +647,8 @@ function toggleDropdown() {
       </div>
     </div>
     {/if}
-    {/if}
- </div>
+  {/if}
+</div>
 
 <style>
   .formation-player {
