@@ -1,23 +1,7 @@
 <script>
     let {
         teams = {},
-        playerTeam = {
-            name: '',
-            draftOrder: 0,
-            attackers: [],
-            midfielders: [],
-            defenders: [],
-            keepers: [],
-            playerCount: 0,
-            transferBudget: 275,
-            wins: 0,
-            draws: 0,
-            losses: 0,
-            points: 0,
-            goalsFor: 0,
-            goalsAgainst: 0,
-            player: true
-        }
+        playerTeam = {}
     } = $props();
     
     const sortedTeams = $derived.by(() => {

@@ -175,7 +175,8 @@ async function draftSetup() {
         formation: playerTeam.formation || '4-4-2',
         transfer_budget: 50000,
         player_count: 0,
-        frontend_number: 0
+        frontend_number: 0,
+        draft_order: playerTeam.draftOrder
     });
 
     
@@ -190,7 +191,8 @@ async function draftSetup() {
             manager_id: team.manager.id,
             formation: team.formation || '4-4-2',
             transfer_budget: 50000,
-            player_count: 0
+            player_count: 0,
+            draft_order: team.draftOrder,
         });
     }
 
@@ -403,7 +405,7 @@ function assignRivals(firstName, bool, index) {
                 });
                 teams[`team${potentialRivalIndex}`].rivals.push({
                     name: playerTeam.name,
-                    index: index,
+                    index: 0,
                 });
             }
             clubsWithRivals[index].push(potentialRivalIndex);
