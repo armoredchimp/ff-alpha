@@ -7,6 +7,7 @@
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
+    import { hydrateTeams } from '$lib/loading/teams/hydrateTeams.js'
     import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
@@ -97,9 +98,17 @@
             // Load teams and wait for it to complete
             const teamsLoaded = await loadTeamsData();
             
+
             if (teamsLoaded && response.data.redirect) {
+            
               delay(100);
               await hydratePlayers();
+              delay(100)
+              try {
+                await hydrateTeams();
+              } catch(err){
+                console.error('error hydrating teams', err)
+              }
               delay(100);
               await hydrateManagers();
               goto(response.data.redirect);

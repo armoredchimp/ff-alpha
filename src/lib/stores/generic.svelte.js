@@ -21,14 +21,6 @@ export let keepingImpMap = $state({})
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
 
-let currentTeamPage = $state('')
-
-export function getCurrentTeamPage(){
-    return {
-        get teampage() { return currentTeamPage },
-        setTeamPage(value) { currentTeamPage = value }
-    }
-}
 
 // export function setAvgs(outData, kData){
 //     return {

@@ -3,26 +3,21 @@
   import TeamHeader from "$lib/TeamHeader.svelte";
   import TeamScores from "$lib/TeamScores.svelte";
   import Formation from "$lib/Formation.svelte";
-  import { getCurrentTeamPage } from '$lib/stores/generic.svelte'
   import SelectedList from "$lib/SelectedList.svelte";
   import { createFormationStructure, populateLineup } from "$lib/utils";
-	import { calculateTotalScores } from "../../../../lib/utils/team.js";
+	import { calculateTotalScores } from "$lib/utils";
+  import { afterNavigate } from '$app/navigation';
   // import { page} from '$app/state'
 
 
   let { data } = $props();
 
 
-let currTeam = getCurrentTeamPage()
 
-if (data){
-  currTeam.setTeamPage(data.team.name.toLowerCase())
-}
 
-onMount(() => {
+  afterNavigate(() => {
 
        data.team.selected = createFormationStructure(data.team.formation);
-       calculateTotalScores(data.team)
        populateLineup(data.team);
        console.log("FINAL selected:", data.team.selected);
 

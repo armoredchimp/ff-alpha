@@ -1,7 +1,7 @@
 <script>
     import ManagerMini from "./ManagerMini.svelte";
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
-    import { getCurrentTeamPage } from '$lib/stores/generic.svelte'
+    
 
     let {
       team = {
@@ -26,7 +26,7 @@
     let popupPosition = $state({ x: 0, y: 0 });
     
 
-    let teamPage = getCurrentTeamPage()
+ 
 
 
     function getRivalTeam(index) {
@@ -48,12 +48,7 @@
         hoveredRival = null;
     }
 
-    function handleRivalNav(){
-        if(hoveredRival !== null){
-            teamPage.setTeamPage(hoveredRival.name.toLowerCase())
-        }
-
-    }
+ 
 
     // Calculate bar width percentage
     function getBarWidth(value, max = 5000) {
@@ -110,13 +105,12 @@
             {#if team.rivals.length > 0}
                 <div class="rivals-container">
                     {#each team.rivals as rival}
-                        {@const rivalTeam = getRivalTeam(rival.index)}
+                        {@const rivalNav = rival.name.toLowerCase()}
                         <a 
-                            href="{rival.index === 0 ? '/teams/player/main' : `/teams/teamswap`}"
+                            href="{rival.index === 0 ? '/teams/player/main' : `/teams/${rivalNav}`}"
                             class="rival-badge"
                             onmouseenter={(e) => handleRivalHover(e, rival)}
                             onmouseleave={handleRivalLeave}
-                            onclick={handleRivalNav}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="rival-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
