@@ -3,7 +3,6 @@ export let playersByID = $state({})
 
 export let playerCall = $state(false)
 
-
 export let managers = $state([])
 export let managersByID = $state({})
 
@@ -21,6 +20,15 @@ export let keepingImpMap = $state({})
 
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
+
+let currentTeamPage = $state('')
+
+export function getCurrentTeamPage(){
+    return {
+        get teampage() { return currentTeamPage },
+        setTeamPage(value) { currentTeamPage = value }
+    }
+}
 
 // export function setAvgs(outData, kData){
 //     return {

@@ -61,6 +61,10 @@ export const handle: Handle = async ({ event, resolve }) => {
         }
     }
     
+    // if (event.url.pathname.startsWith('/teams') && !(event.url.pathname.startsWith('teams/player'))){
+
+    // }
+
     // Protected route checking
     console.log('Checking protection...');
     const rootDirName = event.route.id?.split('/')[1] || '';
