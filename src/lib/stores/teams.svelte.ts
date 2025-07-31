@@ -1,4 +1,6 @@
-let team1 = $state({
+import type { Team } from "$lib/types/types";
+
+let team1 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -55,7 +57,7 @@ let team1 = $state({
     }
 });
 
-let team2 = $state({
+let team2 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -112,7 +114,7 @@ let team2 = $state({
     }
 });
 
-let team3 = $state({
+let team3 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -169,7 +171,7 @@ let team3 = $state({
     }
 });
 
-let team4 = $state({
+let team4 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -226,7 +228,7 @@ let team4 = $state({
     }
 });
 
-let team5 = $state({
+let team5 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -283,7 +285,7 @@ let team5 = $state({
     }
 });
 
-let team6 = $state({
+let team6 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -340,7 +342,7 @@ let team6 = $state({
     }
 });
 
-let team7 = $state({
+let team7 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -397,7 +399,7 @@ let team7 = $state({
     }
 });
 
-let team8 = $state({
+let team8 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -454,7 +456,7 @@ let team8 = $state({
     }
 });
 
-let team9 = $state({
+let team9 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -511,7 +513,7 @@ let team9 = $state({
     }
 });
 
-let team10 = $state({
+let team10 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -568,7 +570,7 @@ let team10 = $state({
     }
 });
 
-let team11 = $state({
+let team11 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -625,7 +627,7 @@ let team11 = $state({
     }
 });
 
-let team12 = $state({
+let team12 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -682,7 +684,7 @@ let team12 = $state({
     }
 });
 
-let team13 = $state({
+let team13 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -739,7 +741,7 @@ let team13 = $state({
     }
 });
 
-let team14 = $state({
+let team14 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -796,7 +798,7 @@ let team14 = $state({
     }
 });
 
-let team15 = $state({
+let team15 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -853,7 +855,7 @@ let team15 = $state({
     }
 });
 
-let team16 = $state({
+let team16 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -910,7 +912,7 @@ let team16 = $state({
     }
 });
 
-let team17 = $state({
+let team17 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -967,7 +969,7 @@ let team17 = $state({
     }
 });
 
-let team18 = $state({
+let team18 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -1024,7 +1026,7 @@ let team18 = $state({
     }
 });
 
-let team19 = $state({
+let team19 = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -1080,6 +1082,7 @@ let team19 = $state({
         }
     }
 });
+
 
 export const teams = {
     team1, team2, team3, team4, team5, team6, team7, team8, team9, team10,
@@ -1087,7 +1090,7 @@ export const teams = {
 };
 
 
-export let playerTeam = $state({
+export let playerTeam = $state<Team>({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -1142,5 +1145,3 @@ export let playerTeam = $state({
         }
     }
 });
-
-

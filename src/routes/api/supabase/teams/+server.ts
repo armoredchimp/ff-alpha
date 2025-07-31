@@ -3,6 +3,38 @@ import type { RequestHandler } from "@sveltejs/kit";
 import { getLeagueId } from "$lib/server/auth";
 import { supabaseScaling } from "$lib/supabase/supaClient";
 
+interface DbTeam {
+    team_id: number;
+    team_name: string;
+    frontend_number: number;
+    draft_order: number;
+    player_count: number;
+    traits: any[];
+    rivals: any[];
+    transfer_budget: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    points: number;
+    goals_for: number;
+    goals_against: number;
+    formation: string;
+    manager_id: any;
+    league_id: string;
+}
+
+interface DbTeamPlayers {
+    team_id: number;
+    league_id: string;
+    attackers: number[];
+    midfielders: number[];
+    defenders: number[];
+    keepers: number[];
+    selected: number[];
+    subs: number[];
+    unused: number[];
+}
+
 // Load teams from teams table, then players from team_players table, prep data for teams hydration
 export const GET: RequestHandler = async ({ cookies }) => {
     try {
@@ -32,16 +64,16 @@ export const GET: RequestHandler = async ({ cookies }) => {
         const { data: teamPlayersData, error: playersError } = await supabaseScaling
             .from('team_players')
             .select('*')
-            .eq('league_id', leagueId)
+            .eq('league_id', leagueId);
 
-         if (playersError) {
+        if (playersError) {
             console.error('Error loading team players:', playersError);
             return json({ error: 'Failed to load team players' }, { status: 500 });
         }
 
-        const teamPlayersMap = new Map();
+        const teamPlayersMap = new Map<number, Omit<DbTeamPlayers, 'team_id' | 'league_id'>>();
         if (teamPlayersData) {
-            teamPlayersData.forEach(tp => {
+            (teamPlayersData as DbTeamPlayers[]).forEach(tp => {
                 teamPlayersMap.set(tp.team_id, {
                     attackers: tp.attackers || [],
                     midfielders: tp.midfielders || [],
@@ -50,15 +82,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
                     selected: tp.selected || [],
                     subs: tp.subs || [],
                     unused: tp.unused || []
-                })
-            })
+                });
+            });
         }
 
         // Create teams object formatted for the frontend
         const teams: Record<string, any> = {};
         let playerTeam: any = null;
 
-       teamsData.forEach(dbTeam => {
+        (teamsData as DbTeam[]).forEach(dbTeam => {
             // Link player data for this team by team_id
             const playerData = teamPlayersMap.get(dbTeam.team_id) || {
                 attackers: [],
@@ -68,7 +100,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 selected: [],
                 subs: [],
                 unused: []
-            }
+            };
 
             const teamData = {
                 name: dbTeam.team_name || '',

@@ -1,5 +1,7 @@
-export let allPlayers = $state([])
-export let playersByID = $state({})
+import type { Player } from "$lib/types/types"
+
+export let allPlayers = $state<Player[]>([])
+export let playersByID = $state<Record<number, Player>>({})
 
 export let playerCall = $state(false)
 
@@ -21,7 +23,6 @@ export let keepingImpMap = $state({})
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
 
-let teamPage = $state()
 
 // export function setAvgs(outData, kData){
 //     return {
