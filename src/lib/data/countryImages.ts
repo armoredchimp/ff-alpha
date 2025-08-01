@@ -1,4 +1,7 @@
-const countryImagesByName = {
+type CountryCode = string | null;
+
+
+const countryImagesByName: Record<string, CountryCode> = {
     "Afghanistan": "af",
     "Albania": "al",
     "Algeria": "dz",
@@ -228,10 +231,10 @@ const countryImagesByName = {
     "Zimbabwe": "zw"
   };
 
-export function getCountryUrl(name) {
+export function getCountryUrl(name: string): string | undefined {
     const code = countryImagesByName[name];
     if (code) {
-        // append “.png” to every identifier to match the CDN naming
         return `https://cdn.sportmonks.com/images/countries/png/short/${code}.png`;
     }   
+    return undefined;
 }
