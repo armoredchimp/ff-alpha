@@ -1,36 +1,37 @@
-<script>
+<script lang="ts">
 	import { goto } from "$app/navigation";
 	import { getLeagueState } from "$lib/stores/league.svelte";
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
     import { enhance } from '$app/forms';
     import { invalidateAll } from '$app/navigation';
+    import type { SubmitFunction } from '@sveltejs/kit';
 
-    const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL
+    const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL;
 
-    let selectedTeams = $state(14);
-    let selectedCountry = $state('england');
-    let leagueName = $state('');
-    let isCreating = $state(false);
-    let userId = $state('');
-    let creationToken = $state('');
+    let selectedTeams = $state<14 | 16 | 18 | 20>(14);
+    let selectedCountry = $state<string>('england');
+    let leagueName = $state<string>('');
+    let isCreating = $state<boolean>(false);
+    let userId = $state<string>('');
+    let creationToken = $state<string>('');
 
     // Get user info on mount
-    $effect(async () => {
-        const leagueState = getLeagueState();
-        const session = await fetchAuthSession();
-        userId = session.tokens?.idToken?.payload?.sub || '';
-        creationToken = leagueState.creationToken || '';
-        
-        if (!creationToken) {
-            alert('Not authorized to create a league. Please refresh and try again.');
-            goto('/');
-        }
+    $effect(() => {
+        (async () => {
+            const leagueState = getLeagueState();
+            const session = await fetchAuthSession();
+            userId = session.tokens?.idToken?.payload?.sub as string || '';
+            creationToken = leagueState.creationToken || '';
+            
+            if (!creationToken) {
+                alert('Not authorized to create a league. Please refresh and try again.');
+                goto('/');
+            }
+        })();
     });
 
-    console.log('fucking GH not pushing')
-
-    async function handleFormSubmit({ form, data, action, cancel }) {
+    const handleFormSubmit: SubmitFunction = async ({ formData, action, cancel }) => {
         isCreating = true;
         
         // Let the form submit to server action
@@ -70,14 +71,17 @@
                     } else {
                         throw new Error('Failed to register league');
                     }
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Error registering league:', error);
                     
                     // Clean up the created league
                     const deleteForm = new FormData();
                     deleteForm.append('leagueId', result.data.league.id);
                     
-                    await axios.post('?/deleteLeague', deleteForm);
+                    await fetch('?/deleteLeague', {
+                        method: 'POST',
+                        body: deleteForm
+                    });
                     
                     if (error.response?.status === 403) {
                         alert('Your session has expired or you already have a league. Please refresh and try again.');
