@@ -21,7 +21,7 @@ export type Team = {
     goalsAgainst: number;
     formation: string;
     formationDisplayed: boolean;
-    manager?: (Manager | number | null);
+    manager?: (Manager | number | null)[];
     player?: boolean; 
     scores: {
         total: {
