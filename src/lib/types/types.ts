@@ -21,7 +21,7 @@ export type Team = {
     goalsAgainst: number;
     formation: string;
     formationDisplayed: boolean;
-    manager?: any[];
+    manager?: (Manager | number | null);
     player?: boolean; 
     scores: {
         total: {
@@ -81,4 +81,14 @@ export type Player = {
     ints_per90: number;
     fouls_per90: number;
     created_at: string;
+};
+
+export type Manager = {
+    id: number;
+    display_name: string;
+    age: number;
+    nationality: string;
+    image_path: string;
+    league_id: number;
+    preferred_formation: string | null;
 };

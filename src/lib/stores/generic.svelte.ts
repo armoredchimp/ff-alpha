@@ -1,12 +1,12 @@
-import type { Player } from "$lib/types/types"
+import type { Player, Manager } from "$lib/types/types"
 
 export let allPlayers = $state<Player[]>([])
 export let playersByID = $state<Record<number, Player>>({})
 
 export let playerCall = $state(false)
 
-export let managers = $state([])
-export let managersByID = $state({})
+export let managers = $state<Manager[]>([])
+export let managersByID = $state<Record<number, Manager>>({});
 
 export let defenseWeightMap = $state({})
 export let passingWeightMap = $state({})
