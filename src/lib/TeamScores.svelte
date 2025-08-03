@@ -1,4 +1,19 @@
-<script>
+<script lang="ts">
+    interface ScoresProps {
+        attacking: number;
+        passing: number;
+        possession: number;
+        defense: number;
+        keeping: number;
+    }
+
+    type StatLabel = 'Keeping' | 'Defending' | 'Possession' | 'Passing' | 'Attacking';
+
+    interface StatItem {
+        label: StatLabel;
+        value: number;
+    }
+
     let {
         scores = {
             attacking: 0,
@@ -9,9 +24,13 @@
         },
         playerCount = 1,
         keeperCount = 1
+    }: {
+        scores?: ScoresProps;
+        playerCount?: number;
+        keeperCount?: number;
     } = $props();
 
-    let maxScore = 5000;
+    const maxScore = 5000;
 
     let atk = $derived(scores.attacking / playerCount);
     let pas = $derived(scores.passing / playerCount);
@@ -19,9 +38,9 @@
     let def = $derived(scores.defense / playerCount);
     let kep = $derived(scores.keeping ? scores.keeping / keeperCount : 0);
 
-    let percent = score => `${Math.min(100, (score / maxScore) * 100)}%`;
+    const percent = (score: number): string => `${Math.min(100, (score / maxScore) * 100)}%`;
 
-    let barColors = {
+    const barColors: Record<StatLabel, string> = {
         Attacking: 'attacking-bar',
         Passing: 'passing-bar',
         Possession: 'possession-bar',
@@ -48,7 +67,7 @@
                 </div>
                 <div class="progress-bar-container">
                     <div
-                        class={`progress-bar ${barColors[stat.label]}`}
+                        class={`progress-bar ${barColors[stat.label as StatLabel]}`}
                         style={`width: ${percent(stat.value)}`}
                     ></div>
                 </div>

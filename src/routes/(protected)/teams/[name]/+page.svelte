@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import TeamHeader from "$lib/TeamHeader.svelte";
   import TeamScores from "$lib/TeamScores.svelte";
   import Formation from "$lib/Formation.svelte";
   import SelectedList from "$lib/SelectedList.svelte";
   import { createFormationStructure, populateLineup } from "$lib/utils";
-  import { calculateTotalScores } from "$lib/utils";
   import { afterNavigate } from '$app/navigation';
   import type { Team } from '$lib/types/types';
   import type { PageData } from './$types';
