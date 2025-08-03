@@ -1,57 +1,73 @@
-<script>
+<script lang="ts">
     import ManagerMini from "./ManagerMini.svelte";
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
-    
+    import type { Team, Manager } from "$lib/types/types";
+
+    interface Rival {
+        name: string;
+        index: number;
+    }
+
+    interface PopupPosition {
+        x: number;
+        y: number;
+    }
+
+    interface ScoreStat {
+        label: string;
+        value: number;
+        color: string;
+    }
 
     let {
-      team = {
-          name: '',
-          draftOrder: 0,
-          attackers: [],
-          midfielders: [],
-          defenders: [],
-          keepers: [],
-          playerCount: 0,
-          traits: [],
-          transferBudget: 0,
-          manager: null,
-          rivals: []
-      },
-      computer = false
+        team = {
+            name: '',
+            draftOrder: 0,
+            attackers: [],
+            midfielders: [],
+            defenders: [],
+            keepers: [],
+            playerCount: 0,
+            traits: [],
+            transferBudget: 0,
+            manager: null,
+            rivals: []
+        } as Team,
+        computer = false
+    }: {
+        team?: Team;
+        computer?: boolean;
     } = $props();
 
-  
+    let hoveredRival = $state<Rival | null>(null);
+    let popupPosition = $state<PopupPosition>({ x: 0, y: 0 });
 
-    let hoveredRival = $state(null);
-    let popupPosition = $state({ x: 0, y: 0 });
-    
+    // Type guard to check if manager is a Manager object
+    function isManager(manager: any): manager is Manager {
+        return manager && typeof manager === 'object' && 'image_path' in manager;
+    }
 
- 
-
-
-    function getRivalTeam(index) {
+    function getRivalTeam(index: number): Team | null {
         if (index === 0) return playerTeam;
-        const teamKey = `team${index}`;
+        const teamKey = `team${index}` as keyof typeof teams;
         return teams[teamKey] || null;
     }
 
-    function handleRivalHover(event, rival) {
+    function handleRivalHover(event: MouseEvent, rival: Rival): void {
         hoveredRival = rival;
-        const rect = event.currentTarget.getBoundingClientRect();
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
         popupPosition = {
             x: rect.left + rect.width / 2,
             y: rect.bottom + 8
         };
     }
 
-    function handleRivalLeave() {
+    function handleRivalLeave(): void {
         hoveredRival = null;
     }
 
- 
-
     // Calculate bar width percentage
-    function getBarWidth(value, max = 5000) {
+    function getBarWidth(value: number, max: number = 5000): string {
         const percentage = (value / max) * 100;
         return `${Math.min(100, percentage)}%`;
     }
@@ -79,7 +95,7 @@
                     </div>
                 </div>
 
-                {#if computer && team.manager}
+                {#if computer && isManager(team.manager)}
                     <div class="manager-container">
                         <img 
                             src={team.manager.image_path} 
@@ -187,6 +203,7 @@
 {/if}
 
 <style>
+    /* All the existing styles remain the same */
     .header-container {
         width: 100%;
         padding: 2rem 1.5rem;
