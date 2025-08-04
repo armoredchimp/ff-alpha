@@ -9,7 +9,7 @@
 
     const REGISTER_LEAGUE_URL = import.meta.env.VITE_AWS_REGISTER_LEAGUE_URL;
 
-    let selectedTeams = $state<14 | 16 | 18 | 20>(14);
+    let selectedTeams = $state<number>(14);
     let selectedCountry = $state<string>('england');
     let leagueName = $state<string>('');
     let isCreating = $state<boolean>(false);

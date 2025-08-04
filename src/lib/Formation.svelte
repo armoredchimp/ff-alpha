@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
     import FormationPlayer from "./FormationPlayer.svelte";
     import FormationTab from "./FormationTab.svelte";
+    import type { Team } from "$lib/types/types";
 
     let {
-      team = {},
+      team = {} as Team,
       zonesVisible = true
       } = $props();
 
