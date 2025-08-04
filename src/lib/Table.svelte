@@ -1,12 +1,17 @@
-<script>
+<script lang="ts">
+    import type { Team } from "$lib/types/types";
+
     let {
         teams = {},
-        playerTeam = {}
+        playerTeam = {} as Team
+    }: {
+        teams?: Record<string, Team>;
+        playerTeam?: Team;
     } = $props();
     
     const sortedTeams = $derived.by(() => {
         const teamsArray = Object.values(teams).filter(team => team.name !== '');
-        const allTeams = [...teamsArray, playerTeam];
+        const allTeams: Team[] = [...teamsArray, playerTeam];
         
         // Check if all teams have zero points
         const allZeroPoints = allTeams.every(team => team.points === 0);
@@ -53,14 +58,20 @@
                 {@const goalDifference = team.goalsFor - team.goalsAgainst}
                 <tr class="hover:bg-gray-50 {team === playerTeam ? 'bg-blue-50' : ''}">
                     <td class="px-4 py-2 border-b">{index + 1}</td>
-                    <td class="px-4 py-2 border-b font-medium"><a href="teams/{team.player ? 'player/main' : team.name.toLowerCase()}">{team.name || `Team ${index + 1}`}</a></td>
+                    <td class="px-4 py-2 border-b font-medium">
+                        <a href="teams/{team.player ? 'player/main' : team.name.toLowerCase()}">
+                            {team.name || `Team ${index + 1}`}
+                        </a>
+                    </td>
                     <td class="px-4 py-2 text-center border-b">{gamesPlayed}</td>
                     <td class="px-4 py-2 text-center border-b">{team.wins}</td>
                     <td class="px-4 py-2 text-center border-b">{team.draws}</td>
                     <td class="px-4 py-2 text-center border-b">{team.losses}</td>
                     <td class="px-4 py-2 text-center border-b">{team.goalsFor}</td>
                     <td class="px-4 py-2 text-center border-b">{team.goalsAgainst}</td>
-                    <td class="px-4 py-2 text-center border-b {goalDifference > 0 ? 'text-green-600' : goalDifference < 0 ? 'text-red-600' : ''}">{goalDifference}</td>
+                    <td class="px-4 py-2 text-center border-b {goalDifference > 0 ? 'text-green-600' : goalDifference < 0 ? 'text-red-600' : ''}">
+                        {goalDifference > 0 ? '+' : ''}{goalDifference}
+                    </td>
                     <td class="px-4 py-2 text-center border-b font-bold">{team.points}</td>
                 </tr>
             {/each}
