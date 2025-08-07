@@ -1,5 +1,13 @@
-<script>
-	import { onMount } from "svelte";
+<script lang="ts">
+  import { onMount } from "svelte";
+  
+  interface Scores {
+    defense?: number;
+    possession?: number;
+    passing?: number;
+    attacking?: number;
+    keeping?: number;
+  }
 
   // Props for the tab: group label and score breakdown
   let {
@@ -10,14 +18,18 @@
       passing: 0,
       attacking: 0,
       keeping: 0
-    },
+    } as Scores,
     playerCount = 0,
-  } = $props();
+  } = $props<{
+    group?: string;
+    scores?: Scores;
+    playerCount?: number;
+  }>();
 
   // Exponent for power-law scaling (0 < alpha < 1)
   const alpha = 0.8;
-
-  const widthPct = score =>
+  
+  const widthPct = (score: number): string =>
     playerCount > 0
       ? `${(score / 5000 / Math.pow(playerCount, alpha)) * 100}%`
       : '0%';
@@ -26,47 +38,44 @@
     console.log(group, playerCount)
   })
 </script>
+
 {#if group !== 'keepers'}
   <div class="formation-tab">
     <div class="tab-header">{group}</div>
-
     <div class="tab-metrics">
       <div class="metric">
         <span class="metric-label">Def. Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-def"
-            style="width: {widthPct(scores.defense)}"
+            style="width: {widthPct(scores.defense ?? 0)}"
           ></div>
         </div>
       </div>
-
       <div class="metric">
         <span class="metric-label">Poss. Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-poss"
-            style="width: {widthPct(scores.possession)}"
+            style="width: {widthPct(scores.possession ?? 0)}"
           ></div>
         </div>
       </div>
-
       <div class="metric">
         <span class="metric-label">Pass. Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-pass"
-            style="width: {widthPct(scores.passing)}"
+            style="width: {widthPct(scores.passing ?? 0)}"
           ></div>
         </div>
       </div>
-
       <div class="metric">
         <span class="metric-label">Att. Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-attk"
-            style="width: {widthPct(scores.attacking)}"
+            style="width: {widthPct(scores.attacking ?? 0)}"
           ></div>
         </div>
       </div>
@@ -75,24 +84,22 @@
 {:else}
   <div class="formation-tab">
     <div class="tab-header">{group}</div>
-
     <div class="tab-metrics">
       <div class="metric">
         <span class="metric-label">Keeper Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-def"
-            style="width: {widthPct(scores.keeping)}"
+            style="width: {widthPct(scores.keeping ?? 0)}"
           ></div>
         </div>
       </div>
-
       <div class="metric">
         <span class="metric-label">Pass. Score</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-poss"
-            style="width: {widthPct(scores.passing)}"
+            style="width: {widthPct(scores.passing ?? 0)}"
           ></div>
         </div>
       </div>
@@ -149,6 +156,7 @@
   .metric-bar {
     height: 100%;
   }
+
   .bar-def  { background-color: #e74c3c; }
   .bar-poss { background-color: #3498db; }
   .bar-pass { background-color: #2ecc71; }
