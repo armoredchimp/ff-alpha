@@ -4,6 +4,15 @@ export let allPlayers = $state<Player[]>([])
 export let playersByID = $state<Record<number, Player>>({})
 
 export let playerCall = $state(false)
+let playerPageInit = $state<boolean>(false)
+
+export function getPlayerInit(){
+    return playerPageInit
+}
+
+export function setPlayerInit(data: boolean){
+    playerPageInit = data
+}
 
 export let managers = $state<Manager[]>([])
 export let managersByID = $state<Record<number, Manager>>({});
@@ -22,6 +31,8 @@ export let keepingImpMap = $state({})
 
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
+
+
 
 
 // export function setAvgs(outData, kData){

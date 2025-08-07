@@ -1,5 +1,6 @@
 <script lang="ts">
     import { playerTeam } from "$lib/stores/teams.svelte";
+    import { getPlayerInit, setPlayerInit } from "$lib/stores/generic.svelte";
     import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
     import SelectedList from "$lib/SelectedList.svelte";
@@ -7,20 +8,24 @@
     import TeamScores from "$lib/TeamScores.svelte";
     import { onMount } from "svelte";
     import { createFormationStructure, resetScores, populateLineup, delay } from "$lib/utils";
-    import { calculateTotalScores } from "../../../../../lib/utils";
+    import { calculateTotalScores } from "$lib/utils";
     import type { Team } from "$lib/types/types";
-   
+    
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
+    let init = getPlayerInit()
 
     onMount(() => {
         calculateTotalScores(playerTeam as Team)
        
-        if(playerTeam.selected.length < 1){
-            playerTeam.selected = createFormationStructure(playerTeam.formation)
+        if(!init){
+            if(playerTeam.selected.length < 1){
+                playerTeam.selected = createFormationStructure(playerTeam.formation)
+            }
+            delay(100)
+            populateLineup(playerTeam as Team)
+            setPlayerInit(true)
         }
-        delay(100)
-        populateLineup(playerTeam as Team)
         
         console.log(playerTeam)
        
