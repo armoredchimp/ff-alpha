@@ -1,13 +1,16 @@
-<script>
-	import { getCountryUrl } from "./data/countryImages";
-
+<script lang="ts">
+    import { getCountryUrl } from "./data/countryImages";
+    import type { Player } from "$lib/types/types";
 
     let {
-        player = {},
+        player = null as Player | null,
         showPopup = true
-    } = $props();
+    } = $props<{
+        player?: Player | null;
+        showPopup?: boolean;
+    }>();
 
-    let nationImage = $state(null)
+    let nationImage = $state<string | null>(null)
  
     if(player && player.nationality){
         nationImage = getCountryUrl(player.nationality)
@@ -15,8 +18,8 @@
 </script>
 
 <div class="player-image-container">
-    <img src={nationImage} alt={player.player_name} class="player-photo" />
-    {#if showPopup}
+    <img src={nationImage} alt={player?.player_name || 'Player'} class="player-photo" />
+    {#if showPopup && player}
         <div class="player-popup">
             <h5>{player.player_name}</h5>
             <p>Position: {player.detailed_position}</p>
@@ -32,12 +35,14 @@
         width: 35px;
         height: 35px;
     }
+    
     .player-photo {
         width: 100%;
         height: 100%;
         border-radius: 25px;
         object-fit: cover;
     }
+    
     .player-popup {
         display: none;
         position: absolute;
@@ -51,14 +56,17 @@
         width: 200px;
         z-index: 10;
     }
+    
     .player-image-container:hover .player-popup {
         display: block;
     }
+    
     .player-popup h5 {
         margin: 0 0 0.5rem 0;
         font-size: 0.9rem;
         font-weight: 600;
     }
+    
     .player-popup p {
         margin: 0.25rem 0;
         font-size: 0.8rem;

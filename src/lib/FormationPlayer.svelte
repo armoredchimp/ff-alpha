@@ -99,7 +99,7 @@
               positionGroup: group,
               detailedPosition: detailedPos,
               playerIndex: i,
-              path: ['selected', group, detailedPos, 'players', i],
+              path: ['selected', group, detailedPos, 'players', i.toString()],
               player: currentPlayer as Player
             };
           }
@@ -278,7 +278,7 @@
                   positionGroup: group,
                   detailedPosition: detailedPos,
                   playerIndex: i,
-                  path: ['selected', group, detailedPos, 'players', i],
+                  path: ['selected', group, detailedPos, 'players', i.toString()],
                   player: null
                 };
                 break;
