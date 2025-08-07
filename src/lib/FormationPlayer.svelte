@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { delay, positionAbbrev } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
@@ -6,24 +6,46 @@
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
   import { onMount } from "svelte";
+  import type { Player, Team } from "$lib/types/types";
+
+  interface CurrentSlot {
+    positionGroup?: string;
+    detailedPosition?: string;
+    playerIndex?: number;
+    path?: string[];
+    player?: Player | null;
+  }
+
+  interface ReplacementSlot {
+    positionGroup?: string;
+    detailedPosition?: string;
+    playerIndex: number;
+    player: Player | null;
+    sub: boolean;
+  }
 
   let {
-    player = {},
+    player = null as Player | null,
     currentPosition,
-    zone = null,
+    zone = null as number | null,
     hide = false
-  } = $props();
+  } = $props<{
+    player?: Player | null;
+    currentPosition: string;
+    zone?: number | null;
+    hide?: boolean;
+  }>();
 
-  let currentSlot = $state({})
-  let eligiblePositions = $state([])
-  let eligibleReplacements = $state([])
+  let currentSlot = $state<CurrentSlot>({})
+  let eligiblePositions = $state<string[]>([])
+  let eligibleReplacements = $state<Player[]>([])
   let showDropdown = $state(false)
   let selectedReplacement = $state('')
-  let dropdownTimeout = null;
-  let nationImage = $state(null)
-  let fadeTimeout = null;
+  let dropdownTimeout: ReturnType<typeof setTimeout> | null = null;
+  let nationImage = $state<string | null>(null)
+  let fadeTimeout: ReturnType<typeof setTimeout> | null = null;
   let dropdownFading = $state(false);
-  let hoveredReplacement = $state(null);
+  let hoveredReplacement = $state<Player | null>(null);
   let showComparison = $state(false);
   const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'];
 
@@ -34,7 +56,7 @@
     // Find the first empty slot (null, undefined, or empty object)
     for (let i = 0; i < subs.length; i++) {
       const sub = subs[i];
-      if (!sub || !sub.player_name || !sub.id) {
+      if (!sub || typeof sub === 'number' || !('player_name' in sub) || !('id' in sub)) {
         return i;
       }
     }
@@ -56,8 +78,8 @@
     }
   })
 
-  function getSelectedSlot(){
-    if (!player || !player.id) return null;
+  function getSelectedSlot(): CurrentSlot {
+    if (!player || !player.id) return {};
     
     for (const group of positionGroups) {
       if (!playerTeam.selected[group]) continue;
@@ -71,22 +93,23 @@
         for (let i = 0; i < playersArray.length; i++){
           // Fixed: Properly check for null/undefined players
           const currentPlayer = playersArray[i];
-          if (currentPlayer && currentPlayer.id && currentPlayer.id === player.id) {
+          if (currentPlayer && typeof currentPlayer !== 'number' && 
+              'id' in currentPlayer && currentPlayer.id === player.id) {
             return {
               positionGroup: group,
               detailedPosition: detailedPos,
               playerIndex: i,
               path: ['selected', group, detailedPos, 'players', i],
-              player: currentPlayer
+              player: currentPlayer as Player
             };
           }
         }
       }
     }
-    return null;
+    return {};
   }
 
-  function getEligiblePositions(){
+  function getEligiblePositions(): void {
     eligiblePositions = []; // Reset the array
     eligiblePositions.push(currentPosition)
     if (currentPosition !== 'Goalkeeper'){
@@ -95,7 +118,7 @@
     }
   }
 
-  function getEligiblePlayers(){
+  function getEligiblePlayers(): void {
     eligibleReplacements = [];
     if(eligiblePositions && eligiblePositions.length > 0){
       eligiblePositions.forEach(pos => {
@@ -104,19 +127,24 @@
     }
   }
 
-  function scanPlayersForPos(position){
-    const foundPlayerIds = new Set(); // Track found players to avoid duplicates
+  function scanPlayersForPos(position: string): void {
+    const foundPlayerIds = new Set<number>(); // Track found players to avoid duplicates
     
     // Scan roster players
     for (const group of positionGroups) {
-      if (playerTeam[group] && playerTeam[group].length > 0){
-        for(let i = 0; i < playerTeam[group].length; i++) {
-          const rosterPlayer = playerTeam[group][i];
-          if(rosterPlayer && rosterPlayer.detailed_position === position && rosterPlayer.id) {
+      const groupPlayers = playerTeam[group as keyof Team];
+      if (Array.isArray(groupPlayers) && groupPlayers.length > 0){
+        for(let i = 0; i < groupPlayers.length; i++) {
+          const rosterPlayer = groupPlayers[i];
+          if(rosterPlayer && typeof rosterPlayer !== 'number' && 
+             'detailed_position' in rosterPlayer && 
+             rosterPlayer.detailed_position === position && 
+             rosterPlayer.id) {
             // Skip if this is the current player or already found
-            if ((!player || !player.id || rosterPlayer.id !== player.id) && !foundPlayerIds.has(rosterPlayer.id)){
+            if ((!player || !player.id || rosterPlayer.id !== player.id) && 
+                !foundPlayerIds.has(rosterPlayer.id)){
               foundPlayerIds.add(rosterPlayer.id);
-              eligibleReplacements.push(rosterPlayer);
+              eligibleReplacements.push(rosterPlayer as Player);
             }
           }
         }
@@ -127,18 +155,22 @@
     if (playerTeam.subs && playerTeam.subs.length > 0) {
       for (let i = 0; i < playerTeam.subs.length; i++) {
         const sub = playerTeam.subs[i];
-        if (sub && sub.detailed_position === position && sub.id) {
+        if (sub && typeof sub !== 'number' && 
+            'detailed_position' in sub && 
+            sub.detailed_position === position && 
+            sub.id) {
           // Skip if this is the current player or already found
-          if ((!player || !player.id || sub.id !== player.id) && !foundPlayerIds.has(sub.id)) {
+          if ((!player || !player.id || sub.id !== player.id) && 
+              !foundPlayerIds.has(sub.id)) {
             foundPlayerIds.add(sub.id);
-            eligibleReplacements.push(sub);
+            eligibleReplacements.push(sub as Player);
           }
         }
       }
     }
   }
 
-  function removePlayer() {
+  function removePlayer(): void {
     if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
     
     const removedPlayer = currentSlot.player;
@@ -155,7 +187,10 @@
     }
     
     // Update the selected position to null
-    playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = null;
+    if (currentSlot.positionGroup && currentSlot.detailedPosition && 
+        currentSlot.playerIndex !== undefined) {
+      playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = null;
+    }
     
     // Move player to subs
     playerTeam.subs[subIndex] = removedPlayer;
@@ -174,7 +209,7 @@
     import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
   }
 
-  function findReplacementSlot(replacementPlayer) {
+  function findReplacementSlot(replacementPlayer: Player): ReplacementSlot | null {
     if (!replacementPlayer || !replacementPlayer.id) return null;
     
     // Check selected positions
@@ -189,12 +224,13 @@
         const playersArray = positionData.players;
         for (let i = 0; i < playersArray.length; i++){
           const currentPlayer = playersArray[i];
-          if (currentPlayer && currentPlayer.id === replacementPlayer.id) {
+          if (currentPlayer && typeof currentPlayer !== 'number' && 
+              'id' in currentPlayer && currentPlayer.id === replacementPlayer.id) {
             return {
               positionGroup: group,
               detailedPosition: detailedPos,
               playerIndex: i,
-              player: currentPlayer,
+              player: currentPlayer as Player,
               sub: false
             };
           }
@@ -206,10 +242,11 @@
     if (playerTeam.subs && playerTeam.subs.length > 0) {
       for (let i = 0; i < playerTeam.subs.length; i++){
         const sub = playerTeam.subs[i];
-        if (sub && sub.id === replacementPlayer.id) {
+        if (sub && typeof sub !== 'number' && 
+            'id' in sub && sub.id === replacementPlayer.id) {
           return {
             playerIndex: i,
-            player: sub,
+            player: sub as Player,
             sub: true
           };
         }
@@ -219,7 +256,7 @@
     return null;
   }
 
-  function replacePlayer(replacementPlayer) {
+  function replacePlayer(replacementPlayer: Player): void {
     if (!replacementPlayer) return;
 
     // If current slot is empty, we need to find where to place the replacement
@@ -254,7 +291,9 @@
       }
     }
 
-    if (!currentSlot || !currentSlot.path) {
+    if (!currentSlot || !currentSlot.path || 
+        !currentSlot.positionGroup || !currentSlot.detailedPosition || 
+        currentSlot.playerIndex === undefined) {
       console.error('Could not find valid slot for replacement');
       return;
     }
@@ -286,7 +325,7 @@
       player = replacementPlayer;
       currentSlot.player = replacementPlayer;
       
-    } else {
+    } else if (replacementSlot.positionGroup && replacementSlot.detailedPosition) {
       // Replacement is coming from another position
       const swapPlayer = playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex];
       
@@ -310,7 +349,7 @@
     import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
   }
 
-  function handleDropdownMouseEnter() {
+  function handleDropdownMouseEnter(): void {
     if (dropdownTimeout) {
       clearTimeout(dropdownTimeout);
       dropdownTimeout = null;
@@ -322,7 +361,7 @@
     dropdownFading = false;
   }
 
-  function handleDropdownMouseLeave() {
+  function handleDropdownMouseLeave(): void {
       dropdownTimeout = setTimeout(() => {
         dropdownFading = true;
         fadeTimeout = setTimeout(() => {
@@ -342,7 +381,7 @@
       }, 1000);
   }
 
-  function toggleDropdown() {
+  function toggleDropdown(): void {
       showDropdown = !showDropdown;
       if (showDropdown) {
         const event = new CustomEvent('focusplayer', { 
@@ -375,13 +414,12 @@
       }
   }
 
-
-  function handleReplacementHover(replacement) {
+  function handleReplacementHover(replacement: Player): void {
     hoveredReplacement = replacement;
     showComparison = true;
   }
 
-  function handleReplacementLeave() {
+  function handleReplacementLeave(): void {
     hoveredReplacement = null;
     showComparison = false;
   }
@@ -553,7 +591,7 @@
        <div class="metric-bar-container">
          <div
            class="metric-bar bar-poss"
-           style="width: {(player.keeper_score / 5000) * 100}%"
+           style="width: {(player.keeper_score ?? 0 / 5000) * 100}%"
          ></div>
        </div>
      </div>
@@ -641,7 +679,7 @@
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-poss"
-            style="width: {(hoveredReplacement.keeper_score / 5000) * 100}%"
+            style="width: {(hoveredReplacement.keeper_score ?? 0 / 5000) * 100}%"
           ></div>
         </div>
       </div>
