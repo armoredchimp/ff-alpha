@@ -1,4 +1,4 @@
-export const countryMap = {
+const countryMap = {
     2: "Poland",
     5: "Brazil",
     11: "Germany",
@@ -227,7 +227,7 @@ export const countryMap = {
 };
 
 // Updated getNation function that uses the local map instead of API calls
-export function getCountry(id) {
+export function getCountry(id: number): string {
     const name = countryMap[id];
     
     if (name) {

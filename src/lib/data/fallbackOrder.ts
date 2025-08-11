@@ -12,6 +12,6 @@ const fallbackOrder = {
         "Right Back":           ["Left Back", "Centre Back"]
     };
 
-export function getFallbackPos(position){
+export function getFallbackPos(position: string): string{
     return fallbackOrder[position]
 }

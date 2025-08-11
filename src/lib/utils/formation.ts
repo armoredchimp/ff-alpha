@@ -1,8 +1,9 @@
 import { formationConfig } from "$lib/data/formationConfig";
 import { resetScores } from "./team";
 import { getFallbackPos } from "$lib/data/fallbackOrder";
+import { type Team } from "$lib/types/types";
 
-export function createFormationStructure(formationName) {
+export function createFormationStructure(formationName: string): object {
     const config = formationConfig[formationName];
     const structure = {};
     config.forEach(([group, ...positions]) => {
@@ -14,7 +15,7 @@ export function createFormationStructure(formationName) {
     return structure;
 }
 
-export function populateLineup(team) {
+export function populateLineup(team: Team): void {
     const selected = team.selected;
     const usedIds = new Set();
 

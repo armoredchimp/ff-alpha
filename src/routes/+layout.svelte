@@ -9,11 +9,9 @@
     import { supabase } from "$lib/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils";
     import { getPlayerPicture } from "../lib/api/sportsmonk/utils/apiUtils.svelte";
-    import { countryMap, getCountry } from '$lib/data/countries';
+    import { getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
-	import PlayerTeam from "$lib/PlayerDraftTeam.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
-	import Page from "./+page.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
 	import { goto, invalidateAll } from "$app/navigation";
