@@ -16,7 +16,7 @@ import {
 } from '$lib/utils';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
 import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
-import { getSetDraft, draft } from '$lib/stores/draft.svelte';
+import { draft } from '$lib/stores/draft.svelte';
 import { firstParts, secondParts, commonNames } from '$lib/data/rngClubNames';
 import { formationConfig } from '$lib/data/formationConfig';
 import DraftPlayer from '$lib/DraftPlayer.svelte';
@@ -30,12 +30,9 @@ import { getLeagueState, setLeagueId } from '$lib/stores/league.svelte';
 const { data } = $props()
 
 // State Variables
-const localDraftState = getSetDraft();
-const localDraftReference = $state(draft);
-let totalTeamsRef = localDraftReference.totalTeams;
-let halfOfTeams = $derived(totalTeamsRef / 2);
+let halfOfTeams = $derived(draft.totalTeams / 2);
 let numberPool = $state(null);
-let countriesCode = $state(1);
+// let countriesCode = $state(1);
 let draftUploaded = $state(false);
 let selectedNames = $state({});
 let clubsWithRivals = $state({});
@@ -55,7 +52,7 @@ onMount(async () => {
         // Check if players are loaded in the store
         if (allPlayers.length > 0) {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
-            localDraftState.setGate0(true);
+            draft.gate0 = true
         } else {
             console.log('No players loaded - this should not happen');
             // Optionally reload players if somehow missing
@@ -64,8 +61,8 @@ onMount(async () => {
         
         // Set number of teams
         if (data.numOfTeams && data.numOfTeams > 14) {
-            localDraftState.setTotalTeams(data.numOfTeams)
-            console.log('total teams value', localDraftState.totalTeams)
+            draft.totalTeams = data.numOfTeams
+            console.log('total teams value', draft.totalTeams)
         } else {
             console.log('Condition failed - using default 14');
         }
@@ -80,7 +77,7 @@ onMount(async () => {
         }
         
         numberPool = Array.from({length: draft.totalTeams }, (_, i) => i + 1);
-        localDraftState.setLoaded(true)
+        draft.loaded = true
     }
 });
 
@@ -159,10 +156,10 @@ async function draftSetup() {
 
     const leagueState = getLeagueState();
 
-    localDraftState.setPlayers(allPlayers)
+    draft.availablePlayers = allPlayers
     playerTeam.draftOrder = assignDraftOrder(numberPool);
-    localDraftState.setOrderList(organizeDraftOrder(playerTeam, teams, draft.totalTeams));
-    localDraftState.setGate1(true);
+    draft.orderList = organizeDraftOrder(playerTeam, teams, draft.totalTeams);
+    draft.gate1 = true;
 
     // Prepare teams data for Supabase insertion
     const teamsToInsert = [];
@@ -606,7 +603,7 @@ async function executePick(teamId, isPlayer, player = null, transferVal = null) 
     pickingTeam.transferBudget -= transferVal;
     pickingTeam.playerCount++;
 
-    localDraftState.setPlayers(draft.availablePlayers.filter(p => p.id !== player.id))
+    draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
 
     console.log(player)
     return player;
@@ -785,7 +782,7 @@ function getPlayerValue(index, player, traits) {
     {#if draft.gate1}
     <div class="draft-ticker-container">
         <!-- {draft.currentTeam} -->
-        <DraftTicker ticker={localDraftReference}/>
+        <DraftTicker ticker={draft}/>
             </div>
             {/if}
             {#if draft.gate0 && !draft.gate1}
@@ -815,7 +812,7 @@ function getPlayerValue(index, player, traits) {
                 <!-- {draft.currPick.id}
                 {draft.currPick.name} -->
                 <button
-                    onclick={() => handleAIPick(localDraftReference.orderList[(localDraftReference.currentRound - 1) * draft.totalTeams +(localDraftReference.currentPick -1)].id)}
+                    onclick={() => handleAIPick(draft.orderList[(draft.currentRound - 1) * draft.totalTeams +(draft.currentPick -1)].id)}
                     class="advance-btn">Advance Draft
                 </button>
                 <button
