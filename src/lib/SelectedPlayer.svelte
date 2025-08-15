@@ -70,6 +70,17 @@
             ></div>
           </div>
         </div>
+
+        <div class="metric">
+          <span class="metric-label">Goalscoring</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-fin"
+              style="width: {((player.finishing_score || 0) / 5000) * 100}%"
+            ></div>
+          </div>
+        </div>
+
       </div>
     </div>
   {:else if player?.player_name && player?.detailed_position === "Goalkeeper"}
@@ -205,4 +216,5 @@
   .bar-poss { background: #f4a261; }
   .bar-pass { background: #2a9d8f; }
   .bar-attk { background: #264653; }
+  .bar-fin { background: #b011e0;}
 </style>

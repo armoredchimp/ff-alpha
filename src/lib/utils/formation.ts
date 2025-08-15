@@ -84,6 +84,7 @@ export function populateLineup(team: Team): void {
                     const scoreKey = group === 'keepers' ? 'keeper' : group;
                     if (team.scores[scoreKey]) {
                         if (scoreKey !== 'keeper') {
+                            team.scores[scoreKey].finishing  += fallbackMatch.finishing_score || 0;
                             team.scores[scoreKey].attacking  += fallbackMatch.attacking_score || 0;
                             team.scores[scoreKey].defense    += fallbackMatch.defensive_score || 0;
                             team.scores[scoreKey].possession += fallbackMatch.possession_score || 0;

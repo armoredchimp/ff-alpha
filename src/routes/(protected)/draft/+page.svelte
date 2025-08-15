@@ -89,31 +89,30 @@ $effect(() => {
 });
 
 
-// Server Actions
-async function getPlayerById(id) {
-    const formData = new FormData();
-    formData.append('playerId', id);
+// async function getPlayerById(id) {
+//     const formData = new FormData();
+//     formData.append('playerId', id);
     
-    try {
-        const response = await fetch('?/getPlayerById', {
-            method: 'POST',
-            body: formData
-        });
+//     try {
+//         const response = await fetch('?/getPlayerById', {
+//             method: 'POST',
+//             body: formData
+//         });
         
-        const result = await response.json();
+//         const result = await response.json();
         
-        if (result.type === 'success' && result.data) {
-            console.log(result.data.player);
-            return result.data.player;
-        } else {
-            console.error('Failed to fetch player');
-            return null;
-        }
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
-}
+//         if (result.type === 'success' && result.data) {
+//             console.log(result.data.player);
+//             return result.data.player;
+//         } else {
+//             console.error('Failed to fetch player');
+//             return null;
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         return null;
+//     }
+// }
 
 
 async function draftSetup() {

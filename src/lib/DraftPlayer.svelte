@@ -7,7 +7,7 @@
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
-    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap } from "./stores/generic.svelte";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap, finishingWeightMap, finishingImpMap } from "./stores/generic.svelte";
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
 	import PlayerDraftTeam from "./PlayerDraftTeam.svelte";
@@ -34,6 +34,7 @@
             minutes: '',
             aerial: '',
             shotsOff: '',
+            shotsOn: '',
             shots: '',
             offsides: '',
             goals: '',
@@ -70,11 +71,11 @@
     let expandedSection = $state(null);
     let totalDuels = $state(0);
     let duelsWon = $state(0);
-    let sentences = $state([])
     let sortedDefStats = $state([]);
     let sortedPossStats = $state([]);
     let sortedPassStats = $state([]);
     let sortedAttStats = $state([]);
+    let sortedFinStats = $state([]);
     let sortedKprStats = $state([]);
     let playerRankings = $state({})
     let notableStats = $state([])
@@ -86,12 +87,13 @@
     const statConfig = {
         'TacklesPer90': ['tackles', [defenseImpMap, sortedDefStats, defenseWeightMap]],
         'AerialsWonPer90': ['aerial', [defenseImpMap, sortedDefStats, defenseWeightMap]],
-        'ShotsOffTargetPer90': ['shotsOff', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
+        'ShotsOffTargetPer90': ['shotsOff', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
+        'ShotsOnTargetPer90': ['shotsOn', [attackingImpMap, sortedAttStats, attackingWeightMap],[finishingImpMap, sortedFinStats, finishingWeightMap]],
         'ShotsTotal': ['shots'],
-        'OffsidesPer90': ['offsides', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
-        'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats, attackingWeightMap]],
-        'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats, attackingWeightMap]],
-        'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'OffsidesPer90': ['offsides', [attackingImpMap, sortedAttStats, attackingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
+        'GoalsPer90': ['goals', [attackingImpMap, sortedAttStats, attackingWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
+        'ShotsBlockedPer90': ['shotsBlocked', [attackingImpMap, sortedAttStats, attackingWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
+        'HitWoodworkPer90': ['hitWood', [attackingImpMap, sortedAttStats, attackingWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
         'AssistsPer90': ['assists', [passingImpMap, sortedPassStats, passingWeightMap], [attackingImpMap, sortedAttStats, attackingWeightMap]],
         'PassesPer90': ['passes', [passingImpMap, sortedPassStats, passingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
         'GoalsConcededPer90': ['goalsConc', [defenseImpMap, sortedDefStats, defenseWeightMap], [keepingImpMap, sortedKprStats, keepingWeightMap]],
@@ -110,7 +112,7 @@
         'LongBallsWonPer90': ['lbWon', [defenseImpMap, sortedDefStats, defenseWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
         'Cleansheets': ['clean', [defenseImpMap, sortedDefStats, defenseWeightMap], [keepingImpMap, sortedKprStats, keepingWeightMap]],
         'BigChancesCreatedPer90': ['bigCr', [passingImpMap, sortedPassStats, passingWeightMap], [possessionImpMap, sortedPossStats, possessionWeightMap]],
-        'BigChancesMissedPer90': ['bigMis', [attackingImpMap, sortedAttStats, attackingWeightMap]],
+        'BigChancesMissedPer90': ['bigMis', [attackingImpMap, sortedAttStats, attackingWeightMap], [finishingImpMap, sortedFinStats, finishingWeightMap]],
         'AccuratePassesPercentage': ['accPPerc', [possessionImpMap, sortedPossStats, possessionWeightMap]],
         'CrossesBlockedPer90': ['cBlocked', [defenseImpMap, sortedDefStats, defenseWeightMap]],
     };
@@ -423,6 +425,7 @@
                 sortStatsByImportance(sortedKprStats)
                 sortStatsByImportance(sortedPassStats)
                 sortStatsByImportance(sortedPossStats)
+                sortStatsByImportance(sortedFinStats)
                 selectNotables()
                 statted = true
             } else {
@@ -687,6 +690,44 @@
                                 <div class="expandable-section">
                                     <div class="stat-grid">
                                         {#each sortedAttStats as stat}
+                                            <div class="stat-item">
+                                                <span class="stat-name">{stat.name}:</span>
+                                                <span class="stat-value">{stat.value}</span>
+                                                <span class:stat-importance={stat.importanceValue > 0} class:stat-importance-neg={stat.importanceValue < 0}>
+                                                    {stat.importanceValue > 0 ? '+'.repeat(stat.importanceValue) : '-'.repeat(Math.abs(stat.importanceValue))}
+                                                </span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- End Product Score -->
+                            <div class="score">
+                                <div 
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown={e => e.key === 'Shift' && toggleSection('finishing')}
+                                    class="score-label" 
+                                    onclick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSection('finishing');
+                                    }}
+                                >
+                                    <span>Goalscoring:</span>
+                                    <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'finishing' ? '▲' : '▼'}</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style={`width: ${(player.finishing_score / 5000) * 100}%;`}></div>
+                                    </div>
+                                    <div class="popup">{player.finishing_score}</div>
+                                </div>
+                            </div>
+                            {#if expandedSection === 'finishing'}
+                                <div class="expandable-section">
+                                    <div class="stat-grid">
+                                        {#each sortedFinStats as stat}
                                             <div class="stat-item">
                                                 <span class="stat-name">{stat.name}:</span>
                                                 <span class="stat-value">{stat.value}</span>

@@ -6,6 +6,7 @@
     possession?: number;
     passing?: number;
     attacking?: number;
+    finishing?: number;
     keeping?: number;
   }
 
@@ -17,6 +18,7 @@
       possession: 0,
       passing: 0,
       attacking: 0,
+      finishing: 0,
       keeping: 0
     } as Scores,
     playerCount = 0,
@@ -76,6 +78,15 @@
           <div
             class="metric-bar bar-attk"
             style="width: {widthPct(scores.attacking ?? 0)}"
+          ></div>
+        </div>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Goalscoring</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-fin"
+            style="width: {widthPct(scores.finishing ?? 0)}"
           ></div>
         </div>
       </div>
@@ -161,4 +172,5 @@
   .bar-poss { background-color: #3498db; }
   .bar-pass { background-color: #2ecc71; }
   .bar-attk { background-color: #f1c40f; }
+  .bar-fin { background-color: #b011e0; }
 </style>

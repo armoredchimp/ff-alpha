@@ -10,7 +10,7 @@
     import { delay, calculateAge } from "$lib/utils";
     import { getPlayerPicture } from "../lib/api/sportsmonk/utils/apiUtils.svelte";
     import { getCountry } from '$lib/data/countries';
-    import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap } from "$lib/stores/generic.svelte";
+    import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
@@ -160,7 +160,8 @@
             getWeightsFromTable('getKeeperScore', keepingWeightMap, keepingImpMap),
             getWeightsFromTable('getPossessionScore', possessionWeightMap, possessionImpMap),
             getWeightsFromTable('getPassingScore', passingWeightMap, passingImpMap),
-            getWeightsFromTable('getAttackingScore', attackingWeightMap, attackingImpMap)
+            getWeightsFromTable('getAttackingScore', attackingWeightMap, attackingImpMap),
+            getWeightsFromTable('getFinishingScore', finishingWeightMap, finishingImpMap )
         ])
 
         weightsFetched = true
@@ -238,11 +239,13 @@
                     passing_score: null,
                     possession_score: null,
                     attacking_score: null,
+                    finishing_score: null,
                     total_score: null,
                     transfer_value: null,
                     player_age: null
                 };
 
+                let finishing = null;
                 let attacking = null;
                 let keeping = null;
                 let passing = null;
@@ -267,6 +270,9 @@
                     
                     attacking = getAttackingScore(player, player["Detailed Position"]);
                     total += parseFloat(attacking.score);
+
+                    finishing = getFinishingScore(player, player["Detailed Position"]);
+                    total += parseFloat(finishing.score);
                    
                     const p90s = {
                         PlayerName: playerData.player_name,
@@ -278,6 +284,7 @@
                         ...passing.p90s,
                         ...possession.p90s,
                         ...attacking.p90s,
+                        ...finishing.p90s,
                     }
 
              
@@ -286,6 +293,7 @@
                     if (defense?.p90s?.FoulsPer90) playerData.fouls_per90 = defense.p90s.FoulsPer90;
                     if (passing?.p90s?.KeyPassesPer90) playerData.key_passes_per90 = passing.p90s.KeyPassesPer90;
 					if (passing?.p90s?.AccurateCrossesPer90) playerData.accurate_crosses_per90 = passing.p90s.AccurateCrossesPer90;
+                    if (finishing?.p90s?.GoalsPer90) playerData.goals_per90 = finishing.p90s.GoalsPer90;
                     if (attacking?.p90s?.GoalsPer90) playerData.goals_per90 = attacking.p90s.GoalsPer90;
                     if (attacking?.p90s?.AssistsPer90) playerData.assists_per90 = attacking.p90s.AssistsPer90;
 					if (attacking?.p90s?.SuccessfulDribblesPer90) playerData.successful_dribbles_per90 = attacking.p90s.SuccessfulDribblesPer90;
@@ -296,19 +304,20 @@
                     if (isMidfielder) {
                         total *= 1.05;
                     } else if (isAttacker) {
-                        total *= 1.3;
+                        total *= 1.2;
                     } else if (isCB) {
-                        total *= 1.6;
+                        total *= 1.7;
                     } else if (isFullback) {
                         total *= 0.95;
                     }
 
-                    total = (total / 4).toFixed(2);
+                    total = (total / 3.2).toFixed(2);
                     console.log('total:  ', total)
                     playerData.defensive_score = parseFloat(defense.score)
                     playerData.passing_score = parseFloat(passing.score)
                     playerData.possession_score = parseFloat(possession.score)
                     playerData.attacking_score = parseFloat(attacking.score)
+                    playerData.finishing_score = parseFloat(finishing.score)
     
                 } else {
                     keeping = getKeeperScore(player, player["Detailed Position"]);
@@ -317,7 +326,7 @@
                     passing = getPassingScore(player, player["Detailed Position"]);
                     total += parseFloat(passing.score);
 
-                    total = (total / 2).toFixed(2);
+                    total = (total / 1.9).toFixed(2);
 
                     playerData.keeper_score = parseFloat(keeping.score)
                     playerData.passing_score = parseFloat(passing.score)
@@ -696,6 +705,53 @@ function getKeeperScore(row, detailedPosition){
     console.log('keeping score', keepingScore)
     return {
         score: keepingScore,
+        p90s: per90Stats
+    }
+}
+function getFinishingScore(row, detailedPosition) {
+    const weights = finishingWeightMap[detailedPosition];
+    if(!weights){
+        console.error('Weight map not found', detailedPosition)
+    }
+    const stats = {
+        BigChancesMissed: row['Big Chances Missed'] || 0,
+        Goals: row['Goals'] || 0,
+        HitWoodwork: row['Hit Woodwork'] || 0,
+        BlockedShots: row['Blocked Shots'] || 0,
+        ShotsOffTarget: row['Shots Off Target'] || 0,
+        ShotsOnTarget: row['Shots On Target'] || 0,
+        Offsides: row['Offsides'] || 0
+    };
+    
+    const minutesPlayed = row['Minutes Played'] || 0;
+
+    const per90Stats = {};
+    for (const [key, value] of Object.entries(stats)) {
+        per90Stats[`${key}Per90`] = (value / minutesPlayed) * 90;
+    }
+
+    let finishingScore = 0;
+    for (const [key, weight] of Object.entries(weights)) {
+        finishingScore += (per90Stats[key] || 0) * weight;
+    }
+
+    // Apply consistency bonus if applicable
+    let consistencyBonus = 0;
+    if (minutesPlayed > 1000) {
+        consistencyBonus = Math.floor((minutesPlayed - 1000) / 500) * 5;
+    }
+    finishingScore += consistencyBonus;
+
+    // Apply the minutes-played penalty for players under 1000 minutes
+    if (minutesPlayed < 1000) {
+        const minutesPercentage = minutesPlayed / 1000;
+        finishingScore = finishingScore * minutesPercentage;
+    }
+
+    finishingScore = (finishingScore * 2).toFixed(2);
+    finishingScore = capScore(finishingScore)
+    return {
+        score: finishingScore,
         p90s: per90Stats
     }
 }

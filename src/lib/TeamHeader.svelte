@@ -13,11 +13,6 @@
         y: number;
     }
 
-    interface ScoreStat {
-        label: string;
-        value: number;
-        color: string;
-    }
 
     let {
         team = {

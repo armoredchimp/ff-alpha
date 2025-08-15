@@ -26,6 +26,7 @@ let team1 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -33,18 +34,21 @@ let team1 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -83,6 +87,7 @@ let team2 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -90,18 +95,21 @@ let team2 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -140,6 +148,7 @@ let team3 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -147,18 +156,21 @@ let team3 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -197,6 +209,7 @@ let team4 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -204,18 +217,21 @@ let team4 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -254,6 +270,7 @@ let team5 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -261,18 +278,21 @@ let team5 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -311,6 +331,7 @@ let team6 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -318,18 +339,21 @@ let team6 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -368,6 +392,7 @@ let team7 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -375,18 +400,21 @@ let team7 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -425,6 +453,7 @@ let team8 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -432,18 +461,21 @@ let team8 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -482,6 +514,7 @@ let team9 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -489,18 +522,21 @@ let team9 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -539,6 +575,7 @@ let team10 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -546,18 +583,21 @@ let team10 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -596,6 +636,7 @@ let team11 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -603,18 +644,21 @@ let team11 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -653,6 +697,7 @@ let team12 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -660,18 +705,21 @@ let team12 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -710,6 +758,7 @@ let team13 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -717,18 +766,21 @@ let team13 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -767,6 +819,7 @@ let team14 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -774,18 +827,21 @@ let team14 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -824,6 +880,7 @@ let team15 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -831,18 +888,21 @@ let team15 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -881,6 +941,7 @@ let team16 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -888,18 +949,21 @@ let team16 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -938,6 +1002,7 @@ let team17 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -945,18 +1010,21 @@ let team17 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -995,6 +1063,7 @@ let team18 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -1002,18 +1071,21 @@ let team18 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -1052,6 +1124,7 @@ let team19 = $state<Team>({
     manager: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -1059,18 +1132,21 @@ let team19 = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -1090,7 +1166,7 @@ export const teams = {
 };
 
 
-export let playerTeam = $state<Team>({
+export let playerTeam = $state({
     name: '',
     dbId: 0,
     draftOrder: 0,
@@ -1115,6 +1191,7 @@ export let playerTeam = $state<Team>({
     rivals: [],
     scores: {
         total: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
@@ -1122,18 +1199,21 @@ export let playerTeam = $state<Team>({
             keeping: 0
         },
         attackers: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         midfielders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,
             defense: 0
         },
         defenders: {
+            finishing: 0,
             attacking: 0,
             possession: 0,
             passing: 0,

@@ -10,7 +10,7 @@ export type Team = {
     subs: (Player | number)[];
     unused: (Player | number)[];
     playerCount: number;
-    traits: any[]; 
+    traits?: any[]; 
     rivals: any[]; 
     transferBudget: number;
     wins: number;
@@ -25,6 +25,7 @@ export type Team = {
     player?: boolean; 
     scores: {
         total: {
+            finishing: number;
             attacking: number;
             possession: number;
             passing: number;
@@ -32,18 +33,21 @@ export type Team = {
             keeping: number;
         };
         attackers: {
+            finishing: number;
             attacking: number;
             possession: number;
             passing: number;
             defense: number;
         };
         midfielders: {
+            finishing: number;
             attacking: number;
             possession: number;
             passing: number;
             defense: number;
         };
         defenders: {
+            finishing: number;
             attacking: number;
             possession: number;
             passing: number;
@@ -67,6 +71,7 @@ export type Player = {
     image_path: string;
     transfer_value: number;
     total_score: number;
+    finishing_score: number;
     attacking_score: number;
     possession_score: number;
     passing_score: number;

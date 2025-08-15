@@ -557,14 +557,25 @@
        </div>
 
        <div class="metric">
-         <span class="metric-label">Att. Score</span>
+         <span class="metric-label">Atk. Score</span>
          <div class="metric-bar-container">
            <div
              class="metric-bar bar-attk"
-             style="width: {(player.attacking_score / 5000 ) * 100}%"
+             style="width: {(player.attacking_score / 4000 ) * 100}%"
            ></div>
          </div>
        </div>
+       
+        <div class="metric">
+         <span class="metric-label">Goalscoring</span>
+         <div class="metric-bar-container">
+           <div
+             class="metric-bar bar-fin"
+             style="width: {(player.finishing_score / 4000 ) * 100}%"
+           ></div>
+         </div>
+       </div>
+
      </div>
    </div>
    {:else if player.detailed_position === "Goalkeeper"}
@@ -653,6 +664,17 @@
             ></div>
           </div>
         </div>
+
+        <div class="metric">
+         <span class="metric-label">Goalscoring</span>
+         <div class="metric-bar-container">
+           <div
+             class="metric-bar bar-attk"
+             style="width: {(player.finishing_score / 5000 ) * 100}%"
+           ></div>
+         </div>
+       </div>
+
       </div>
     </div>
     {:else if hoveredReplacement.detailed_position === "Goalkeeper"}
@@ -981,5 +1003,9 @@
   
   .bar-attk {
     background-color: #f1c40f;
+  }
+
+  .bar-fin {
+    background-color: #62058d;
   }
 </style>

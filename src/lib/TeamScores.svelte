@@ -1,5 +1,6 @@
 <script lang="ts">
     interface ScoresProps {
+        finishing: number;
         attacking: number;
         passing: number;
         possession: number;
@@ -16,6 +17,7 @@
 
     let {
         scores = {
+            finishing: 0,
             attacking: 0,
             passing: 0,
             possession: 0,
@@ -32,6 +34,7 @@
 
     const maxScore = 5000;
 
+    let fin = $derived(scores.finishing /playerCount);
     let atk = $derived(scores.attacking / playerCount);
     let pas = $derived(scores.passing / playerCount);
     let pos = $derived(scores.possession / playerCount);
@@ -41,6 +44,7 @@
     const percent = (score: number): string => `${Math.min(100, (score / maxScore) * 100)}%`;
 
     const barColors: Record<StatLabel, string> = {
+        Goalscoring: 'finishing-bar',
         Attacking: 'attacking-bar',
         Passing: 'passing-bar',
         Possession: 'possession-bar',
@@ -59,6 +63,7 @@
             { label: 'Possession', value: pos },
             { label: 'Passing', value: pas },
             { label: 'Attacking', value: atk },
+            { label: 'Goalscoring', value: fin }
         ] as stat}
             <div class="score-item">
                 <div class="score-label">
@@ -135,6 +140,10 @@
     }
 
     /* Muted, professional tones */
+    .finishing-bar {
+       background-color: #a541d3; 
+    }
+
     .attacking-bar {
         background-color: #fca5a5; /* soft red */
     }

@@ -27,15 +27,16 @@ export function parseTeamIdMap(parsedData: any): Record<string, any> {
 }
 
 export function resetScores(team: Team): void {
-    team.scores.attackers    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.midfielders  = { attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.defenders    = { attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.attackers    = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.midfielders  = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.defenders    = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
     team.scores.keeper       = { passing: 0, keeping: 0 };
 }
 
 export function calculateTotalScores(team: Team): void {
     // Reset total scores to 0
     team.scores.total = {
+        finishing: 0,
         attacking: 0,
         defense: 0,
         possession: 0,
@@ -52,6 +53,10 @@ export function calculateTotalScores(team: Team): void {
             // Type guard to check if player is actually a Player object
             if (typeof player !== 'number' && player && 'attacking_score' in player) {
                 const p = player as Player;
+                if (p.finishing_score) {
+                    team.scores.total.finishing += p.finishing_score;
+                }
+
                 if (p.attacking_score) {
                     team.scores.total.attacking += p.attacking_score;
                 }
@@ -100,6 +105,7 @@ export function recalculateSectionScores(team: Team): void {
                                     } else {
                                         const section = team.scores[scoreKey as 'attackers' | 'midfielders' | 'defenders'];
                                         if ('attacking' in section) {
+                                            section.finishing += player.finishing_score || 0;
                                             section.attacking += player.attacking_score || 0;
                                             section.defense += player.defensive_score || 0;
                                             section.possession += player.possession_score || 0;

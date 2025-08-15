@@ -101,15 +101,15 @@
             if (teamsLoaded && response.data.redirect) {
             
               delay(100);
-              await hydratePlayers();
+              hydratePlayers();
               delay(100)
               try {
-                await hydrateTeams();
+              hydrateTeams();
               } catch(err){
                 console.error('error hydrating teams', err)
               }
               delay(100);
-              await hydrateManagers();
+              hydrateManagers();
               goto(response.data.redirect);
             }
         } else if (response.data.redirect) {
@@ -141,7 +141,7 @@
                   // Create session with auth info AND league ID if they have one
                   const sessionResponse = await axios.post('/api/auth/session', {
                       userId: currentUser.userId, 
-                      username: currentUser.username,
+                      username: values.email,
                       leagueId: leagueInfo.leagueId || null
                   });
                   
