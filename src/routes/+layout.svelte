@@ -167,10 +167,12 @@
         weightsFetched = true
     }
 
-    async function getPlayerImages(miniDB) {
+
+    async function getPlayerImages(leagueId, miniDB) {
+        const table = leagueIdConfig[leagueId[0]]
         try {
             let { data: players, error } = await supabase
-                .from('prem_stats_2425')
+                .from(table)
                 .select('*')
 
             if (error) {
@@ -208,72 +210,239 @@
         }
     }
 
-    async function getPlayersThenScore(miniDB) {
-        await fetchAllWeights()
+   async function getPlayersThenScore(leagueString, seasonString) {
+    console.log(`[getPlayersThenScore] Starting for league: ${leagueString}, season: ${seasonString}`);
+    
+    await fetchAllWeights()
 
-        if(weightsFetched){
+    const statTable = `${leagueString}_stats_${seasonString}`
+    const ninetyTable = `${leagueString}_stats_${seasonString}_per90`
+    const miniTable = `${leagueString}_mini_${seasonString}`
+
+    console.log(`[getPlayersThenScore] Tables - stat: ${statTable}, ninety: ${ninetyTable}, mini: ${miniTable}`);
+
+    if(weightsFetched){
+        console.log(`[getPlayersThenScore] Weights fetched successfully`);
         try {
             let { data: players, error } = await supabase
-                .from('prem_stats_2425')
+                .from(statTable)
                 .select('*');
 
             if (error) {
-                console.error('Error fetching players:', error);
+                console.error(`[getPlayersThenScore] CRITICAL ERROR fetching players from ${statTable}:`, error);
+                console.error(`[getPlayersThenScore] Error details:`, JSON.stringify(error));
                 return;
             }
 
-            console.log(`Fetched ${players.length} players.`);
+            if (!players || players.length === 0) {
+                console.warn(`[getPlayersThenScore] No players found in ${statTable}`);
+                return;
+            }
 
-            for (const player of players) {
-                console.log(`Processing player: ${player["Player Name"]}`);
+            console.log(`[getPlayersThenScore] Fetched ${players.length} players from ${statTable}`);
 
-                await delay(500);
-                
-                const playerData = {
-                    id: player.id,
-                    player_name: player["Player Name"],
-                    position: player.Position,
-                    detailed_position: player["Detailed Position"],
-                    keeper_score: null,
-                    defensive_score: null,
-                    passing_score: null,
-                    possession_score: null,
-                    attacking_score: null,
-                    finishing_score: null,
-                    total_score: null,
-                    transfer_value: null,
-                    player_age: null
-                };
+            let processedCount = 0;
+            let skippedCount = 0;
+            const skippedPlayers = [];
 
-                let finishing = null;
-                let attacking = null;
-                let keeping = null;
-                let passing = null;
-                let defense = null;
-                let possession = null;
-                let total = 0;
-                const isKeeper = player.Position === 'Goalkeeper';
-                const isMidfielder = player.Position === 'Midfielder';
-                const isAttacker = player.Position === 'Attacker';
-                const isCB = player["Detailed Position"] === 'Centre-Back';
-                const isFullback = player["Detailed Position"] === 'Left-Back' || player["Detailed Position"] === 'Right-Back';
+            for (let i = 0; i < players.length; i++) {
+                const player = players[i];
+                console.log(`[getPlayersThenScore] Processing player ${i + 1}/${players.length}: ${player["Player Name"]} (ID: ${player.id})`);
+
+                try {
+                    await delay(500);
+                    
+                    if (!player.id) {
+                        console.error(`[getPlayersThenScore] Player ${player["Player Name"]} has no ID - skipping`);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
+
+                    if (!player["Player Name"]) {
+                        console.error(`[getPlayersThenScore] Player ID ${player.id} has no name - skipping`);
+                        skippedCount++;
+                        skippedPlayers.push(`ID: ${player.id}`);
+                        continue;
+                    }
+
+                    const playerData = {
+                        id: player.id,
+                        player_name: player["Player Name"],
+                        position: player.Position,
+                        detailed_position: player["Detailed Position"],
+                        keeper_score: null,
+                        defensive_score: null,
+                        passing_score: null,
+                        possession_score: null,
+                        attacking_score: null,
+                        finishing_score: null,
+                        total_score: null,
+                        transfer_value: null,
+                        player_age: null
+                    };
+
+                    console.log(`[getPlayersThenScore] Player ${player["Player Name"]} - Position: ${player.Position}, Detailed: ${player["Detailed Position"]}`);
+
+                    // Skip scoring for players with less than 135 minutes
+                    const minutesPlayed = player["Minutes Played"] || 0;
+                    if (minutesPlayed < 250) {
+                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Only ${minutesPlayed} minutes played, skipping scoring and setting defaults`);
+                        
+                        playerData.defensive_score = 0;
+                        playerData.passing_score = 0;
+                        playerData.possession_score = 0;
+                        playerData.attacking_score = 0;
+                        playerData.finishing_score = 0;
+                        playerData.keeper_score = 0;
+                        playerData.total_score = 0;
+                        playerData.transfer_value = 500;
+                        playerData.player_age = player.Age;
+                        playerData.player_team = player["Player Team"];
+                        playerData.nationality = player.Nation;
+                        
+                        // Still need to create minimal per90s entry for consistency
+                        const minimalP90s = {
+                            PlayerName: playerData.player_name,
+                            PlayerTeam: player["Player Team"],
+                            MinutesPlayed: minutesPlayed,
+                            Position: playerData.position,
+                            DetailedPosition: playerData.detailed_position
+                        };
+                        
+                        await insertPer90s(ninetyTable, player.id, minimalP90s);
+                        
+                        const { error: uploadError } = await supabase
+                            .from(miniTable)
+                            .upsert([playerData]);
+
+                        if (uploadError) {
+                            console.error(`[getPlayersThenScore] ERROR uploading minimal scores for player ${player["Player Name"]} (ID: ${player.id}) to ${miniTable}:`, uploadError);
+                            skippedCount++;
+                            skippedPlayers.push(player["Player Name"]);
+                        } else {
+                            console.log(`[getPlayersThenScore] Successfully uploaded minimal scores for low-minutes player ${player["Player Name"]} (ID: ${player.id})`);
+                            processedCount++;
+                        }
+                        
+                        continue; 
+                    }
+
+                    let finishing = null;
+                    let attacking = null;
+                    let keeping = null;
+                    let passing = null;
+                    let defense = null;
+                    let possession = null;
+                    let total = 0;
+                    const isKeeper = player.Position === 'Goalkeeper';
+                    const isMidfielder = player.Position === 'Midfielder';
+                    const isAttacker = player.Position === 'Attacker';
+                    const isCB = player["Detailed Position"] === 'Centre-Back';
+                    const isFullback = player["Detailed Position"] === 'Left-Back' || player["Detailed Position"] === 'Right-Back';
 
                 if (!isKeeper) {
-                    defense = getDefensiveScore(player, player["Detailed Position"]);
-                    total += parseFloat(defense.score);
-                  
-                    passing = getPassingScore(player, player["Detailed Position"]);
-                    total += parseFloat(passing.score);
-                   
-                    possession = getPossessionScore(player, player["Detailed Position"]);
-                    total += parseFloat(possession.score);
+                    console.log(`[getPlayersThenScore] Processing outfield player: ${player["Player Name"]}`);
                     
-                    attacking = getAttackingScore(player, player["Detailed Position"]);
-                    total += parseFloat(attacking.score);
-
-                    finishing = getFinishingScore(player, player["Detailed Position"]);
-                    total += parseFloat(finishing.score);
+                    try {
+                        defense = getDefensiveScore(player, player["Detailed Position"]);
+                        if (!defense || !defense.score || defense.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Defense score is null/undefined/too small: ${defense?.score}`);
+                            console.log('setting minimal default defensive score of 10');
+                            defense = defense || {};
+                            defense.score = 10;
+                            defense.p90s = defense.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Defense score: ${defense?.score}`);
+                            total += parseFloat(defense.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting defense score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
+                  
+                    try {
+                        passing = getPassingScore(player, player["Detailed Position"]);
+                        if (!passing || !passing.score || passing.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Passing score is null/undefined/too small: ${passing?.score}`);
+                            console.log('setting minimal default passing score of 10');
+                            passing = passing || {};
+                            passing.score = 10;
+                            passing.p90s = passing.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Passing score: ${passing?.score}`);
+                            total += parseFloat(passing.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting passing score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
                    
+                    try {
+                        possession = getPossessionScore(player, player["Detailed Position"]);
+                        if (!possession || !possession.score || possession.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Possession score is null/undefined/too small: ${possession?.score}`);
+                            console.log('setting minimal default possession score of 10');
+                            possession = possession || {};
+                            possession.score = 10;
+                            possession.p90s = possession.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Possession score: ${possession?.score}`);
+                            total += parseFloat(possession.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting possession score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
+
+                    try {
+                        attacking = getAttackingScore(player, player["Detailed Position"]);
+                        if (!attacking || !attacking.score || attacking.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Attacking score is null/undefined/too small: ${attacking?.score}`);
+                            console.log('setting minimal default attacking score of 10');
+                            attacking = attacking || {};
+                            attacking.score = 10;
+                            attacking.p90s = attacking.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Attacking score: ${attacking?.score}`);
+                            total += parseFloat(attacking.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting attacking score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
+
+                    try {
+                        finishing = getFinishingScore(player, player["Detailed Position"]);
+                        if (!finishing || !finishing.score || finishing.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Finishing score is null/undefined/too small: ${finishing?.score}`);
+                            console.log('setting minimal default finishing score of 10');
+                            finishing = finishing || {};
+                            finishing.score = 10;
+                            finishing.p90s = finishing.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Finishing score: ${finishing?.score}`);
+                            total += parseFloat(finishing.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting finishing score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
                     const p90s = {
                         PlayerName: playerData.player_name,
                         PlayerTeam: player["Player Team"],
@@ -287,32 +456,38 @@
                         ...finishing.p90s,
                     }
 
+                    console.log(`[getPlayersThenScore] ${player["Player Name"]} - Inserting per90s data to ${ninetyTable}`);
              
                     if (defense?.p90s?.TacklesPer90) playerData.tackles_per90 = defense.p90s.TacklesPer90;
                     if (defense?.p90s?.InterceptionsPer90) playerData.ints_per90 = defense.p90s.InterceptionsPer90;
                     if (defense?.p90s?.FoulsPer90) playerData.fouls_per90 = defense.p90s.FoulsPer90;
                     if (passing?.p90s?.KeyPassesPer90) playerData.key_passes_per90 = passing.p90s.KeyPassesPer90;
-					if (passing?.p90s?.AccurateCrossesPer90) playerData.accurate_crosses_per90 = passing.p90s.AccurateCrossesPer90;
+                    if (passing?.p90s?.AccurateCrossesPer90) playerData.accurate_crosses_per90 = passing.p90s.AccurateCrossesPer90;
                     if (finishing?.p90s?.GoalsPer90) playerData.goals_per90 = finishing.p90s.GoalsPer90;
                     if (attacking?.p90s?.GoalsPer90) playerData.goals_per90 = attacking.p90s.GoalsPer90;
                     if (attacking?.p90s?.AssistsPer90) playerData.assists_per90 = attacking.p90s.AssistsPer90;
-					if (attacking?.p90s?.SuccessfulDribblesPer90) playerData.successful_dribbles_per90 = attacking.p90s.SuccessfulDribblesPer90;
+                    if (attacking?.p90s?.SuccessfulDribblesPer90) playerData.successful_dribbles_per90 = attacking.p90s.SuccessfulDribblesPer90;
 
 
-                    await insertPer90s(player.id, p90s)
+                    await insertPer90s(ninetyTable, player.id, p90s)
 
                     if (isMidfielder) {
+                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying midfielder multiplier (1.05)`);
                         total *= 1.05;
                     } else if (isAttacker) {
+                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying attacker multiplier (1.2)`);
                         total *= 1.2;
                     } else if (isCB) {
+                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying CB multiplier (1.7)`);
                         total *= 1.7;
                     } else if (isFullback) {
+                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying fullback multiplier (0.95)`);
                         total *= 0.95;
                     }
 
                     total = (total / 3.2).toFixed(2);
-                    console.log('total:  ', total)
+                    console.log(`[getPlayersThenScore] ${player["Player Name"]} - Final total score: ${total}`);
+                    
                     playerData.defensive_score = parseFloat(defense.score)
                     playerData.passing_score = parseFloat(passing.score)
                     playerData.possession_score = parseFloat(possession.score)
@@ -320,13 +495,50 @@
                     playerData.finishing_score = parseFloat(finishing.score)
     
                 } else {
-                    keeping = getKeeperScore(player, player["Detailed Position"]);
-                    total += parseFloat(keeping.score);
+                    console.log(`[getPlayersThenScore] Processing goalkeeper: ${player["Player Name"]}`);
+                    
+                    try {  
+                        keeping = getKeeperScore(player, player["Detailed Position"]);
+                        if (!keeping || !keeping.score || keeping.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Keeping score is null/undefined/too small: ${keeping?.score}`);
+                            console.log('setting minimal default keeping score of 10');
+                            keeping = keeping || {};
+                            keeping.score = 10;
+                            keeping.p90s = keeping.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Keeping score: ${keeping?.score}`);
+                            total += parseFloat(keeping.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting keeping score for ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
 
-                    passing = getPassingScore(player, player["Detailed Position"]);
-                    total += parseFloat(passing.score);
+                    try {
+                        passing = getPassingScore(player, player["Detailed Position"]);
+                        if (!passing || !passing.score || passing.score < 10) {
+                            console.error(`[getPlayersThenScore] ${player["Player Name"]} - Passing score (GK) is null/undefined/too small: ${passing?.score}`);
+                            console.log('setting minimal default passing score of 10');
+                            passing = passing || {};
+                            passing.score = 10;
+                            passing.p90s = passing.p90s || {};
+                            total += 10;
+                        } else {
+                            console.log(`[getPlayersThenScore] ${player["Player Name"]} - Passing score: ${passing?.score}`);
+                            total += parseFloat(passing.score);
+                        }
+                    } catch(err) {
+                        console.error(`[getPlayersThenScore] ERROR getting passing score for goalkeeper ${player["Player Name"]}:`, err);
+                        skippedCount++;
+                        skippedPlayers.push(player["Player Name"]);
+                        continue;
+                    }
 
                     total = (total / 1.9).toFixed(2);
+                    console.log(`[getPlayersThenScore] ${player["Player Name"]} - Final goalkeeper total: ${total}`);
 
                     playerData.keeper_score = parseFloat(keeping.score)
                     playerData.passing_score = parseFloat(passing.score)
@@ -341,31 +553,59 @@
                         ...passing.p90s,
                     }
 
-                    await insertPer90s(player.id, p90s)
+                    console.log(`[getPlayersThenScore] ${player["Player Name"]} - Inserting goalkeeper per90s data`);
+                    await insertPer90s(ninetyTable, player.id, p90s)
                 }
+                
                 playerData.total_score = total;
                 playerData.transfer_value = (total * 20).toFixed(2);
                 playerData.player_age = player.Age;
                 playerData.player_team = player["Player Team"];
                 playerData.nationality = player.Nation;
 
+                console.log(`[getPlayersThenScore] ${player["Player Name"]} - Upserting to ${miniTable} with total_score: ${playerData.total_score}`);
+                console.log(`[getPlayersThenScore] ${player["Player Name"]} - Full playerData:`, JSON.stringify(playerData));
+
                 const { error: uploadError } = await supabase
-                    .from(miniDB)
+                    .from(miniTable)
                     .upsert([playerData]);
 
                 if (uploadError) {
-                    console.error(`Error uploading scores for player ${player["Player Name"]}:`, uploadError);
+                    console.error(`[getPlayersThenScore] ERROR uploading scores for player ${player["Player Name"]} (ID: ${player.id}) to ${miniTable}:`, uploadError);
+                    console.error(`[getPlayersThenScore] Upload error details:`, JSON.stringify(uploadError));
+                    console.error(`[getPlayersThenScore] Failed playerData:`, JSON.stringify(playerData));
+                    skippedCount++;
+                    skippedPlayers.push(player["Player Name"]);
                 } else {
-                    console.log(`Successfully uploaded scores for player ${player["Player Name"]}`);
+                    console.log(`[getPlayersThenScore] Successfully uploaded scores for player ${player["Player Name"]} (ID: ${player.id}) to ${miniTable}`);
+                    processedCount++;
+                }
+                
+                } catch(playerErr) {
+                    console.error(`[getPlayersThenScore] CRITICAL ERROR processing player ${player["Player Name"]} (ID: ${player.id}):`, playerErr);
+                    console.error(`[getPlayersThenScore] Player data that caused error:`, JSON.stringify(player));
+                    skippedCount++;
+                    skippedPlayers.push(player["Player Name"]);
                 }
             }
 
-            console.log('All players processed and scores uploaded.');
-        } catch (err) {
-            console.error('Error in getPlayersThenScore:', err);
-        }
-    }}
+            console.log(`[getPlayersThenScore] FINAL SUMMARY:`);
+            console.log(`[getPlayersThenScore] Total players in initial data: ${players.length}`);
+            console.log(`[getPlayersThenScore] Successfully processed: ${processedCount}`);
+            console.log(`[getPlayersThenScore] Skipped/Failed: ${skippedCount}`);
+            if (skippedPlayers.length > 0) {
+                console.log(`[getPlayersThenScore] Skipped players:`, skippedPlayers);
+            }
 
+            console.log(`[getPlayersThenScore] All players processed and scores uploaded.`);
+        } catch (err) {
+            console.error(`[getPlayersThenScore] CRITICAL ERROR in main function:`, err);
+            console.error(`[getPlayersThenScore] Error stack:`, err.stack);
+        }
+    } else {
+        console.error(`[getPlayersThenScore] Weights not fetched - aborting`);
+    }
+}
 
 	//bizarre errors when trying to run this functionality in the draft page. Creating an almost duplicate function here *shrug*
     async function getCoachesToDB(){
@@ -437,53 +677,134 @@
     }
 
 
-    async function insertPer90s(id, p90s){
+async function insertPer90s(ninetyTable, id, p90s){
+    console.log(`[insertPer90s] Starting insert for player ID ${id} to table ${ninetyTable}`);
+    console.log(`[insertPer90s] P90s data keys:`, Object.keys(p90s));
+    
+    try {
         const { data, error } = await supabase
-            .from('prem_stats_2425_per90')
+            .from(ninetyTable)
             .upsert({
                 id: id,
                 ...p90s,
             }, { onConflict: 'id'})
-            console.log(`player id ${id} uploaded`)
-            if(error){
-                console.error(error)
+        
+        if(error){
+            console.error(`[insertPer90s] ERROR for player ID ${id}:`, error);
+            console.error(`[insertPer90s] Error details:`, JSON.stringify(error));
+            console.error(`[insertPer90s] Failed p90s data:`, JSON.stringify(p90s));
+            if (error.message && error.message.includes('onConflict')) {
+                console.error(`[insertPer90s] OnConflict triggered for ID ${id} - this may indicate duplicate processing`);
             }
+        } else {
+            console.log(`[insertPer90s] Successfully uploaded player ID ${id} to ${ninetyTable}`);
+            if (data) {
+                console.log(`[insertPer90s] Returned data for ID ${id}:`, JSON.stringify(data));
+            }
+        }
+    } catch(err) {
+        console.error(`[insertPer90s] EXCEPTION for player ID ${id}:`, err);
+        console.error(`[insertPer90s] Exception stack:`, err.stack);
     }
-
+}
 
 /////////////////////////
 // API to Main Stat DB //
-    async function getPremPlayersAndUpload() {
-        console.log('Fetching Premier League players...');
-        let lads = [];
-        try {
-            // Fetch all teams and players for the season
-            const premRes = await axios.get('/api/teams/seasons/23614', {
-                params: {
-                    include: 'players.player;coaches'
-                }
-            });
-            lads = premRes.data.data;
-            console.log("Teams and Players:", lads);
 
-            // Process each player sequentially
-            for (const team of lads) {
-                if (team.players && team.players.length > 0) {
-                    for (const player of team.players) {
-                        if (player.player.date_of_birth !== null) {
-                            console.log(`Fetching stats for player ${player.player.id}...`);
-                            await getPlayerStatsAndUpload(player.player.id, team.name); // Process each player one at a time
+   async function getLeaguePlayersAndUpload(seasonId, leagueString, seasonString){
+    console.log(`[getLeaguePlayersAndUpload] Starting for seasonId: ${seasonId}, league: ${leagueString}, season: ${seasonString}`);
+    
+    let lads = [];
+    let res = null;
+    
+    try {
+        console.log(`[getLeaguePlayersAndUpload] Fetching teams from API for season ${seasonId}`);
+        res = await axios.get(`/api/teams/seasons/${seasonId}`, {
+            params: {
+                include: 'players.player;coaches'
+            }
+        })
+        console.log(`[getLeaguePlayersAndUpload] API response received, status: ${res.status}`);
+    } catch(err){
+        console.error(`[getLeaguePlayersAndUpload] ERROR fetching teams from API:`, err);
+        console.error(`[getLeaguePlayersAndUpload] Error details:`, err.response?.data || err.message);
+        return;
+    }
+    
+    if(res.data){
+        lads = res.data.data;
+        console.log(`[getLeaguePlayersAndUpload] Found ${lads.length} teams`);
+        
+        // Process each player sequentially
+        for (const team of lads) {
+            console.log(`[getLeaguePlayersAndUpload] Processing team: ${team.name}`);
+            
+            if (team.players && team.players.length > 0) {
+                console.log(`[getLeaguePlayersAndUpload] Team ${team.name} has ${team.players.length} players`);
+                
+                for (const player of team.players) {
+                    if (player.player.date_of_birth !== null) {
+                        console.log(`[getLeaguePlayersAndUpload] Fetching stats for player ${player.player.id} (${player.player.name || 'unnamed'}) from team ${team.name}`);
+                        
+                        try {
+                            await getPlayerStatsAndUpload(player.player.id, team.name, seasonId, leagueString, seasonString);
+                            console.log(`[getLeaguePlayersAndUpload] Successfully processed player ${player.player.id}`);
+                        } catch(err) {
+                            console.error(`[getLeaguePlayersAndUpload] ERROR processing player ${player.player.id}:`, err);
+                            console.error(`[getLeaguePlayersAndUpload] Continuing with next player...`);
                         }
+                    } else {
+                        console.log(`[getLeaguePlayersAndUpload] Skipping player ${player.player.id} - no date of birth`);
                     }
                 }
+            } else {
+                console.log(`[getLeaguePlayersAndUpload] Team ${team.name} has no players`);
             }
-            console.log('Operation Success!')
-            await getPlayersThenScore('prem_mini_2425')
-            await statRankings()
-        } catch (err) {
-            console.error("Error fetching Premier League players:", err);
         }
+        
+        console.log(`[getLeaguePlayersAndUpload] All players processed, starting score calculation`);
+        await getPlayersThenScore(leagueString, seasonString)
+        
+        console.log(`[getLeaguePlayersAndUpload] Score calculation complete, starting stat rankings`);
+        await statRankings(leagueString, seasonString)
+        
+        console.log(`[getLeaguePlayersAndUpload] All processing complete for league ${leagueString}, season ${seasonString}`);
+    } else {
+        console.error(`[getLeaguePlayersAndUpload] No data received from API`);
     }
+}
+
+    // async function getPremPlayersAndUpload() {
+    //     console.log('Fetching Premier League players...');
+    //     let lads = [];
+    //     try {
+    //         // Fetch all teams and players for the season
+    //         const premRes = await axios.get('/api/teams/seasons/23614', {
+    //             params: {
+    //                 include: 'players.player;coaches'
+    //             }
+    //         });
+    //         lads = premRes.data.data;
+    //         console.log("Teams and Players:", lads);
+
+    //         // Process each player sequentially
+    //         for (const team of lads) {
+    //             if (team.players && team.players.length > 0) {
+    //                 for (const player of team.players) {
+    //                     if (player.player.date_of_birth !== null) {
+    //                         console.log(`Fetching stats for player ${player.player.id}...`);
+    //                         await getPlayerStatsAndUpload(player.player.id, team.name, 23614); // Process each player one at a time
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         console.log('Operation Success!')
+    //         await getPlayersThenScore('prem_mini_2425')
+    //         await statRankings()
+    //     } catch (err) {
+    //         console.error("Error fetching Premier League players:", err);
+    //     }
+    // }
 
 	async function getSinglePlayerApi(id){
 		const response = await axios.get(`/api/players/${id}`, { 
@@ -498,14 +819,18 @@
 	}
 
 
-    async function getPlayerStatsAndUpload(id, teamName) {
+
+
+    async function getPlayerStatsAndUpload(id, teamName, seasonId, leagueString, seasonString) {
 		let seasonStats = null;
+        let table = `${leagueString}_stats_${seasonString}`
+      
         try {
             // Fetch player data
             const response = await axios.get(`/api/players/${id}`, { 
                 params: {
                     include: 'statistics.details.type;position;detailedPosition',
-                    filter: 'playerStatisticSeasons:23614'
+                    filter: `playerStatisticSeasons:${seasonId}`
                 }
             });
 
@@ -607,7 +932,7 @@
 
                     // Perform a single insert operation with the complete stats object
                     const { error } = await supabase
-                        .from('prem_stats_2425') 
+                        .from(table) 
                         .upsert([statsToInsert]);
 
                     if (error) {
@@ -1044,7 +1369,14 @@ function getDefensiveScore(row, detailedPosition) {
 
 /////////////////
 //Stat Rankings//
-async function statRankings() {
+async function statRankings(leagueString, seasonString) {
+    console.log(`[statRankings] Starting rankings for league: ${leagueString}, season: ${seasonString}`);
+    
+    const ninetyTable = `${leagueString}_stats_${seasonString}_per90`
+    const rankTable = `${leagueString}_stats_${seasonString}_rankings`
+    
+    console.log(`[statRankings] Tables - ninety: ${ninetyTable}, rank: ${rankTable}`);
+    
     const invertedStats = [
         "ShotsOffTargetPer90",
         "BigChancesMissedPer90",
@@ -1055,24 +1387,42 @@ async function statRankings() {
         "DribbledPastPer90",
         "ErrorLeadToGoal"
     ];
-
+    
+    console.log(`[statRankings] Fetching data from ${ninetyTable}`);
+    
     const { data, error } = await supabase
-        .from('prem_stats_2425_per90')
+        .from(ninetyTable)
         .select('*');
+    
     if (error) {
-        console.error(error);
+        console.error(`[statRankings] ERROR fetching from ${ninetyTable}:`, error);
+        console.error(`[statRankings] Error details:`, JSON.stringify(error));
         return;
     }
-
+    
+    if (!data || data.length === 0) {
+        console.warn(`[statRankings] No data found in ${ninetyTable}`);
+        return;
+    }
+    
+    console.log(`[statRankings] Fetched ${data.length} players from ${ninetyTable}`);
+    
     // Only get rankings for players with significant minutes (half of the maximum or greater)
     const maxMinutes = Math.max(...data.map(player => player.MinutesPlayed));
+    console.log(`[statRankings] Max minutes played: ${maxMinutes}`);
+    
     const minutesThreshold = maxMinutes / 3;
+    console.log(`[statRankings] Minutes threshold (max/3): ${minutesThreshold}`);
+    
     const filteredPlayers = data.filter(player => player.MinutesPlayed >= minutesThreshold);
-
+    console.log(`[statRankings] ${filteredPlayers.length} players meet minutes threshold`);
+    
     // Separate players into keepers and non-keepers
     const keepers = filteredPlayers.filter(player => player.DetailedPosition === 'Goalkeeper');
     const nonKeepers = filteredPlayers.filter(player => player.DetailedPosition !== 'Goalkeeper');
-
+    
+    console.log(`[statRankings] Found ${keepers.length} keepers and ${nonKeepers.length} non-keepers`);
+    
     // Initialize rankedData for all players
     const rankedData = filteredPlayers.map(player => ({
         id: player.id,
@@ -1087,19 +1437,28 @@ async function statRankings() {
             return acc;
         }, {})
     }));
-
+    
+    console.log(`[statRankings] Initialized ranked data for ${rankedData.length} players`);
+    
     // Helper function to rank players with tie handling
     const rankPlayers = (players, stat, isInverted) => {
+        console.log(`[statRankings] Ranking ${players.length} players for stat: ${stat} (inverted: ${isInverted})`);
+        
         const sortedPlayers = [...players].sort((a, b) => isInverted ? a[stat] - b[stat] : b[stat] - a[stat]);
-
         let currentRank = 1;
         let previousValue = null;
         let firstRankSet = false
-
+        
         sortedPlayers.forEach((player, index) => {
             const playerInRankedData = rankedData.find(p => p.id === player.id);
+            
+            if (!playerInRankedData) {
+                console.error(`[statRankings] Could not find player ID ${player.id} in rankedData`);
+                return;
+            }
+            
             const currentValue = player[stat];
-
+            
             if (currentValue !== previousValue && !firstRankSet){
                 currentRank = 1
                 firstRankSet = true;
@@ -1107,7 +1466,7 @@ async function statRankings() {
             else if (currentValue !== previousValue) {
                 currentRank += 1; // Update rank if the value changes
             }
-
+            
             if (currentRank <= 50) {
                 playerInRankedData[stat] = currentRank; // Top 50
             } else if (currentRank >= sortedPlayers.length - 49) {
@@ -1115,32 +1474,48 @@ async function statRankings() {
             } else {
                 playerInRankedData[stat] = 0; // Not in top or bottom 50
             }
-
+            
             previousValue = currentValue; // Update previous value for the next iteration
         });
+        
+        console.log(`[statRankings] Completed ranking for stat: ${stat}`);
     };
-
+    
     // Rank non-keepers using statsToRank
+    console.log(`[statRankings] Starting to rank non-keepers for ${statsToRank.length} stats`);
     statsToRank.forEach(stat => {
         const isInverted = invertedStats.includes(stat);
         rankPlayers(nonKeepers, stat, isInverted);
     });
-
+    
     // Rank keepers using keeperStatsToRank
+    console.log(`[statRankings] Starting to rank keepers for ${keeperStatsToRank.length} stats`);
     keeperStatsToRank.forEach(stat => {
         const isInverted = invertedStats.includes(stat);
         rankPlayers(keepers, stat, isInverted);
     });
-
-    console.log(rankedData);
-
-    const { rankings, err } = await supabase
-        .from('prem_stats_2425_rankings')
-        .upsert(rankedData, { onConflict: 'id' })
-    if (err) {
-        console.error(err);
-    } else {
-        console.log('Rankings uploaded');
+    
+    console.log(`[statRankings] All rankings complete, upserting ${rankedData.length} records to ${rankTable}`);
+    console.log(`[statRankings] Sample ranked data (first player):`, JSON.stringify(rankedData[0]));
+    
+    try {
+        const { rankings, err } = await supabase
+            .from(rankTable)
+            .upsert(rankedData, { onConflict: 'id' })
+        
+        if (err) {
+            console.error(`[statRankings] ERROR upserting rankings to ${rankTable}:`, err);
+            console.error(`[statRankings] Error details:`, JSON.stringify(err));
+            console.error(`[statRankings] Failed data sample (first 3 records):`, JSON.stringify(rankedData.slice(0, 3)));
+        } else {
+            console.log(`[statRankings] Successfully uploaded ${rankedData.length} rankings to ${rankTable}`);
+            if (rankings) {
+                console.log(`[statRankings] Returned data length:`, rankings.length);
+            }
+        }
+    } catch(err) {
+        console.error(`[statRankings] EXCEPTION during upsert:`, err);
+        console.error(`[statRankings] Exception stack:`, err.stack);
     }
 }
 
@@ -1181,6 +1556,24 @@ async function getNations() {
   }
 }
 
+    let leagueIdConfig = {
+        23614: ['prem_stats_2425','prem_stats_2425_per90','prem_stats_2425_rankings'],
+        23744: ['bundes_stats_2425','bundes_stats_2425_per90'],
+        23643: ['ligue1_stats_2425','ligue1_stats_2425_per90'],
+        23621: ['laliga_stats_2425','laliga_stats_2425_per90'],
+        23746: ['seriea_stats_2425','seriea_stats_2425_per90']
+
+
+}
+
+async function allLeagues(){
+    await getLeaguePlayersAndUpload(23744, 'bundes','2425')
+    await getLeaguePlayersAndUpload(23621, 'laliga','2425')
+    await getLeaguePlayersAndUpload(23643, 'ligue1','2425')
+    await getLeaguePlayersAndUpload(23614, 'prem','2425')
+    await getLeaguePlayersAndUpload(23746, 'seriea','2425')
+}
+
 function toggleDevBar() {
     devBarVisible = !devBarVisible;
   }
@@ -1194,10 +1587,13 @@ function toggleDevBar() {
 
 {#if devBarVisible}
     <div class="dev-bar">
-        <button onclick={getPremPlayersAndUpload}>Let's Go</button>
+        <button onclick={allLeagues()}>All Leagues</button>
+        <button onclick={getLeaguePlayersAndUpload(23614, 'prem','2425')}>Premier League</button>
+        <button onclick={getLeaguePlayersAndUpload(23744, 'bundes','2425')}>Bundesliga</button>
+        <button onclick={getLeaguePlayersAndUpload(23643, 'ligue1','2425')}>Ligue 1</button>
+        <button onclick={getLeaguePlayersAndUpload(23621, 'laliga','2425')}>La Liga</button>
+        <button onclick={getLeaguePlayersAndUpload(23746, 'seriea','2425')}>Serie A</button>
         <button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
-        <button onclick={getPlayersThenScore('prem_mini_2425')}>Upload Scores to Mini</button>
-        <button onclick={getPlayersThenScore('prem_mini_2425_testing')}>Upload Scores to Mini TEST</button>
         <button onclick={fetchAllWeights}>Weights</button>
         <button onclick={testWeightMap}>Test Weight to Defense</button>
         <button onclick={statRankings}>Stat Rankings</button>

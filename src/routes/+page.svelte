@@ -153,13 +153,13 @@
                       
                       await invalidateAll();
                       
-                      await Promise.all([
-                        loadPlayersData(),
-                        loadManagersData()
-                      ]);
-
+                      
                       // Navigate based on league status
                       if (leagueInfo.status === 'HAS_LEAGUE' && leagueInfo.leagueId) {
+                          await Promise.all([
+                            loadPlayersData(),
+                            loadManagersData()
+                          ]);
                           await checkLeagueDraftStatus();
                       } else if (leagueInfo.status === 'CAN_CREATE_LEAGUE') {
                           goto('/create');
