@@ -23,51 +23,51 @@
     let codeInputs = [];
     let tempPassword = ''; 
 
-    async function checkUserLeagueStatus() {
-        const leagueState = getLeagueState();
-        
-        try {
-            leagueState.loading = true;
-            leagueState.error = null;
-            
-            const session = await fetchAuthSession();
-            const idToken = session.tokens?.idToken?.toString();
-            
-            if (!idToken) {
-                throw new Error('No authentication token available');
-            }
-            
-            const response = await axios.get(`${POST_LOGIN_URL}`, {
-                headers: {
-                    'Authorization': idToken
-                }
-            });
-            
-            console.log('League status:', response.data);
-            
-            setLeagueStatus(response.data);
-            
-            return response.data;
-            
-        } catch (error) {
-            console.error('Error checking league status:', error);
-            
-            if (error.response) {
-                leagueState.error = `Server error: ${error.response.status}`;
-                throw new Error(`Failed to check league status: ${error.response.status}`);
-            } else if (error.request) {
-                leagueState.error = 'No response from server';
-                throw new Error('No response from server');
-            } else {
-                leagueState.error = error.message;
-                throw error;
-            }
-        } finally {
-            leagueState.loading = false;
-        }
-    }
+async function checkUserLeagueStatus() {
+    const leagueState = getLeagueState();
     
-    async function registerUser(values){
+    try {
+        leagueState.loading = true;
+        leagueState.error = null;
+        
+        const session = await fetchAuthSession();
+        const idToken = session.tokens?.idToken?.toString();
+        
+        if (!idToken) {
+            throw new Error('No authentication token available');
+        }
+        
+        const response = await axios.get(`${POST_LOGIN_URL}`, {
+            headers: {
+                'Authorization': idToken
+            }
+        });
+        
+        console.log('League status:', response.data);
+        
+        setLeagueStatus(response.data);
+        
+        return response.data;
+        
+    } catch (error) {
+        console.error('Error checking league status:', error);
+        
+        if (error.response) {
+            leagueState.error = `Server error: ${error.response.status}`;
+            throw new Error(`Failed to check league status: ${error.response.status}`);
+        } else if (error.request) {
+            leagueState.error = 'No response from server';
+            throw new Error('No response from server');
+        } else {
+            leagueState.error = error.message;
+            throw error;
+        }
+    } finally {
+        leagueState.loading = false;
+    }
+}
+    
+async function registerUser(values){
         tempPassword = values.password;
         try {
             const { isSignUpComplete, userId, nextStep } = await signUp({
@@ -85,201 +85,218 @@
         }
     }
 
-    async function checkLeagueDraftStatus(){
-        try {
-            const response = await axios.get('/api/supabase/draft_check');
-            
-            if (response.data.draftComplete) {
-              draft.gate0 = true;
-              draft.gate1 = true;
-              draft.complete = true;
 
+async function signUserIn(values) {
+    try {
+        const { isSignedIn } = await signIn({
+            username: values.email,
+            password: values.password,
+        });
+        
+        if (isSignedIn) {
+            const currentUser = await getCurrentUser();
+            console.log('Current user:', currentUser);
+            setUser(currentUser);
+            
+            try {
+                // Check league status using AWS Lambda
+                const leagueInfo = await checkUserLeagueStatus();
+                
+                // Create session with auth info AND league ID if they have one
+                const sessionResponse = await axios.post('/api/auth/session', {
+                    userId: currentUser.userId,
+                    username: values.email,
+                    leagueId: leagueInfo.leagueId || null
+                });
+                
+                if (sessionResponse.status === 200) {
+                    displayConfirmCodes = false;
+                    emailValue = '';
+                    passwordValue = '';
+                    console.log(`Successfully logged in!`, currentUser);
+                    
+                    await invalidateAll();
+                    
+                    if (leagueInfo.status === 'HAS_LEAGUE' && leagueInfo.leagueId) {
+                        // Fetch league info (draft status and countries code) FIRST
+                        const leagueData = await fetchLeagueInfo();
+                        
+                        if (leagueData) {
+                            const countriesCode = leagueData.countriesCode;
+                            
+                            // Load players from the appropriate table based on countries code
+                            await Promise.all([
+                                loadPlayersData(countriesCode), 
+                                loadManagersData()
+                            ]);
+                            
+                            await handlePostLeagueLoad(leagueData);
+                        }
+                    } else if (leagueInfo.status === 'CAN_CREATE_LEAGUE') {
+                        goto('/create');
+                    }
+                }
+            } catch(err) {
+                console.error('Failed to check league status or create session', err);
+                alert('Login successful but failed to load league data. Please refresh the page.');
+            }
+        } else {
+            console.log('Failed to Login');
+            alert('Invalid email or password');
+        }
+    } catch(err) {
+        console.error('Login error', err);
+        alert(err.message || 'Login failed. Please try again.');
+    }
+}
+
+
+async function fetchLeagueInfo() {
+    try {
+        const response = await axios.get('/api/supabase/league_info'); 
+        
+        return response.data; // Returns { draftComplete, countriesCode, redirect }
+    } catch (error) {
+        console.error('Error fetching league info:', error);
+        return null;
+    }
+}
+
+async function handlePostLeagueLoad(leagueData) {
+    try {
+        if (leagueData.draftComplete) {
+            draft.gate0 = true;
+            draft.gate1 = true;
+            draft.complete = true;
+            
             // Load teams and wait for it to complete
             const teamsLoaded = await loadTeamsData();
             
-
-            if (teamsLoaded && response.data.redirect) {
-            
-              delay(100);
-              hydratePlayers();
-              delay(100)
-              try {
-              hydrateTeams();
-              } catch(err){
-                console.error('error hydrating teams', err)
-              }
-              delay(100);
-              hydrateManagers();
-              goto(response.data.redirect);
+            if (teamsLoaded && leagueData.redirect) {
+                delay(100);
+                hydratePlayers();
+                delay(100);
+                try {
+                    hydrateTeams();
+                } catch(err) {
+                    console.error('error hydrating teams', err);
+                }
+                delay(100);
+                hydrateManagers();
+                goto(leagueData.redirect);
             }
-        } else if (response.data.redirect) {
-            goto(response.data.redirect);
+        } else if (leagueData.redirect) {
+            goto(leagueData.redirect);
         }
-        } catch (error) {
-            console.error('Error checking league draft status:', error);
-            // Default to draft page if there's an error
-            goto('/draft');
-        }
+    } catch (error) {
+        console.error('Error in post-league load:', error);
+        // Default to draft page if there's an error
+        goto('/draft');
+    }
+}
+
+async function triggerRegistration() {
+    if (!emailValue || !passwordValue) {
+        alert('Please enter both email and password');
+        return;
+    }
+    await registerUser({ email: emailValue, password: passwordValue });
+    displayConfirmCodes = true;
+}
+
+function triggerSignIn() {
+    if (!emailValue || !passwordValue) {
+        alert('Please enter both email and password');
+        return;
+    }
+    signUserIn({ email: emailValue, password: passwordValue })
+}
+
+function handleCodeInput(event, index){
+    const input = event.target;
+    let value = input.value;
+
+    if(/[^0-9]/.test(value)){
+        input.value = value.replace(/[^0-9]/g, '')
+        value = input.value;
     }
 
-    async function signUserIn(values) {
-      try {
-          const { isSignedIn } = await signIn({
-              username: values.email,
-              password: values.password,
-          });
-          
-          if (isSignedIn) {
-              const currentUser = await getCurrentUser();
-              console.log('Current user:', currentUser);
-              setUser(currentUser);
-              
-              try {
-                  // Check league status using AWS Lambda
-                  const leagueInfo = await checkUserLeagueStatus();
-                  
-                  // Create session with auth info AND league ID if they have one
-                  const sessionResponse = await axios.post('/api/auth/session', {
-                      userId: currentUser.userId, 
-                      username: values.email,
-                      leagueId: leagueInfo.leagueId || null
-                  });
-                  
-                  if (sessionResponse.status === 200) {
-                      displayConfirmCodes = false;
-                      emailValue = '';
-                      passwordValue = '';
-                      console.log(`Successfully logged in!`, currentUser);
-                      
-                      await invalidateAll();
-                      
-                      
-                      // Navigate based on league status
-                      if (leagueInfo.status === 'HAS_LEAGUE' && leagueInfo.leagueId) {
-                          await Promise.all([
-                            loadPlayersData(),
-                            loadManagersData()
-                          ]);
-                          await checkLeagueDraftStatus();
-                      } else if (leagueInfo.status === 'CAN_CREATE_LEAGUE') {
-                          goto('/create');
-                      }
-                  }
-              } catch(err) {
-                  console.error('Failed to check league status or create session', err);
-                  alert('Login successful but failed to load league data. Please refresh the page.');
-              }
-          } else {
-              console.log('Failed to Login');
-              alert('Invalid email or password');
-          }
-      } catch(err) {
-          console.error('Login error', err);
-          alert(err.message || 'Login failed. Please try again.');
-      }
-  }
-    async function triggerRegistration() {
-        if (!emailValue || !passwordValue) {
-            alert('Please enter both email and password');
-            return;
-        }
-        await registerUser({ email: emailValue, password: passwordValue });
-        displayConfirmCodes = true;
+    if(value.length > 1) {
+        input.value = value.substring(0, 1);
     }
+    confirmationCodeDigits[index] = input.value;
 
-    function triggerSignIn() {
-        if (!emailValue || !passwordValue) {
-            alert('Please enter both email and password');
-            return;
-        }
-        signUserIn({ email: emailValue, password: passwordValue })
+    if (input.value.length === 1 && index < 5 && codeInputs[index + 1]) {
+        codeInputs[index + 1].focus();
     }
+}
 
-    function handleCodeInput(event, index){
-        const input = event.target;
-        let value = input.value;
-
-        if(/[^0-9]/.test(value)){
-            input.value = value.replace(/[^0-9]/g, '')
-            value = input.value;
-        }
-
-        if(value.length > 1) {
-            input.value = value.substring(0, 1);
-        }
-        confirmationCodeDigits[index] = input.value;
-
-        if (input.value.length === 1 && index < 5 && codeInputs[index + 1]) {
-            codeInputs[index + 1].focus();
-        }
-    }
-
-    function handleCodeKeyDown(event, index) {
-        if (event.key === 'Backspace') {
-            confirmationCodeDigits[index] = ''; 
-            if (event.target.value === '' && index > 0 && codeInputs[index - 1]) {
-                codeInputs[index - 1].focus();
-            }
-        } else if (event.key === 'ArrowLeft' && index > 0 && codeInputs[index - 1]) {
+function handleCodeKeyDown(event, index) {
+    if (event.key === 'Backspace') {
+        confirmationCodeDigits[index] = ''; 
+        if (event.target.value === '' && index > 0 && codeInputs[index - 1]) {
             codeInputs[index - 1].focus();
-        } else if (event.key === 'ArrowRight' && index < 5 && codeInputs[index + 1]) {
-            codeInputs[index + 1].focus();
         }
+    } else if (event.key === 'ArrowLeft' && index > 0 && codeInputs[index - 1]) {
+        codeInputs[index - 1].focus();
+    } else if (event.key === 'ArrowRight' && index < 5 && codeInputs[index + 1]) {
+        codeInputs[index + 1].focus();
     }
+}
 
-    function handlePaste(event) {
-        event.preventDefault();
-        const pasteData = (event.clipboardData || window.clipboardData).getData('text');
-        const digits = pasteData.replace(/[^0-9]/g, '').split('');
-        
-        digits.slice(0, 6).forEach((digit, i) => {
-            confirmationCodeDigits[i] = digit;
-            if (codeInputs[i]) {
-                codeInputs[i].value = digit;
-            }
+function handlePaste(event) {
+    event.preventDefault();
+    const pasteData = (event.clipboardData || window.clipboardData).getData('text');
+    const digits = pasteData.replace(/[^0-9]/g, '').split('');
+    
+    digits.slice(0, 6).forEach((digit, i) => {
+        confirmationCodeDigits[i] = digit;
+        if (codeInputs[i]) {
+            codeInputs[i].value = digit;
+        }
+    });
+
+    const focusIndex = Math.min(Math.max(0, digits.length - 1), 5);
+    if (codeInputs[focusIndex]) {
+        codeInputs[focusIndex].focus();
+    }
+}
+
+async function handleCodeVerification() {
+    const code = confirmationCodeDigits.join('');
+    if (code.length !== 6) {
+        alert('Please enter all 6 digits of the confirmation code');
+        return;
+    }
+    
+    try {
+        const { isSignUpComplete, nextStep } = await confirmSignUp({
+            username: emailValue,
+            confirmationCode: code
         });
 
-        const focusIndex = Math.min(Math.max(0, digits.length - 1), 5);
-        if (codeInputs[focusIndex]) {
-            codeInputs[focusIndex].focus();
-        }
-    }
-
-    async function handleCodeVerification() {
-        const code = confirmationCodeDigits.join('');
-        if (code.length !== 6) {
-            alert('Please enter all 6 digits of the confirmation code');
-            return;
-        }
-        
-        try {
-            const { isSignUpComplete, nextStep } = await confirmSignUp({
-                username: emailValue,
-                confirmationCode: code
+        if (isSignUpComplete) {
+            console.log('Sign up confirmed successfully!');
+            registering = false;
+            setRegStatus({
+                completed: true,
+                username: emailValue
             });
-
-            if (isSignUpComplete) {
-                console.log('Sign up confirmed successfully!');
-                registering = false;
-                setRegStatus({
-                    completed: true,
-                    username: emailValue
-                });
-                
-                // Auto-login after successful confirmation
-                await signUserIn({ email: emailValue, password: tempPassword });
-                
-                // Clear sensitive data
-                tempPassword = '';
-                confirmationCodeDigits = ['', '', '', '', '', ''];
-            } else {
-                console.log('Confirmation not complete. Next step:', nextStep);
-            }
-        } catch (error) {
-            console.error('Error confirming sign up:', error);
-            alert(error.message || 'Invalid confirmation code. Please try again.');
+            
+            // Auto-login after successful confirmation
+            await signUserIn({ email: emailValue, password: tempPassword });
+            
+            // Clear sensitive data
+            tempPassword = '';
+            confirmationCodeDigits = ['', '', '', '', '', ''];
+        } else {
+            console.log('Confirmation not complete. Next step:', nextStep);
         }
+    } catch (error) {
+        console.error('Error confirming sign up:', error);
+        alert(error.message || 'Invalid confirmation code. Please try again.');
     }
+}
 </script>
 
 

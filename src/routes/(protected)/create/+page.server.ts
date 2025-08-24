@@ -24,6 +24,7 @@ export const actions: Actions = {
         const leagueName = data.get('leagueName') as string;
         const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
         const creationToken = data.get('creationToken') as string;
+        const countryCode = parseInt(data.get('countryCode') as string, 10);
        
         if (!leagueName?.trim()) {
             return fail(400, { error: 'Please enter a league name' });
@@ -32,16 +33,21 @@ export const actions: Actions = {
         if (!creationToken) {
             return fail(403, { error: 'Not authorized to create a league' });
         }
+
+        // Validate country code is within valid range
+        if (!countryCode || countryCode < 1 || countryCode > 5) {
+            return fail(400, { error: 'Invalid country selection' });
+        }
        
         try {
-            // Create league in Supabase
+            // Create league in Supabase with the selected country code
             const { data: league, error: supabaseError } = await supabaseScaling
                 .from('leagues')
                 .insert({
                     creator: session.userId,
                     league_name: leagueName,
                     total_teams: selectedTeams,
-                    countries_code: 1, // England = 1 for now
+                    countries_code: countryCode, // Use the dynamic country code
                     draft_complete: false
                 })
                 .select()
@@ -68,7 +74,8 @@ export const actions: Actions = {
                 league: {
                     id: league.league_id.toString(),
                     name: league.league_name,
-                    totalTeams: league.total_teams
+                    totalTeams: league.total_teams,
+                    countryCode: league.countries_code
                 }
             };
            

@@ -16,6 +16,15 @@
     let userId = $state<string>('');
     let creationToken = $state<string>('');
 
+    // Map countries to their codes
+    const countryCodeMap: Record<string, number> = {
+        'england': 1,
+        'spain': 2,
+        'germany': 3,
+        'france': 4,
+        'italy': 5
+    };
+
     // Get user info on mount
     $effect(() => {
         (async () => {
@@ -33,6 +42,9 @@
 
     const handleFormSubmit: SubmitFunction = async ({ formData, action, cancel }) => {
         isCreating = true;
+        
+        // Add the country code to the form data
+        formData.append('countryCode', countryCodeMap[selectedCountry].toString());
         
         // Let the form submit to server action
         return async ({ result, update }) => {
@@ -157,39 +169,39 @@
                         </button>
                         <button 
                             type="button"
-                            class="country-option disabled"
-                            disabled
+                            class="country-option {selectedCountry === 'spain' ? 'selected' : ''}"
+                            onclick={() => selectedCountry = 'spain'}
+                            disabled={isCreating}
                         >
                             <img class="flag-icon" src="https://flagcdn.com/w20/es.png" alt="Spain Flag">
                             Spain - La Liga
-                            <span class="coming-soon">Coming Soon</span>
                         </button>
                         <button 
                             type="button"
-                            class="country-option disabled"
-                            disabled
+                            class="country-option {selectedCountry === 'germany' ? 'selected' : ''}"
+                            onclick={() => selectedCountry = 'germany'}
+                            disabled={isCreating}
                         >
                             <img class="flag-icon" src="https://flagcdn.com/w20/de.png" alt="Germany Flag">
-                            German Bundesliga
-                            <span class="coming-soon">Coming Soon</span>
+                            Germany - Bundesliga
                         </button>
                         <button 
                             type="button"
-                            class="country-option disabled"
-                            disabled
+                            class="country-option {selectedCountry === 'france' ? 'selected' : ''}"
+                            onclick={() => selectedCountry = 'france'}
+                            disabled={isCreating}
                         >
                             <img class="flag-icon" src="https://flagcdn.com/w20/fr.png" alt="France Flag">
                             France - Ligue 1
-                            <span class="coming-soon">Coming Soon</span>
                         </button>
                         <button 
                             type="button"
-                            class="country-option disabled"
-                            disabled
+                            class="country-option {selectedCountry === 'italy' ? 'selected' : ''}"
+                            onclick={() => selectedCountry = 'italy'}
+                            disabled={isCreating}
                         >
                             <img class="flag-icon" src="https://flagcdn.com/w20/it.png" alt="Italy Flag">
                             Italy - Serie A
-                            <span class="coming-soon">Coming Soon</span>
                         </button>
                     </div>
                 </div>
@@ -352,23 +364,19 @@ header h1 {
     border-color: #3b82f6;
 }
 
-.country-option.disabled {
+.country-option:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     background-color: #f9f9f9;
 }
 
-.country-option .flag {
-    font-size: 1.3rem;
+.country-option.selected .flag-icon {
+    filter: brightness(0) invert(1);
 }
 
-.coming-soon {
-    position: absolute;
-    right: 16px;
-    font-size: 0.7rem;
-    color: #999;
-    font-weight: 400;
-    font-style: italic;
+.flag-icon {
+    width: 20px;
+    height: auto;
 }
 
 .confirm-button {
