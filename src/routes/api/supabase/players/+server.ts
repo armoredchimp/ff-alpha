@@ -3,15 +3,8 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { supabase } from "$lib/supabase/supaClient";
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
 import { supabaseScaling } from "$lib/supabase/supaClient";
+import { TABLE_PREFIXES } from '$lib/stores/league.svelte';
 
-// Map countries codes to their table prefixes
-const TABLE_PREFIXES: Record<number, string> = {
-    1: 'prem',     // Premier League
-    2: 'laliga',   // La Liga
-    3: 'bundes',    // Bundesliga
-    4: 'ligue1',   // Ligue 1
-    5: 'seriea'    // Serie A
-};
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
     // Check authentication

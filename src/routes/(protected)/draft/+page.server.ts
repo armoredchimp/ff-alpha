@@ -11,8 +11,8 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     }
     
     try {
-        // Use the existing draft_check endpoint
-        const draftCheckResponse = await fetch('/api/supabase/draft_check');
+        
+        const draftCheckResponse = await fetch('/api/supabase/league_info');
         const draftCheckData = await draftCheckResponse.json();
         
         if (draftCheckData.draftComplete) {

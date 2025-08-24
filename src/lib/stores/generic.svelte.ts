@@ -3,6 +3,7 @@ import type { Player, Manager } from "$lib/types/types"
 export let allPlayers = $state<Player[]>([])
 export let playersByID = $state<Record<number, Player>>({})
 
+
 export let playerCall = $state(false)
 let playerPageInit = $state<boolean>(false)
 

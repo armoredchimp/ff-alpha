@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
        
         const { data: league, error } = await supabaseScaling
             .from('leagues')
-            .select('draft_complete, countries_code')
+            .select('total_teams, draft_complete, countries_code')
             .eq('league_id', leagueId)
             .single();
        
@@ -28,6 +28,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
        
         return json({
             draftComplete: league.draft_complete,
+            numOfTeams: league.total_teams,
             countriesCode: league.countries_code,
             redirect: league.draft_complete ? '/teams/player/main' : '/draft'
         });

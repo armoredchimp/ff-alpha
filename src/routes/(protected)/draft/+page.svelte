@@ -24,7 +24,7 @@ import DraftTicker from '$lib/DraftTicker.svelte';
 import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
 import DraftTeam from '$lib/DraftTeam.svelte';
 import { managers } from "$lib/stores/generic.svelte";
-import { getLeagueState, setLeagueId } from '$lib/stores/league.svelte';
+import { getLeagueState, setLeagueId, getCountry } from '$lib/stores/league.svelte';
 
 // Props
 const { data } = $props()
@@ -32,7 +32,6 @@ const { data } = $props()
 // State Variables
 let halfOfTeams = $derived(draft.totalTeams / 2);
 let numberPool = $state(null);
-// let countriesCode = $state(1);
 let draftUploaded = $state(false);
 let selectedNames = $state({});
 let clubsWithRivals = $state({});
@@ -54,9 +53,9 @@ onMount(async () => {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
             draft.gate0 = true
         } else {
-            console.log('No players loaded - this should not happen');
-            // Optionally reload players if somehow missing
-            // await loadPlayersData();
+            console.log('No players loaded - should only happen right after league creation');
+            let countriesCode = getCountry()
+            await loadPlayersData(countriesCode);
         }
         
         // Set number of teams

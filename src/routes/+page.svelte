@@ -3,7 +3,7 @@
     import { signUp, confirmSignUp, signIn, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
-    import { setLeagueStatus, getLeagueState } from '$lib/stores/league.svelte';
+    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
@@ -123,7 +123,10 @@ async function signUserIn(values) {
                         
                         if (leagueData) {
                             const countriesCode = leagueData.countriesCode;
-                            
+                            const numOfTeams = leagueData.numOfTeams;
+                            setCountry(countriesCode)
+                            console.log('AAAAAAAAAAAAAAAAAAAAAAH', numOfTeams)
+                            setTeamCount(numOfTeams)
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
                                 loadPlayersData(countriesCode), 

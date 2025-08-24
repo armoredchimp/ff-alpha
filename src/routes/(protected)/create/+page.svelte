@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { getLeagueState } from "$lib/stores/league.svelte";
+	import { getLeagueState, setCountry, setTeamCount } from "$lib/stores/league.svelte";
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
     import { enhance } from '$app/forms';
@@ -43,8 +43,8 @@
     const handleFormSubmit: SubmitFunction = async ({ formData, action, cancel }) => {
         isCreating = true;
         
-        // Add the country code to the form data
-        formData.append('countryCode', countryCodeMap[selectedCountry].toString());
+        const country_code = countryCodeMap[selectedCountry]
+        formData.append('countryCode', country_code.toString());
         
         // Let the form submit to server action
         return async ({ result, update }) => {
@@ -67,10 +67,13 @@
                     if (registerResponse.data.success) {
                         console.log('League registered successfully!');
                         
+                        setCountry(country_code)
+                        setTeamCount(selectedTeams)
                         // Update local state
                         const leagueState = getLeagueState();
                         leagueState.hasLeague = true;
                         leagueState.leagueId = result.data.league.id;
+                        leagueState.country_code = country_code;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
                         

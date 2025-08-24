@@ -2,6 +2,7 @@
     import axios from "axios";
     import { supabase } from "./supabase/supaClient";
     import { draft } from "./stores/draft.svelte";
+    import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
     import { delay } from "./utils";
     import { getPlayerPicture } from "./api/sportsmonk/utils/apiUtils.svelte";
     import { playerTeam } from "./stores/teams.svelte";
@@ -11,6 +12,8 @@
     import Page from "../routes/+page.svelte";
     import { error } from "@sveltejs/kit";
 	import PlayerDraftTeam from "./PlayerDraftTeam.svelte";
+	import { get } from "svelte/store";
+	import { onMount } from "svelte";
 
     let {
         player = {
@@ -68,6 +71,9 @@
 
     let statted = $state(false)
     let isExpanded = $state(false);
+    let country = $state()
+    let leaguePrefix = $state()
+    let seasonID = $state()
     let expandedSection = $state(null);
     let totalDuels = $state(0);
     let duelsWon = $state(0);
@@ -80,6 +86,12 @@
     let playerRankings = $state({})
     let notableStats = $state([])
     let activeTab = $state('notables')
+
+    onMount(()=>{
+        country = getCountry()
+        leaguePrefix = TABLE_PREFIXES[country]
+        seasonID = SEASON_ID_LOOKUP[country]
+    })
 
     const isKeeper = player.position === 'Goalkeeper';
 
@@ -349,7 +361,7 @@
     async function getPlayerRankings(id) {
         try {
             const { data, error } = await supabase
-                .from('prem_stats_2425_rankings')
+                .from(`${leaguePrefix}_stats_2425_rankings`)
                 .select('*')
                 .eq('id', id)
                 .single()
@@ -370,7 +382,7 @@
             const lad = await axios.get(`/api/players/${id}`, {
                 params: {
                     include: 'statistics.details.type',
-                    filter: 'playerStatisticSeasons:23614'
+                    filter: `playerStatisticSeasons:${seasonID}`
                 }
             });
 
