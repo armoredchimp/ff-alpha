@@ -17,7 +17,7 @@ import {
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
 import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
 import { draft } from '$lib/stores/draft.svelte';
-import { firstParts, secondParts, commonNames } from '$lib/data/rngClubNames';
+import { loadPlayersData } from '$lib/loading/players/loadPlayers';
 import { formationConfig } from '$lib/data/formationConfig';
 import DraftPlayer from '$lib/DraftPlayer.svelte';
 import DraftTicker from '$lib/DraftTicker.svelte';
@@ -25,7 +25,7 @@ import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
 import DraftTeam from '$lib/DraftTeam.svelte';
 import { managers } from "$lib/stores/generic.svelte";
 import { getLeagueState, setLeagueId, getCountry } from '$lib/stores/league.svelte';
-
+import { TABLE_PREFIXES } from '$lib/stores/league.svelte';
 // Props
 const { data } = $props()
 
@@ -39,7 +39,10 @@ let clubsWithoutMoney = $state({
     total: 0,
     clubNumbers: []
 });
-
+let firstParts = $state([]);
+let secondParts = $state([]);
+let commonNames = $state([]);
+let leagueState = $state()
 // Caching
 const traitEffectsCache = new Map();
 
@@ -48,22 +51,28 @@ onMount(async () => {
     if(!draft.loaded){
         console.log('data: ', data)
         
+        // Get country code and load appropriate club names
+        const countriesCode = getCountry();
+        await loadClubNames(countriesCode);
+        leagueState = getLeagueState();
         // Check if players are loaded in the store
         if (allPlayers.length > 0) {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
-            draft.gate0 = true
         } else {
             console.log('No players loaded - should only happen right after league creation');
-            let countriesCode = getCountry()
             await loadPlayersData(countriesCode);
         }
-        
+        draft.gate0 = true
         // Set number of teams
         if (data.numOfTeams && data.numOfTeams > 14) {
             draft.totalTeams = data.numOfTeams
             console.log('total teams value', draft.totalTeams)
+        } else if(leagueState.numOfTeams > 14) {
+            draft.totalTeams = leagueState.numOfTeams
+            
         } else {
             console.log('Condition failed - using default 14');
+
         }
         
         // Load managers if needed
@@ -80,6 +89,34 @@ onMount(async () => {
     }
 });
 
+async function loadClubNames(countryCode) {
+    const prefix = TABLE_PREFIXES[countryCode];
+    if (!prefix) {
+        console.error('Invalid country code:', countryCode);
+        // Fallback to default (prem) if invalid code
+        return;
+    }
+    
+    try {
+        const module = await import(`$lib/data/${prefix}/rngClubNames.js`);
+        firstParts = module.firstParts || [];
+        secondParts = module.secondParts || [];
+        commonNames = module.commonNames || [];
+        console.log(`Loaded club names for ${prefix}`);
+    } catch (error) {
+        console.error(`Failed to load club names for ${prefix}:`, error);
+        // Fallback to prem if the specific league fails
+        try {
+            const fallbackModule = await import(`$lib/data/prem/rngClubNames.js`);
+            firstParts = fallbackModule.firstParts || [];
+            secondParts = fallbackModule.secondParts || [];
+            commonNames = fallbackModule.commonNames || [];
+            console.log('Loaded fallback club names (prem)');
+        } catch (fallbackError) {
+            console.error('Failed to load fallback club names:', fallbackError);
+        }
+    }
+}
 
 $effect(() => {
     if (draft.complete && !draftUploaded) {
@@ -152,7 +189,6 @@ async function draftSetup() {
         }
     }
 
-    const leagueState = getLeagueState();
 
     draft.availablePlayers = allPlayers
     playerTeam.draftOrder = assignDraftOrder(numberPool);
@@ -781,7 +817,7 @@ function getPlayerValue(index, player, traits) {
     <div class="draft-ticker-container">
         <!-- {draft.currentTeam} -->
         <DraftTicker ticker={draft}/>
-            </div>
+    </div>
             {/if}
             {#if draft.gate0 && !draft.gate1}
             <div class="create-teams-btn">

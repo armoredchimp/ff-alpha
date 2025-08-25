@@ -77,8 +77,6 @@
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
                         
-                        // Occasional bug when going to /draft after league creation. 
-                        // have not been able to replicate but it is likely involving the cookie/leagueID
                         await invalidateAll();
                         
                         // Navigate to draft

@@ -1,6 +1,3 @@
-import { firstParts, secondParts, commonNames } from "$lib/data/rngClubNames";
-
-
 const doubleNameFirsts = new Map(); // Tracks how many times a first part is used in double names
 const singleNameFirsts = new Map(); // Tracks first parts used as single names
 const usedSecondParts = new Set()
