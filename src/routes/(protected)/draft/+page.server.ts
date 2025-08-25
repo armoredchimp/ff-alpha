@@ -12,22 +12,11 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     
     try {
         
-        const draftCheckResponse = await fetch('/api/supabase/league_info');
-        const draftCheckData = await draftCheckResponse.json();
+        const leagueResponse = await fetch('/api/supabase/league_info');
+        const leagueData = await leagueResponse.json();
         
-        if (draftCheckData.draftComplete) {
-            throw redirect(303, draftCheckData.redirect);
-        }
-        
-        // Only load league data to get number of teams
-        const { data: leagueData, error: leagueError } = await supabaseScaling
-            .from('leagues')
-            .select('total_teams')
-            .eq('league_id', leagueId)
-            .single();
-
-        if (leagueError) {
-            console.error('Error fetching league:', leagueError);
+        if (leagueData.draftComplete) {
+            throw redirect(303, leagueData.redirect);
         }
 
         const numOfTeams = leagueData?.total_teams || 14;
