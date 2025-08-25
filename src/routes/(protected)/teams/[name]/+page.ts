@@ -11,3 +11,5 @@ export const load: PageLoad = ({ params }) => {
         team: foundTeam ? foundTeam[1] : null,
     };
 };
+
+

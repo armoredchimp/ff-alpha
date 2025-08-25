@@ -51,10 +51,8 @@ onMount(async () => {
     if(!draft.loaded){
         console.log('data: ', data)
         
-        // Get country code and load appropriate club names
-        const countriesCode = getCountry();
-        await loadClubNames(countriesCode);
         leagueState = getLeagueState();
+        await loadClubNames(leagueState.countryCode);
         // Check if players are loaded in the store
         if (allPlayers.length > 0) {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
@@ -105,16 +103,6 @@ async function loadClubNames(countryCode) {
         console.log(`Loaded club names for ${prefix}`);
     } catch (error) {
         console.error(`Failed to load club names for ${prefix}:`, error);
-        // Fallback to prem if the specific league fails
-        try {
-            const fallbackModule = await import(`$lib/data/prem/rngClubNames.js`);
-            firstParts = fallbackModule.firstParts || [];
-            secondParts = fallbackModule.secondParts || [];
-            commonNames = fallbackModule.commonNames || [];
-            console.log('Loaded fallback club names (prem)');
-        } catch (fallbackError) {
-            console.error('Failed to load fallback club names:', fallbackError);
-        }
     }
 }
 

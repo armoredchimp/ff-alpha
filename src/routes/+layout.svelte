@@ -607,15 +607,15 @@
     }
 }
 
-	//bizarre errors when trying to run this functionality in the draft page. Creating an almost duplicate function here *shrug*
-    async function getCoachesToDB(){
+
+    async function getCoachesToDB(seasonID, leaguePrefix){
         try {
-            const premRes = await axios.get('/api/teams/seasons/23614', {
+            const res = await axios.get(`/api/teams/seasons/${seasonID}`, {
                 params: {
                     include: 'players.player;coaches'
                 }
             });
-            const lads = premRes.data.data;
+            const lads = res.data.data;
             console.log("Teams and Players:", lads);
             const coaches = []
             for (const team of lads){
@@ -634,34 +634,38 @@
                     const coachRes = await axios.get(`/api/coaches/${coach[0].coach_id}`)
                     if (coachRes){
                         let manager = coachRes.data.data
-						manager.age = calculateAge(manager.date_of_birth)
-						manager.league_id = 1
-						manager.nationality = getCountry(manager.nationality_id)
-						const fieldsToRemove = [
-							'city_id',
-							'common_name',
-							'country_id',
-							'date_of_birth',
-							'firstname',
-							'gender',
-							'height',
-							'lastname',
-							'name',
-							'nationality_id',
-							'player_id',
-							'sport_id',
-							'weight'
-						];
-						for (const field of fieldsToRemove) {
-							delete manager[field];
-						}
-						let { data, error } = await supabase
-							.from('active_managers')
-							.upsert(manager)
+                        if(manager && manager !== undefined){
+                            console.log(manager)
+                            manager.age = calculateAge(manager.date_of_birth)
+                            manager.league_id = seasonID
+                            manager.nationality = getCountry(manager.nationality_id)
+                            const fieldsToRemove = [
+                                'city_id',
+                                'common_name',
+                                'country_id',
+                                'date_of_birth',
+                                'firstname',
+                                'gender',
+                                'height',
+                                'lastname',
+                                'name',
+                                'nationality_id',
+                                'player_id',
+                                'sport_id',
+                                'weight'
+                            ];
+                            for (const field of fieldsToRemove) {
+                                delete manager[field];
+                            }
+                            let { data, error } = await supabase
+                                .from(`${leaguePrefix}_managers`)
+                                .upsert(manager)
 
-						if (error){
-							console.error('supa error: ', error)
-						}
+                            if (error){
+                                console.error('supa error: ', error)
+                            }
+                        }
+                        
                     }
                 }
 				console.log('managers', managers)
@@ -1574,6 +1578,14 @@ async function allLeagues(){
     await getLeaguePlayersAndUpload(23746, 'seriea','2425')
 }
 
+async function allManagers(){
+    await getCoachesToDB(23614, 'prem')
+    await getCoachesToDB(23621, 'laliga')
+    await getCoachesToDB(23744, 'bundes')
+    await getCoachesToDB(23643, 'ligue1')
+    await getCoachesToDB(23746, 'seriea')
+}
+
 function toggleDevBar() {
     devBarVisible = !devBarVisible;
   }
@@ -1597,7 +1609,7 @@ function toggleDevBar() {
         <button onclick={fetchAllWeights}>Weights</button>
         <button onclick={testWeightMap}>Test Weight to Defense</button>
         <button onclick={statRankings}>Stat Rankings</button>
-        <button onclick={getCoachesToDB}>Managers to DB</button>
+        <button onclick={allManagers}>Managers to DB</button>
         <button onclick={getNations}>Nations</button>
         <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
         <button onclick={getPlayerImages('prem_mini_2425')}>Player Images to Mini</button>

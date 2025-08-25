@@ -2,7 +2,7 @@ interface LeagueState {
     hasLeague: boolean;
     leagueId: string | null;
     canCreateLeague: boolean;
-    country_code: number;
+    countryCode: number;
     numOfTeams: number;
     creationToken: string | null;
     tokenExpiresAt: string | null;
@@ -21,7 +21,7 @@ let leagueState = $state<LeagueState>({
     hasLeague: false,
     leagueId: null,
     canCreateLeague: false,
-    country_code: 0,
+    countryCode: 0,
     numOfTeams: 14,
     creationToken: null,
     tokenExpiresAt: null,
@@ -38,11 +38,11 @@ export function setTeamCount(numOfTeams: number) {
 }
 
 export function setCountry(countryCode: number) {
-    leagueState.country_code = countryCode
+    leagueState.countryCode = countryCode
 }
 
 export function getCountry(): number {
-    return leagueState.country_code;
+    return leagueState.countryCode;
 }
 
 export const TABLE_PREFIXES: Record<number, string> = {

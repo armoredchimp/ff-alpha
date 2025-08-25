@@ -13,26 +13,15 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     }
     
     try {
-        let countriesCode = 1; // Default to Premier League
+        let countriesCode = -1;
         
         // First, try to get countries code from query parameter
         const paramCode = url.searchParams.get('countriesCode');
         if (paramCode) {
             countriesCode = parseInt(paramCode);
         } else {
-            // If not provided, fetch from the league
-            const leagueId = getLeagueId(cookies);
-            if (leagueId) {
-                const { data: league, error: leagueError } = await supabaseScaling
-                    .from('leagues')
-                    .select('countries_code')
-                    .eq('league_id', leagueId)
-                    .single();
-                
-                if (!leagueError && league) {
-                    countriesCode = league.countries_code;
-                }
-            }
+            console.warn(`Invalid countries code ${countriesCode}`);
+            return;
         }
         
         // Validate countries code
