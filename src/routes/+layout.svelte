@@ -346,6 +346,9 @@
                     
                     try {
                         defense = getDefensiveScore(player, player["Detailed Position"]);
+                        if(!isCB || !isFullback){
+                            defense.score *= 0.7
+                        }
                         if (!defense || !defense.score || defense.score < 10) {
                             console.error(`[getPlayersThenScore] ${player["Player Name"]} - Defense score is null/undefined/too small: ${defense?.score}`);
                             console.log('setting minimal default defensive score of 10');
@@ -474,9 +477,6 @@
                     if (isMidfielder) {
                         console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying midfielder multiplier (1.05)`);
                         total *= 1.05;
-                    } else if (isAttacker) {
-                        console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying attacker multiplier (1.2)`);
-                        total *= 1.2;
                     } else if (isCB) {
                         console.log(`[getPlayersThenScore] ${player["Player Name"]} - Applying CB multiplier (1.7)`);
                         total *= 1.7;
@@ -1029,7 +1029,7 @@ function getKeeperScore(row, detailedPosition){
         keepingScore = keepingScore * minutesPercentage;
     }
 
-    keepingScore = (keepingScore / 10).toFixed(2)
+    keepingScore = (keepingScore / 14).toFixed(2)
     keepingScore = capScore(keepingScore)
     console.log('keeping score', keepingScore)
     return {
@@ -1362,6 +1362,7 @@ function getDefensiveScore(row, detailedPosition) {
         const minutesPercentage = minutesPlayed / 1000;
         defensiveScore = defensiveScore * minutesPercentage;
     }
+
 
     defensiveScore = (defensiveScore * 0.8).toFixed(2)
     defensiveScore = capScore(defensiveScore)
