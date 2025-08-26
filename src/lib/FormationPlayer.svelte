@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { delay, positionAbbrev } from "./utils";
+  import { delay, positionAbbrev, formatPlayerName, recalculateSectionScores } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
-  import { recalculateSectionScores } from "./utils";
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
   import { onMount } from "svelte";
@@ -440,7 +439,7 @@
 
 <div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
   {#if player}
-    <div class="player-name">{player.player_name}</div>
+    <div class="player-name">{formatPlayerName(player.player_name)}</div>
     <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={nationImage} alt={player.player_name} />
   {:else}
     <div class="player-name">Empty</div>
@@ -489,7 +488,7 @@
               aria-label="Replace player with {replacement.player_name}"
             >
               <PlayerMini player={replacement} showPopup={false} />
-              <span class="player-name-option">{replacement.player_name}</span>
+              <span class="player-name-option">{formatPlayerName(replacement.player_name)}</span>
             </button>
           {/each}
         </div>

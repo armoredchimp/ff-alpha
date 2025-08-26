@@ -48,3 +48,29 @@ export function getRandomItem(array) {
     const randomIndex = Math.floor(Math.random() * array.length);
     return array.splice(randomIndex, 1)[0];
 } 
+
+export function formatPlayerName(name: string, maxLength: number = 14): string {
+  if (!name) return 'Empty';
+  
+  // If name fits, return as-is
+  if (name.length <= maxLength) return name;
+  
+  // Try to abbreviate first name(s)
+  const parts = name.trim().split(' ');
+  if (parts.length > 1) {
+   
+    const lastName = parts[parts.length - 1];
+    const firstNames = parts.slice(0, -1);
+    
+    const initials = firstNames.map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+    const abbreviated = `${initials} ${lastName}`;
+    
+    if (abbreviated.length > maxLength && lastName.length <= maxLength) {
+      return lastName;
+    }
+    
+    return abbreviated;
+  }
+  
+  return name.substring(0, maxLength - 3) + '...';
+}

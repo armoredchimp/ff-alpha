@@ -1,4 +1,4 @@
 export * from './draft.js';
-export * from './team.js';
-export * from './formation.js';
-export * from './common.js';
+export * from './team.ts';
+export * from './formation.ts';
+export * from './common.ts';
