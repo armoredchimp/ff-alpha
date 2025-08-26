@@ -1549,7 +1549,7 @@ async function getNations() {
     }
 
     // 4) Log the final map
-    console.log('🌍 Country → Image map:', nameImageMap);
+    console.log('Country → Image map:', nameImageMap);
 
     return nameImageMap;
 

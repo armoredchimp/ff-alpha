@@ -125,12 +125,11 @@ async function signUserIn(values) {
                             const countriesCode = leagueData.countriesCode;
                             const numOfTeams = leagueData.numOfTeams;
                             setCountry(countriesCode)
-                            console.log('AAAAAAAAAAAAAAAAAAAAAAH', numOfTeams)
                             setTeamCount(numOfTeams)
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
                                 loadPlayersData(countriesCode), 
-                                loadManagersData()
+                                loadManagersData(countriesCode)
                             ]);
                             
                             await handlePostLeagueLoad(leagueData);

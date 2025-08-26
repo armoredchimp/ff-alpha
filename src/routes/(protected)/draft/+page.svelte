@@ -58,7 +58,7 @@ onMount(async () => {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
         } else {
             console.log('No players loaded - should only happen right after league creation');
-            await loadPlayersData(countriesCode);
+            await loadPlayersData(leagueState.countriesCode);
         }
         draft.gate0 = true
         // Set number of teams

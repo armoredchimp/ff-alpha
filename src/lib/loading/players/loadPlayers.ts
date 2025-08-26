@@ -2,7 +2,7 @@ import { allPlayers, playersByID } from '$lib/stores/generic.svelte';
 import axios from 'axios';
 import type { Player } from '$lib/types/types';
 
-export async function loadPlayersData(countriesCode?: number): Promise<boolean> {
+export async function loadPlayersData(countriesCode: number): Promise<boolean> {
     try {
         if (allPlayers.length > 0) {
             console.log('Players already loaded, skipping...');

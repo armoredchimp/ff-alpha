@@ -2,7 +2,6 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabase } from "$lib/supabase/supaClient";
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
-import { supabaseScaling } from "$lib/supabase/supaClient";
 import { TABLE_PREFIXES } from '$lib/stores/league.svelte';
 
 
@@ -13,12 +12,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     }
     
     try {
-        let countriesCode = -1;
+        let countriesCode = 0;
         
         // First, try to get countries code from query parameter
-        const paramCode = url.searchParams.get('countriesCode');
-        if (paramCode) {
-            countriesCode = parseInt(paramCode);
+        let paramsCode = url.searchParams.get('countriesCode');
+        if (paramsCode) {
+            countriesCode = parseInt(paramsCode);
         } else {
             console.warn(`Invalid countries code ${countriesCode}`);
             return;
@@ -31,7 +30,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
         
         // Build the table name
-        const season = '2425'; // You can make this dynamic later if needed
+        const season = '2425'; 
         const tableName = `${TABLE_PREFIXES[countriesCode]}_mini_${season}`;
         
         console.log(`Loading players from table: ${tableName} for countries code: ${countriesCode}`);
