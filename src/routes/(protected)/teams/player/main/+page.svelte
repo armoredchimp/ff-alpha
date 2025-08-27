@@ -57,6 +57,7 @@
 </script>
 
 <div class="page-container">
+    <button><a href="/teams/player/matchup">Matchup</a></button>
     <div>
         <TeamHeader team={playerTeam} computer={false} />
     </div>
