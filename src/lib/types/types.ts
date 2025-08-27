@@ -22,6 +22,7 @@ export type Team = {
     formation: string;
     formationDisplayed: boolean;
     manager?: (Manager | number | null)[];
+    nextOpponentID: number;
     player?: boolean; 
     scores: {
         total: {
