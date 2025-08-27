@@ -92,6 +92,16 @@
       <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
 
       <div class="metric">
+        <span class="metric-label">Keeping</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {((player.keeper_score || 0) / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+      
+      <div class="metric">
         <span class="metric-label">Passing</span>
         <div class="metric-bar-container">
           <div
@@ -101,15 +111,6 @@
         </div>
       </div>
 
-      <div class="metric">
-        <span class="metric-label">Keeping</span>
-        <div class="metric-bar-container">
-          <div
-            class="metric-bar bar-poss"
-            style="width: {((player.keeper_score || 0) / 5000) * 100}%"
-          ></div>
-        </div>
-      </div>
     </div>
   {/if}
 </div>
