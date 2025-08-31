@@ -105,6 +105,7 @@ export const actions: Actions = {
         console.log('Received teamPlayers JSON:', teamPlayersJson);
         
         try {
+
             const teamPlayers = JSON.parse(teamPlayersJson);
             
             // console.log('Parsed teamPlayers:', teamPlayers);
@@ -123,9 +124,9 @@ export const actions: Actions = {
                 midfielders: extractPlayerIds(tp.midfielders),
                 defenders: extractPlayerIds(tp.defenders),
                 keepers: extractPlayerIds(tp.keepers),
-                selected: extractPlayerIds(tp.selected),
-                subs: extractPlayerIds(tp.subs),
-                unused: extractPlayerIds(tp.unused)
+                selected: tp.selected,
+                subs: tp.subs,
+                unused: tp.unused
             }));
             
             console.log('Team players with IDs only:', JSON.stringify(teamPlayersWithIds, null, 2));

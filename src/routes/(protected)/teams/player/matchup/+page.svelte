@@ -6,7 +6,7 @@
 
 <div style="display: flex;">
 
-    <Formation team={playerTeam} />
+    <!-- <Formation team={playerTeam} /> -->
     
     <Formation team={teams.team1} />
 

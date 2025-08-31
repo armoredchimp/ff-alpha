@@ -137,3 +137,86 @@ export function populateLineup(team: Team): void {
 
     team.unused = allPlayers.filter(p => !usedIds.has(p.id));
 }
+
+export function extractPlayerIds(team: Team): object {
+    // Create a deep copy of the selected formation structure with only IDs
+    const lightweightSelected = {};
+    
+    Object.entries(team.selected).forEach(([group, positions]) => {
+        lightweightSelected[group] = {};
+        
+        Object.entries(positions).forEach(([pos, cfg]) => {
+            // Keep max and zone, but convert players array to just IDs
+            lightweightSelected[group][pos] = {
+                players: cfg.players.map(player => 
+                    typeof player === 'number' ? player : player.id
+                ),
+                max: cfg.max,
+                zone: cfg.zone
+            };
+        });
+    });
+    
+    // Convert subs array to just IDs
+    const lightweightSubs = team.subs.map(player => 
+        typeof player === 'number' ? player : player.id
+    );
+    
+    // Convert unused array to just IDs
+    const lightweightUnused = team.unused.map(player => 
+        typeof player === 'number' ? player : player.id
+    );
+    
+    // Return the lightweight structure
+    return {
+        selected: lightweightSelected,
+        subs: lightweightSubs,
+        unused: lightweightUnused
+    };
+}
+
+export function hydrateSelected(team: Team, playersByID: Record<string | number, any>): void {
+    // Hydrate the selected formation structure with full player objects
+    Object.entries(team.selected).forEach(([group, positions]) => {
+        Object.entries(positions).forEach(([pos, cfg]) => {
+            // Replace player IDs with full player objects
+            cfg.players = (cfg.players as number[]).map(playerId => {
+                const player = playersByID[playerId];
+                if (!player) {
+                    console.warn(`Player with ID ${playerId} not found in playersByID`);
+                    return null;
+                }
+                return player;
+            }).filter(player => player !== null); // Remove any null entries
+        });
+    });
+    
+    // Hydrate subs array with full player objects
+    team.subs = (team.subs as number[]).map(playerId => {
+        const player = playersByID[playerId];
+        if (!player) {
+            console.warn(`Sub player with ID ${playerId} not found in playersByID`);
+            return null;
+        }
+        return player;
+    }).filter(player => player !== null);
+    
+    // Hydrate unused array with full player objects
+    team.unused = (team.unused as number[]).map(playerId => {
+        const player = playersByID[playerId];
+        if (!player) {
+            console.warn(`Unused player with ID ${playerId} not found in playersByID`);
+            return null;
+        }
+        return player;
+    }).filter(player => player !== null);
+}
+
+export function setSelected(teamsArr) {
+    teamsArr.forEach((team)=>{
+        if(team.formation){
+            createFormationStructure(team.formation)
+        }
+        populateLineup(team)
+    })
+}

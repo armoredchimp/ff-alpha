@@ -1,3 +1,15 @@
+export type PositionConfig = {
+    players: (Player | number)[];
+    max: number;
+    zone: string;
+};
+
+export type FormationStructure = {
+    [group: string]: {
+        [position: string]: PositionConfig;
+    };
+};
+
 export type Team = {
     name: string;
     dbId: number;
@@ -6,7 +18,7 @@ export type Team = {
     midfielders: (Player | number)[];
     defenders: (Player | number)[];
     keepers: (Player | number)[];
-    selected: (Player | number)[];
+    selected: FormationStructure;
     subs: (Player | number)[];
     unused: (Player | number)[];
     playerCount: number;

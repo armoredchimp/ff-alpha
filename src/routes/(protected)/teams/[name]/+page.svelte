@@ -11,8 +11,8 @@
   let { data }: { data: PageData & { team: Team } } = $props();
     
   afterNavigate(() => {
-    data.team.selected = createFormationStructure(data.team.formation);
-    populateLineup(data.team);
+    // data.team.selected = createFormationStructure(data.team.formation);
+    // populateLineup(data.team);
     console.log("FINAL selected:", data.team.selected);
   });
 </script>

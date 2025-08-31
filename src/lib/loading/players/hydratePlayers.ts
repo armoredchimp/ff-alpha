@@ -1,18 +1,26 @@
 import { playersByID } from '$lib/stores/generic.svelte';
+import { createFormationStructure, hydrateSelected } from '$lib/utils/formation';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
-import type { Team, Player } from '$lib/types/types';
+import type { Team, Player, FormationStructure } from '$lib/types/types';
 
-type PositionArray = 'attackers' | 'midfielders' | 'defenders' | 'keepers' | 'selected' | 'subs' | 'unused';
+type PositionArray = 'attackers' | 'midfielders' | 'defenders' | 'keepers' ;
 
 export function hydratePlayers(): void {
     console.log('Starting player hydration...');
    
     // Define the position arrays for hydration
-    const positionArrays: PositionArray[] = ['attackers', 'midfielders', 'defenders', 'keepers', 'selected', 'subs', 'unused'];
+    const positionArrays: PositionArray[] = ['attackers', 'midfielders', 'defenders', 'keepers'];
    
     // Hydrate all teams
     for (const teamKey in teams) {
         const team = teams[teamKey as keyof typeof teams];
+
+         if (team.formation) {
+            // If selected doesn't exist or is empty, create the structure
+            if (!team.selected || Object.keys(team.selected).length === 0) {
+                team.selected = createFormationStructure(team.formation) as FormationStructure;
+            }
+        }
        
         positionArrays.forEach(position => {
             if (team[position] && Array.isArray(team[position])) {
@@ -38,6 +46,10 @@ export function hydratePlayers(): void {
                 team[position].push(...hydratedPlayers);
             }
         });
+
+        if (team.selected || team.subs || team.unused) {
+            hydrateSelected(team, playersByID);
+        }
     }
    
     // Hydrate playerTeam
