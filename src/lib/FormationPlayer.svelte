@@ -670,8 +670,8 @@
          <span class="metric-label">Goalscoring</span>
          <div class="metric-bar-container">
            <div
-             class="metric-bar bar-attk"
-             style="width: {(player.finishing_score / 5000 ) * 100}%"
+             class="metric-bar bar-fin"
+             style="width: {(hoveredReplacement.finishing_score / 5000 ) * 100}%"
            ></div>
          </div>
        </div>
