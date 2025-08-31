@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { playerTeam } from "$lib/stores/teams.svelte";
+    import { playerTeam, teams } from "$lib/stores/teams.svelte";
     import { getPlayerInit, setPlayerInit } from "$lib/stores/generic.svelte";
     import Formation from "$lib/Formation.svelte";
     import { formationConfig } from "$lib/data/formationConfig";
@@ -14,17 +14,20 @@
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
     let init = getPlayerInit()
+    let uploading = $state<boolean>(false);
+    let uploadMessage = $state<string>('');
 
     onMount(() => {
         calculateTotalScores(playerTeam as Team)
        
         if(!init){
-            if(playerTeam.selected.length < 1){
+            // Check if selected is empty or hasn't been populated with players yet
+            if(!playerTeam.selected || Object.keys(playerTeam.selected).length === 0 || !hasPlayersInFormation(playerTeam.selected)){
                 playerTeam.selected = createFormationStructure(playerTeam.formation)
+                delay(100)
+                populateLineup(playerTeam as Team)
+                setPlayerInit(true)
             }
-            delay(100)
-            populateLineup(playerTeam as Team)
-            setPlayerInit(true)
         }
         
         console.log(playerTeam)
@@ -42,6 +45,23 @@
         };
     })
     
+    // Helper function to check if formation has any players
+    function hasPlayersInFormation(selected: any): boolean {
+        if (!selected || typeof selected !== 'object') return false;
+        
+        for (const group of Object.values(selected)) {
+            if (typeof group === 'object') {
+                for (const position of Object.values(group as any)) {
+                    const pos = position as { players?: any[] };
+                    if (pos?.players && Array.isArray(pos.players) && pos.players.length > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
     function formationChange(e: Event): void {
         const target = e.target as HTMLSelectElement;
         playerTeam.formation = target.value;
@@ -54,10 +74,61 @@
         populateLineup(playerTeam as Team)
         formationKey++
     }
+    
+    async function uploadLeaguePlayers(): Promise<void> {
+        uploading = true;
+        uploadMessage = '';
+        
+        try {
+            const response = await fetch('/api/supabase/player_upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    teams: teams, 
+                    playerTeam: playerTeam 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                uploadMessage = `✓ ${result.message || 'Successfully uploaded league players'}`;
+                console.log('Upload successful:', result);
+            } else {
+                uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
+                console.error('Upload failed:', result);
+            }
+        } catch (error) {
+            uploadMessage = '✗ Network error during upload';
+            console.error('Upload error:', error);
+        } finally {
+            uploading = false;
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                uploadMessage = '';
+            }, 5000);
+        }
+    }
 </script>
 
 <div class="page-container">
-    <button><a href="/teams/player/matchup">Matchup</a></button>
+    <div class="top-buttons">
+        <button><a href="/teams/player/matchup">Matchup</a></button>
+        <button 
+            onclick={() => uploadLeaguePlayers()}
+            disabled={uploading}
+            class="upload-button"
+        >
+            {uploading ? 'Uploading...' : 'Upload League Players'}
+        </button>
+        {#if uploadMessage}
+            <span class="upload-message" class:success={uploadMessage.startsWith('✓')}>
+                {uploadMessage}
+            </span>
+        {/if}
+    </div>
     <div>
         <TeamHeader team={playerTeam} computer={false} />
     </div>
@@ -91,6 +162,13 @@
 </div>
 
 <style>
+    .top-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
     .middle-section {
         display: flex;
         flex-direction: column;  
@@ -142,6 +220,49 @@
     
     button:active {
         transform: scale(0.98);
+    }
+    
+    button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .upload-button {
+        background: #28a745;
+    }
+    
+    .upload-button:hover:not(:disabled) {
+        background: #218838;
+    }
+    
+    .upload-message {
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .upload-message.success {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .upload-message:not(.success) {
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
  
     .content-wrapper {
