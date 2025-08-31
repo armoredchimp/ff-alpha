@@ -7,9 +7,10 @@
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
     import { onMount } from "svelte";
-    import { createFormationStructure, resetScores, populateLineup, delay } from "$lib/utils";
+    import { createFormationStructure, resetScores, populateLineup, delay, extractPlayerIds } from "$lib/utils";
     import { calculateTotalScores } from "$lib/utils";
     import type { Team } from "$lib/types/types";
+	import { getLeagueState } from "$lib/stores/league.svelte";
     
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
@@ -80,22 +81,89 @@
         uploadMessage = '';
         
         try {
+            // Prepare team players data identical to draft
+            const teamPlayersData = [];
+            
+            // Add player team
+            console.log('Processing player team...');
+            console.log('playerTeam.dbId:', playerTeam.dbId);
+            
+            if (playerTeam.dbId) {
+                // Extract IDs for selected, subs, unused
+                const lightweightPlayerTeam = extractPlayerIds(playerTeam);
+                
+                const playerTeamData = {
+                    team_id: playerTeam.dbId,
+                    attackers: playerTeam.attackers || [],
+                    midfielders: playerTeam.midfielders || [],
+                    defenders: playerTeam.defenders || [],
+                    keepers: playerTeam.keepers || [],
+                    selected: lightweightPlayerTeam.selected,
+                    subs: lightweightPlayerTeam.subs,
+                    unused: lightweightPlayerTeam.unused
+                };
+                console.log('Player team data prepared:', playerTeamData);
+                teamPlayersData.push(playerTeamData);
+            } else {
+                console.error('Player team missing database ID');
+            }
+            
+            const leagueState = getLeagueState()
+            // Add AI teams - iterate through all possible teams
+            console.log('Processing AI teams...');
+            if(!leagueState && !leagueState.numOfTeams){
+                console.error('League state error')
+                return;
+            }
+            for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
+                const teamKey = `team${i}` as keyof typeof teams;
+                const team = teams[teamKey];
+                
+                if (team && team.dbId && team.dbId > 0) {
+                    console.log(`Processing team ${i}...`);
+                    
+                    // Extract IDs for selected, subs, unused
+                    const lightweightTeam = extractPlayerIds(team);
+                    
+                    const aiTeamData = {
+                        team_id: team.dbId,
+                        attackers: team.attackers || [],
+                        midfielders: team.midfielders || [],
+                        defenders: team.defenders || [],
+                        keepers: team.keepers || [],
+                        selected: lightweightTeam.selected,
+                        subs: lightweightTeam.subs,
+                        unused: lightweightTeam.unused
+                    };
+                    console.log(`Team ${i} data prepared:`, aiTeamData);
+                    teamPlayersData.push(aiTeamData);
+                }
+            }
+            
+            console.log('Total teams to upload:', teamPlayersData.length);
+            
+            if (teamPlayersData.length === 0) {
+                uploadMessage = '✗ No teams with valid data to upload';
+                return;
+            }
+            
+            // Upload team players using FormData exactly like draft
+            const uploadFormData = new FormData();
+            uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
+            
+            console.log('Calling /api/supabase/player_upload...');
             const response = await fetch('/api/supabase/player_upload', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    teams: teams, 
-                    playerTeam: playerTeam 
-                })
+                body: uploadFormData
             });
             
+            console.log('Response status:', response.status);
             const result = await response.json();
+            console.log('Result:', result);
             
             if (response.ok && result.success) {
-                uploadMessage = `✓ ${result.message || 'Successfully uploaded league players'}`;
-                console.log('Upload successful:', result);
+                uploadMessage = `✓ Successfully uploaded ${teamPlayersData.length} teams`;
+                console.log('Upload successful');
             } else {
                 uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
                 console.error('Upload failed:', result);
