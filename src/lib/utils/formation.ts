@@ -1,4 +1,5 @@
 import { formationConfig } from "$lib/data/formationConfig";
+import { playersByID } from "$lib/stores/generic.svelte";
 import { resetScores } from "./team";
 import { getFallbackPos } from "$lib/data/fallbackOrder";
 import { type Team } from "$lib/types/types";
@@ -175,7 +176,7 @@ export function extractPlayerIds(team: Team): object {
     };
 }
 
-export function hydrateSelected(team: Team, playersByID: Record<string | number, any>): void {
+export function hydrateSelected(team: Team): void {
     // Hydrate the selected formation structure with full player objects
     Object.entries(team.selected).forEach(([group, positions]) => {
         Object.entries(positions).forEach(([pos, cfg]) => {

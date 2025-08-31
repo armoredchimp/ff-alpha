@@ -48,7 +48,7 @@ export function hydratePlayers(): void {
         });
 
         if (team.selected || team.subs || team.unused) {
-            hydrateSelected(team, playersByID);
+            hydrateSelected(team);
         }
     }
    
@@ -77,6 +77,10 @@ export function hydratePlayers(): void {
             playerTeam[position].push(...hydratedPlayers);
         }
     });
+
+    if(playerTeam.selected || playerTeam.subs || playerTeam.unused) {
+        hydrateSelected(playerTeam)
+    }
    
     console.log('Player hydration complete - all teams and playerTeam hydrated');
 }

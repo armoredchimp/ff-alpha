@@ -81,10 +81,10 @@
         uploadMessage = '';
         
         try {
-            // Prepare team players data identical to draft
             const teamPlayersData = [];
-            
-            // Add player team
+            const teamFormations = [];
+
+
             console.log('Processing player team...');
             console.log('playerTeam.dbId:', playerTeam.dbId);
             
@@ -104,12 +104,16 @@
                 };
                 console.log('Player team data prepared:', playerTeamData);
                 teamPlayersData.push(playerTeamData);
+
+                teamFormations.push({
+                    team_id: playerTeam.dbId,
+                    formation: playerTeam.formation
+                });
             } else {
                 console.error('Player team missing database ID');
             }
             
             const leagueState = getLeagueState()
-            // Add AI teams - iterate through all possible teams
             console.log('Processing AI teams...');
             if(!leagueState && !leagueState.numOfTeams){
                 console.error('League state error')
@@ -137,6 +141,11 @@
                     };
                     console.log(`Team ${i} data prepared:`, aiTeamData);
                     teamPlayersData.push(aiTeamData);
+
+                     teamFormations.push({
+                        team_id: team.dbId,
+                        formation: team.formation
+                    });
                 }
             }
             
@@ -147,9 +156,10 @@
                 return;
             }
             
-            // Upload team players using FormData exactly like draft
+           
             const uploadFormData = new FormData();
             uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
+            uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
             
             console.log('Calling /api/supabase/player_upload...');
             const response = await fetch('/api/supabase/player_upload', {

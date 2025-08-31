@@ -13,11 +13,14 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
     
     const formData = await request.formData();
     const teamPlayersJson = formData.get('teamPlayers') as string;
+    const teamFormationsJson = formData.get('teamFormations') as string;
     
     console.log('Received teamPlayers JSON:', teamPlayersJson);
+    console.log('Received teamFormations JSON:', teamFormationsJson);
     
     try {
         const teamPlayers = JSON.parse(teamPlayersJson);
+        const teamFormations = teamFormationsJson ? JSON.parse(teamFormationsJson) : [];
         
         // Helper function to extract player IDs from player objects
         const extractPlayerIds = (playerArray: any) => {
@@ -62,6 +65,26 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
         }
         
         console.log('Team players successfully uploaded:', data);
+        
+        // Update formations in teams table if provided
+        if (teamFormations && teamFormations.length > 0) {
+            console.log('Updating formations for teams:', teamFormations);
+            
+            for (const teamFormation of teamFormations) {
+                const { error: updateError } = await supabaseScaling
+                    .from('teams')
+                    .update({ formation: teamFormation.formation })
+                    .eq('team_id', teamFormation.team_id)
+                    .eq('league_id', leagueId);
+                
+                if (updateError) {
+                    console.error(`Error updating formation for team ${teamFormation.team_id}:`, updateError);
+                }
+            }
+            
+            console.log('Formations updated successfully');
+        }
+        
         return json({ success: true });
         
     } catch (error) {
