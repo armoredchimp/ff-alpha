@@ -22,20 +22,20 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
         const teamPlayers = JSON.parse(teamPlayersJson);
         const teamFormations = teamFormationsJson ? JSON.parse(teamFormationsJson) : [];
         
-        // Helper function to extract player IDs from player objects
-        const extractPlayerIds = (playerArray: any) => {
-            if (!Array.isArray(playerArray)) return [];
-            return playerArray.map(player => player.id);
-        };
+        // // Helper function to extract player IDs from player objects
+        // const extractPlayerIds = (playerArray: any) => {
+        //     if (!Array.isArray(playerArray)) return [];
+        //     return playerArray.map(player => player.id);
+        // };
         
         // Convert player objects to ID arrays and add league_id
         const teamPlayersWithIds = teamPlayers.map((tp: any) => ({
             league_id: leagueId,
             team_id: tp.team_id,
-            attackers: extractPlayerIds(tp.attackers),
-            midfielders: extractPlayerIds(tp.midfielders),
-            defenders: extractPlayerIds(tp.defenders),
-            keepers: extractPlayerIds(tp.keepers),
+            attackers: tp.attackers,
+            midfielders: tp.midfielders,
+            defenders: tp.defenders,
+            keepers: tp.keepers,
             selected: tp.selected,
             subs: tp.subs,
             unused: tp.unused

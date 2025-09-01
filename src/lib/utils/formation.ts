@@ -158,6 +158,7 @@ export function extractPlayerIds(team: Team): object {
         });
     });
     
+    console.log('Team subs during extraction', JSON.stringify(team.subs))
     // Convert subs array to just IDs
     const lightweightSubs = team.subs.map(player => 
         typeof player === 'number' ? player : player.id

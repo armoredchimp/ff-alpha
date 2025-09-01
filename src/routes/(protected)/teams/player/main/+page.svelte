@@ -6,11 +6,11 @@
     import SelectedList from "$lib/SelectedList.svelte";
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
+    import { getLeagueState } from "$lib/stores/league.svelte";
     import { onMount } from "svelte";
     import { createFormationStructure, resetScores, populateLineup, delay, extractPlayerIds } from "$lib/utils";
     import { calculateTotalScores } from "$lib/utils";
     import type { Team } from "$lib/types/types";
-	import { getLeagueState } from "$lib/stores/league.svelte";
     
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
@@ -79,12 +79,18 @@
     async function uploadLeaguePlayers(): Promise<void> {
         uploading = true;
         uploadMessage = '';
+
+        const playerToId = (playerArray: any) => {
+            if (!Array.isArray(playerArray)) return [];
+            return playerArray.map(player => player.id);
+        };
         
         try {
+            // Prepare team players data identical to draft
             const teamPlayersData = [];
-            const teamFormations = [];
-
-
+            const teamFormations = []; // Add formations array
+            
+            // Add player team
             console.log('Processing player team...');
             console.log('playerTeam.dbId:', playerTeam.dbId);
             
@@ -94,17 +100,18 @@
                 
                 const playerTeamData = {
                     team_id: playerTeam.dbId,
-                    attackers: playerTeam.attackers || [],
-                    midfielders: playerTeam.midfielders || [],
-                    defenders: playerTeam.defenders || [],
-                    keepers: playerTeam.keepers || [],
+                    attackers: playerToId(playerTeam.attackers) || [],
+                    midfielders: playerToId(playerTeam.midfielders) || [],
+                    defenders: playerToId(playerTeam.defenders) || [],
+                    keepers: playerToId(playerTeam.keepers) || [],
                     selected: lightweightPlayerTeam.selected,
                     subs: lightweightPlayerTeam.subs,
                     unused: lightweightPlayerTeam.unused
                 };
                 console.log('Player team data prepared:', playerTeamData);
                 teamPlayersData.push(playerTeamData);
-
+                
+                // Add formation data
                 teamFormations.push({
                     team_id: playerTeam.dbId,
                     formation: playerTeam.formation
@@ -114,11 +121,13 @@
             }
             
             const leagueState = getLeagueState()
-            console.log('Processing AI teams...');
-            if(!leagueState && !leagueState.numOfTeams){
+
+            if(!leagueState || !leagueState.numOfTeams){
                 console.error('League state error')
                 return;
             }
+
+            console.log('Processing AI teams...');
             for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
                 const teamKey = `team${i}` as keyof typeof teams;
                 const team = teams[teamKey];
@@ -131,18 +140,19 @@
                     
                     const aiTeamData = {
                         team_id: team.dbId,
-                        attackers: team.attackers || [],
-                        midfielders: team.midfielders || [],
-                        defenders: team.defenders || [],
-                        keepers: team.keepers || [],
+                        attackers: playerToId(team.attackers) || [],
+                        midfielders: playerToId(team.midfielders) || [],
+                        defenders: playerToId(team.defenders) || [],
+                        keepers: playerToId(team.keepers) || [],
                         selected: lightweightTeam.selected,
                         subs: lightweightTeam.subs,
                         unused: lightweightTeam.unused
                     };
                     console.log(`Team ${i} data prepared:`, aiTeamData);
                     teamPlayersData.push(aiTeamData);
-
-                     teamFormations.push({
+                    
+                    // Add formation data
+                    teamFormations.push({
                         team_id: team.dbId,
                         formation: team.formation
                     });
@@ -156,11 +166,14 @@
                 return;
             }
             
-           
+            // Upload team players using FormData exactly like draft
             const uploadFormData = new FormData();
+        
             uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
-            uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
+            uploadFormData.append('teamFormations', JSON.stringify(teamFormations)); // Add formations
             
+        
+
             console.log('Calling /api/supabase/player_upload...');
             const response = await fetch('/api/supabase/player_upload', {
                 method: 'POST',

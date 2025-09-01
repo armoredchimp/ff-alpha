@@ -661,7 +661,7 @@
           <div class="metric-bar-container">
             <div
               class="metric-bar bar-attk"
-              style="width: {(hoveredReplacement.attacking_score / 5000 ) * 100}%"
+              style="width: {(hoveredReplacement.attacking_score / 4000 ) * 100}%"
             ></div>
           </div>
         </div>
@@ -671,7 +671,7 @@
          <div class="metric-bar-container">
            <div
              class="metric-bar bar-fin"
-             style="width: {(hoveredReplacement.finishing_score / 5000 ) * 100}%"
+             style="width: {(hoveredReplacement.finishing_score / 4000 ) * 100}%"
            ></div>
          </div>
        </div>

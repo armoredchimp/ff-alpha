@@ -276,6 +276,12 @@ async function finalizeAndUploadDraft() {
     console.log('Starting with draft.totalTeams:', draft.totalTeams);
     
     draftUploading = true;
+
+      const playerToId = (playerArray) => {
+            if (!Array.isArray(playerArray)) return [];
+            return playerArray.map(player => player.id);
+        };
+        
     try {
         // Prepare team players data using stored dbIds
         const teamPlayersData = [];
@@ -287,10 +293,10 @@ async function finalizeAndUploadDraft() {
         if (playerTeam.dbId) {
             const playerTeamData = {
                 team_id: playerTeam.dbId,
-                attackers: playerTeam.attackers || [],
-                midfielders: playerTeam.midfielders || [],
-                defenders: playerTeam.defenders || [],
-                keepers: playerTeam.keepers || [],
+                attackers: playerToId(playerTeam.attackers) || [],
+                midfielders: playerToId(playerTeam.midfielders) || [],
+                defenders: playerToId(playerTeam.defenders) || [],
+                keepers: playerToId(playerTeam.keepers) || [],
                 selected: [], 
                 subs: [], 
                 unused: [] 
@@ -325,10 +331,10 @@ async function finalizeAndUploadDraft() {
 
                 const aiTeamData = {
                     team_id: team.dbId,
-                    attackers: team.attackers || [],
-                    midfielders: team.midfielders || [],
-                    defenders: team.defenders || [],
-                    keepers: team.keepers || [],
+                    attackers: playerToId(team.attackers) || [],
+                    midfielders: playerToId(team.midfielders) || [],
+                    defenders: playerToId(team.defenders) || [],
+                    keepers: playerToId(team.keepers) || [],
                     selected: lightweightTeam.selected,  
                     subs: lightweightTeam.subs,          
                     unused: lightweightTeam.unused  
