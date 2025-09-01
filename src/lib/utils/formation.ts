@@ -142,33 +142,36 @@ export function populateLineup(team: Team): void {
 export function extractPlayerIds(team: Team): object {
     // Create a deep copy of the selected formation structure with only IDs
     const lightweightSelected = {};
-    
+   
     Object.entries(team.selected).forEach(([group, positions]) => {
         lightweightSelected[group] = {};
-        
+       
         Object.entries(positions).forEach(([pos, cfg]) => {
             // Keep max and zone, but convert players array to just IDs
             lightweightSelected[group][pos] = {
-                players: cfg.players.map(player => 
-                    typeof player === 'number' ? player : player.id
-                ),
+                players: cfg.players.map(player => {
+                    if (player === null || player === undefined) return null;
+                    return typeof player === 'number' ? player : player.id;
+                }),
                 max: cfg.max,
                 zone: cfg.zone
             };
         });
     });
-    
+    console.log('Team subs length', team.subs.length)
     console.log('Team subs during extraction', JSON.stringify(team.subs))
     // Convert subs array to just IDs
-    const lightweightSubs = team.subs.map(player => 
-        typeof player === 'number' ? player : player.id
-    );
-    
+    const lightweightSubs = team.subs.map(player => {
+        if (player === null || player === undefined) return null;
+        return typeof player === 'number' ? player : player.id;
+    });
+   
     // Convert unused array to just IDs
-    const lightweightUnused = team.unused.map(player => 
-        typeof player === 'number' ? player : player.id
-    );
-    
+    const lightweightUnused = team.unused.map(player => {
+        if (player === null || player === undefined) return null;
+        return typeof player === 'number' ? player : player.id;
+    });
+   
     // Return the lightweight structure
     return {
         selected: lightweightSelected,

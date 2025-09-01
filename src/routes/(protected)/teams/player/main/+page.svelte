@@ -127,39 +127,39 @@
                 return;
             }
 
-            console.log('Processing AI teams...');
-            for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
-                const teamKey = `team${i}` as keyof typeof teams;
-                const team = teams[teamKey];
+            // console.log('Processing AI teams...');
+            // for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
+            //     const teamKey = `team${i}` as keyof typeof teams;
+            //     const team = teams[teamKey];
                 
-                if (team && team.dbId && team.dbId > 0) {
-                    console.log(`Processing team ${i}...`);
+            //     if (team && team.dbId && team.dbId > 0) {
+            //         console.log(`Processing team ${i}...`);
                     
-                    // Extract IDs for selected, subs, unused
-                    const lightweightTeam = extractPlayerIds(team);
+            //         // Extract IDs for selected, subs, unused
+            //         const lightweightTeam = extractPlayerIds(team);
                     
-                    const aiTeamData = {
-                        team_id: team.dbId,
-                        attackers: playerToId(team.attackers) || [],
-                        midfielders: playerToId(team.midfielders) || [],
-                        defenders: playerToId(team.defenders) || [],
-                        keepers: playerToId(team.keepers) || [],
-                        selected: lightweightTeam.selected,
-                        subs: lightweightTeam.subs,
-                        unused: lightweightTeam.unused
-                    };
-                    console.log(`Team ${i} data prepared:`, aiTeamData);
-                    teamPlayersData.push(aiTeamData);
+            //         const aiTeamData = {
+            //             team_id: team.dbId,
+            //             attackers: playerToId(team.attackers) || [],
+            //             midfielders: playerToId(team.midfielders) || [],
+            //             defenders: playerToId(team.defenders) || [],
+            //             keepers: playerToId(team.keepers) || [],
+            //             selected: lightweightTeam.selected,
+            //             subs: lightweightTeam.subs,
+            //             unused: lightweightTeam.unused
+            //         };
+            //         console.log(`Team ${i} data prepared:`, aiTeamData);
+            //         teamPlayersData.push(aiTeamData);
                     
-                    // Add formation data
-                    teamFormations.push({
-                        team_id: team.dbId,
-                        formation: team.formation
-                    });
-                }
-            }
+            //         // Add formation data
+            //         teamFormations.push({
+            //             team_id: team.dbId,
+            //             formation: team.formation
+            //         });
+            //     }
+            // }
             
-            console.log('Total teams to upload:', teamPlayersData.length);
+            // console.log('Total teams to upload:', teamPlayersData.length);
             
             if (teamPlayersData.length === 0) {
                 uploadMessage = '✗ No teams with valid data to upload';
@@ -242,7 +242,7 @@
             </select>
         </div>
         <button onclick={() => autoPick()}>Auto-Pick Team</button>
-       
+       <h1>{playerTeam.subs.length}</h1>
         <div class="content-wrapper">
             {#key formationKey}
                 <Formation team={playerTeam} />
