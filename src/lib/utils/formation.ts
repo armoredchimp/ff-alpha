@@ -195,11 +195,10 @@ export function hydrateSelected(team: Team): void {
                     return null;
                 }
                 return player;
-            }); // Remove the .filter() that was removing nulls
+            }); 
         });
     });
     
-    // Same for subs and unused - preserve nulls
     team.subs = (team.subs as number[]).map(playerId => {
         if (playerId === null || playerId === undefined) {
             return null;

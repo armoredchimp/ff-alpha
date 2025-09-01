@@ -65,6 +65,7 @@
   });
 
   onMount(() => {
+    recalculateSectionScores(playerTeam)
     // Always get eligible positions based on currentPosition
     getEligiblePositions();
     // Always get eligible players, even if no player is selected
@@ -90,7 +91,7 @@
         
         const playersArray = positionData.players;
         for (let i = 0; i < playersArray.length; i++){
-          // Fixed: Properly check for null/undefined players
+         
           const currentPlayer = playersArray[i];
           if (currentPlayer && typeof currentPlayer !== 'number' && 
               'id' in currentPlayer && currentPlayer.id === player.id) {
