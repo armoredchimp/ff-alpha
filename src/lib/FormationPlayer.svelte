@@ -70,9 +70,9 @@
     // Always get eligible players, even if no player is selected
     getEligiblePlayers();
     
-    // Only get current slot if there's a player
+    
+    currentSlot = getSelectedSlot();
     if(player && player.id){
-      currentSlot = getSelectedSlot();
       nationImage = getCountryUrl(player.nationality)
     }
   })

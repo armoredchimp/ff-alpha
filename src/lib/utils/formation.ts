@@ -184,37 +184,45 @@ export function hydrateSelected(team: Team): void {
     // Hydrate the selected formation structure with full player objects
     Object.entries(team.selected).forEach(([group, positions]) => {
         Object.entries(positions).forEach(([pos, cfg]) => {
-            // Replace player IDs with full player objects
             cfg.players = (cfg.players as number[]).map(playerId => {
+                if (playerId === null || playerId === undefined) {
+                    return null; // Preserve null slots
+                }
+                
                 const player = playersByID[playerId];
                 if (!player) {
                     console.warn(`Player with ID ${playerId} not found in playersByID`);
                     return null;
                 }
                 return player;
-            }).filter(player => player !== null); // Remove any null entries
+            }); // Remove the .filter() that was removing nulls
         });
     });
     
-    // Hydrate subs array with full player objects
+    // Same for subs and unused - preserve nulls
     team.subs = (team.subs as number[]).map(playerId => {
+        if (playerId === null || playerId === undefined) {
+            return null;
+        }
         const player = playersByID[playerId];
         if (!player) {
             console.warn(`Sub player with ID ${playerId} not found in playersByID`);
             return null;
         }
         return player;
-    }).filter(player => player !== null);
+    });
     
-    // Hydrate unused array with full player objects
     team.unused = (team.unused as number[]).map(playerId => {
+        if (playerId === null || playerId === undefined) {
+            return null;
+        }
         const player = playersByID[playerId];
         if (!player) {
             console.warn(`Unused player with ID ${playerId} not found in playersByID`);
             return null;
         }
         return player;
-    }).filter(player => player !== null);
+    });
 }
 
 export function setSelected(teamsArr) {
