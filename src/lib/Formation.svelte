@@ -2,54 +2,81 @@
     import FormationPlayer from "./FormationPlayer.svelte";
     import FormationTab from "./FormationTab.svelte";
     import type { Team } from "$lib/types/types";
+	import PlayerMini from "./PlayerMini.svelte";
 
     let {
       team = {} as Team,
+      base = true,
       zonesVisible = true
-      } = $props();
-
+    } = $props();
 
     let activeTab = $state(null)
-    let focusedZone = $state(null) // Track which player by zone is focused. The rest will have reduced z-index
+    let activeZone = $state(null) // For zone-based highlighting
+    let focusedZone = $state(null) 
     let previousFocusedZone = $state(null)
     let dropdownActive = $state(false) 
    
+    function setActiveTab(tab){
+        activeTab = tab;
+    }
 
-  function setActiveTab(tab){
-      activeTab = tab;
-  }
+    function setActiveZone(zone){
+        activeZone = zone;
+    }
+
+    // Zone to group mapping for zone-based highlighting
+    const zoneToGroup = {
+        15: 'attackers', 16: 'attackers', 17: 'attackers',
+        12: 'attackers', 13: 'attackers', 14: 'attackers',
+        9: 'midfielders', 10: 'midfielders', 11: 'midfielders',
+        6: 'midfielders', 7: 'midfielders', 8: 'midfielders',
+        3: 'defenders', 4: 'defenders', 5: 'defenders',
+        1: 'keepers'
+    };
+
+    // Get zone-specific scores when in zone mode
+    function getZoneScores(zone) {
+        const group = zoneToGroup[zone];
+        if (!group || !team.scores) return null;
+        
+        // For now, return the group scores - you can customize this
+        // to have zone-specific scoring if needed
+        return group === 'keepers' ? team.scores.keeper : team.scores[group];
+    }
+
+    // Get zone-specific player count
+    function getZonePlayerCount(zone) {
+        return getSlotsByZone(zone).filter(slot => slot.player).length;
+    }
 
     // Handle focus event from FormationPlayer
-function handlePlayerFocus(event) {
-    // Only update if it's a different zone
-    if (focusedZone !== event.detail.zone) {
-        previousFocusedZone = focusedZone; // Move current to previous
-        focusedZone = event.detail.zone; // Set new focused zone
+    function handlePlayerFocus(event) {
+        if (focusedZone !== event.detail.zone) {
+            previousFocusedZone = focusedZone;
+            focusedZone = event.detail.zone;
+        }
+        dropdownActive = true;
     }
-    dropdownActive = true;
-}
-    // Handle blur event from FormationPlayer
-function handlePlayerBlur(event) {
-    // Only clear dropdownActive if the blur is from the currently focused zone
-    if (event.detail && event.detail.zone === focusedZone) {
-        dropdownActive = false;
-    }
-    // previousFocusedZone stays until a new zone is focused
-}
 
-function getZoneZIndex(zone) {
-    if (focusedZone === zone) return 100;
-    if (previousFocusedZone === zone) return 90;
-    return 5;
-}
+    // Handle blur event from FormationPlayer
+    function handlePlayerBlur(event) {
+        if (event.detail && event.detail.zone === focusedZone) {
+            dropdownActive = false;
+        }
+    }
+
+    function getZoneZIndex(zone) {
+        if (focusedZone === zone) return 100;
+        if (previousFocusedZone === zone) return 90;
+        return 5;
+    }
+
     // Helper: Gets current number of players in current formation positional group
     const playerCount = groupName =>
       Object.values(team.selected[groupName] || {})
         .reduce((sum, posData) => sum + posData.players.length, 0);
 
-    // Helper: Returns an array of formation slots for the given zone.
-    // Each slot is generated based on the "max" value,
-    // and if a player isn't available for that slot, player is set to null.
+    // Helper: Returns an array of formation slots for the given zone
     function getSlotsByZone(zone) {
       const slots = [];
       if (!team.selected) return slots;
@@ -69,11 +96,9 @@ function getZoneZIndex(zone) {
       });
       return slots;
     }
+</script>
 
-  </script>
-
-
-  <div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
+<div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
     {#if zonesVisible}
     <div class="zone-lines">
       <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
@@ -87,7 +112,10 @@ function getZoneZIndex(zone) {
       <div class="vertical-line" style="left: 65%;"></div>
     </div>
 
-    <div class="hover-zones">
+    <!-- Conditional hover zones based on 'base' prop -->
+    {#if base}
+      <!-- Group-based hover zones (original behavior) -->
+      <div class="hover-zones">
         <div
           role="presentation"
           onmouseenter={()=> setActiveTab('attackers')}
@@ -144,235 +172,522 @@ function getZoneZIndex(zone) {
           {/if}
         </div>
       </div>
+    {:else}
+      <!-- Zone-based hover zones (new behavior) -->
+      <div class="hover-zones-detailed">
+        <!-- Row 6 (Top): Zones 15, 16, 17 -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(15)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 0%; top: 0%; width: 35%; height: 17.5%;"
+        >
+          {#if activeZone === 15}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 15" scores={getZoneScores(15)} playerCount={getZonePlayerCount(15)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(16)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 0%; width: 30%; height: 17.5%;"
+        >
+          {#if activeZone === 16}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 16" scores={getZoneScores(16)} playerCount={getZonePlayerCount(16)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(17)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 65%; top: 0%; width: 35%; height: 17.5%;"
+        >
+          {#if activeZone === 17}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 17" scores={getZoneScores(17)} playerCount={getZonePlayerCount(17)}/>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Row 5: Zones 12, 13, 14 -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(12)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 0%; top: 17.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 12}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 12" scores={getZoneScores(12)} playerCount={getZonePlayerCount(12)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(13)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 17.5%; width: 30%; height: 15%;"
+        >
+          {#if activeZone === 13}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 13" scores={getZoneScores(13)} playerCount={getZonePlayerCount(13)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(14)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 65%; top: 17.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 14}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 14" scores={getZoneScores(14)} playerCount={getZonePlayerCount(14)}/>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Row 4: Zones 9, 10, 11 -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(9)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 0%; top: 32.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 9}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 9" scores={getZoneScores(9)} playerCount={getZonePlayerCount(9)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(10)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 32.5%; width: 30%; height: 15%;"
+        >
+          {#if activeZone === 10}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 10" scores={getZoneScores(10)} playerCount={getZonePlayerCount(10)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(11)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 65%; top: 32.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 11}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 11" scores={getZoneScores(11)} playerCount={getZonePlayerCount(11)}/>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Row 3: Zones 6, 7, 8 -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(6)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 0%; top: 47.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 6}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 6" scores={getZoneScores(6)} playerCount={getZonePlayerCount(6)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(7)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 47.5%; width: 30%; height: 15%;"
+        >
+          {#if activeZone === 7}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 7" scores={getZoneScores(7)} playerCount={getZonePlayerCount(7)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(8)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 65%; top: 47.5%; width: 35%; height: 15%;"
+        >
+          {#if activeZone === 8}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 8" scores={getZoneScores(8)} playerCount={getZonePlayerCount(8)}/>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Row 2: Zones 3, 4, 5 -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(3)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 0%; top: 62.5%; width: 35%; height: 17.5%;"
+        >
+          {#if activeZone === 3}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 3" scores={getZoneScores(3)} playerCount={getZonePlayerCount(3)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(4)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 62.5%; width: 30%; height: 17.5%;"
+        >
+          {#if activeZone === 4}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 4" scores={getZoneScores(4)} playerCount={getZonePlayerCount(4)}/>
+            </div>
+          {/if}
+        </div>
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(5)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 65%; top: 62.5%; width: 35%; height: 17.5%;"
+        >
+          {#if activeZone === 5}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 5" scores={getZoneScores(5)} playerCount={getZonePlayerCount(5)}/>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Row 1 (Bottom): Zone 1 (Keeper) -->
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveZone(1)}
+          onmouseleave={()=> setActiveZone(null)}
+          class="hover-zone-square"
+          style="left: 35%; top: 80%; width: 30%; height: 20%;"
+        >
+          {#if activeZone === 1}
+            <div class="tab-container-zone">
+              <FormationTab group="Zone 1" scores={getZoneScores(1)} playerCount={getZonePlayerCount(1)}/>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
     {/if}
 
-    <!-- Attacker Row (Row 6, Top: Zones 15, 16, 17) -->
     <!-- Zone 15 -->
-<!-- Zone 15 -->
-{#if getSlotsByZone(15).length}
-  <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
-    {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={15}
-        hide={focusedZone !== 15 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    {#if getSlotsByZone(15).length}
+      <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
+        {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={15}
+            hide={focusedZone !== 15 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 16 -->
-{#if getSlotsByZone(16).length}
-  <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
-    {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={16}
-        hide={focusedZone !== 16 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 16 -->
+    {#if getSlotsByZone(16).length}
+      <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
+        {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={16}
+            hide={focusedZone !== 16 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 17 -->
-{#if getSlotsByZone(17).length}
-  <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
-    {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={17}
-        hide={focusedZone !== 17 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 17 -->
+    {#if getSlotsByZone(17).length}
+      <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
+        {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={17}
+            hide={focusedZone !== 17 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 12 -->
-{#if getSlotsByZone(12).length}
-  <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
-    {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={12}
-        hide={focusedZone !== 12 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 12 -->
+    {#if getSlotsByZone(12).length}
+      <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
+        {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={12}
+            hide={focusedZone !== 12 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 13 -->
-{#if getSlotsByZone(13).length}
-  <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
-    {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={13}
-        hide={focusedZone !== 13 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 13 -->
+    {#if getSlotsByZone(13).length}
+      <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
+        {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={13}
+            hide={focusedZone !== 13 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 14 -->
-{#if getSlotsByZone(14).length}
-  <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
-    {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={14}
-        hide={focusedZone !== 14 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 14 -->
+    {#if getSlotsByZone(14).length}
+      <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
+        {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={14}
+            hide={focusedZone !== 14 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 9 -->
-{#if getSlotsByZone(9).length}
-  <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
-    {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={9}
-        hide={focusedZone !== 9 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 9 -->
+    {#if getSlotsByZone(9).length}
+      <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
+        {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={9}
+            hide={focusedZone !== 9 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 10 -->
-{#if getSlotsByZone(10).length}
-  <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
-    {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={10}
-        hide={focusedZone !== 10 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 10 -->
+    {#if getSlotsByZone(10).length}
+      <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
+        {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={10}
+            hide={focusedZone !== 10 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 11 -->
-{#if getSlotsByZone(11).length}
-  <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
-    {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={11}
-        hide={focusedZone !== 11 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 11 -->
+    {#if getSlotsByZone(11).length}
+      <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
+        {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={11}
+            hide={focusedZone !== 11 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 6 -->
-{#if getSlotsByZone(6).length}
-  <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
-    {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={6}
-        hide={focusedZone !== 6 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 6 -->
+    {#if getSlotsByZone(6).length}
+      <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
+        {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={6}
+            hide={focusedZone !== 6 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 7 -->
-{#if getSlotsByZone(7).length}
-  <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
-    {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={7}
-        hide={focusedZone !== 7 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 7 -->
+    {#if getSlotsByZone(7).length}
+      <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
+        {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={7}
+            hide={focusedZone !== 7 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 8 -->
-{#if getSlotsByZone(8).length}
-  <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
-    {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={8}
-        hide={focusedZone !== 8 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 8 -->
+    {#if getSlotsByZone(8).length}
+      <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
+        {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={8}
+            hide={focusedZone !== 8 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 3 -->
-{#if getSlotsByZone(3).length}
-  <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
-    {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={3}
-        hide={focusedZone !== 3 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 3 -->
+    {#if getSlotsByZone(3).length}
+      <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
+        {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={3}
+            hide={focusedZone !== 3 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 4 -->
-{#if getSlotsByZone(4).length}
-  <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
-    {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={4}
-        hide={focusedZone !== 4 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 4 -->
+    {#if getSlotsByZone(4).length}
+      <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
+        {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={4}
+            hide={focusedZone !== 4 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 5 -->
-{#if getSlotsByZone(5).length}
-  <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
-    {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={5}
-        hide={focusedZone !== 5 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 5 -->
+    {#if getSlotsByZone(5).length}
+      <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
+        {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={5}
+            hide={focusedZone !== 5 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-<!-- Zone 1 -->
-{#if getSlotsByZone(1).length}
-  <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
-    {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
-      <FormationPlayer
-        player={slot.player}
-        currentPosition={slot.currentPosition}
-        zone={1}
-        hide={focusedZone !== 1 && dropdownActive}
-      />
-    {/each}
-  </div>
-{/if}
+    <!-- Zone 1 -->
+    {#if getSlotsByZone(1).length}
+      <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
+        {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
+          {#if base}
+          <FormationPlayer
+            player={slot.player}
+            currentPosition={slot.currentPosition}
+            zone={1}
+            hide={focusedZone !== 1 && dropdownActive}
+          />
+          {:else}
+          <PlayerMini player={slot.player} showPopup={true}/>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 </div>
-  <style>
+
+<style>
     .field {
       position: relative;
       width: 60%;
@@ -392,6 +707,9 @@ function getZoneZIndex(zone) {
       z-index: 2;
     }
     
+    .zone > :global(*) {
+      pointer-events: auto;
+    }
     /* Attacker Row (Row 6, Top: Zones 15, 16, 17) */
     .zone-15 { position: absolute; left: 20%; top: 10%; transform: translate(-50%, -50%); }
     .zone-16 { position: absolute; left: 50%; top: 10%; transform: translate(-50%, -50%); }
@@ -444,6 +762,7 @@ function getZoneZIndex(zone) {
       background: rgba(255, 255, 255, 0.25);
     }
 
+    /* Group-based hover zones */
     .hover-zones {
         position: absolute;
         top: 0; left: 0;
@@ -459,18 +778,84 @@ function getZoneZIndex(zone) {
         background-color: transparent;
         pointer-events: auto;
         transition: background-color 0.25s ease;
-        overflow: visible; /* allow tab-container to overflow */
+        overflow: visible;
     }
  
     .hover-zone:hover {
         background-color: rgba(255, 255, 255, 0.1);
     }
+    /* Zone-based hover zones (detailed) */
+   .hover-zones-detailed {
+       position: absolute;
+       top: 0; left: 0;
+       width: 100%; height: 100%;
+       z-index: 1;
+       pointer-events: none;
+   }
 
-    .tab-container {
-        position: absolute;
-        left: 100%;     
-        top: 50%;       
-        transform: translateY(-50%);
-        pointer-events: auto;
-    }
-  </style>
+   .hover-zone-square {
+       position: absolute;
+       background-color: transparent;
+       pointer-events: auto;
+       transition: background-color 0.25s ease;
+       overflow: visible;
+       border: 1px solid transparent;
+   }
+
+   .hover-zone-square:hover {
+       background-color: rgba(255, 255, 255, 0.12);
+       border: 1px solid rgba(255, 255, 255, 0.2);
+   }
+
+   .tab-container {
+       position: absolute;
+       left: 100%;     
+       top: 50%;       
+       transform: translateY(-50%);
+       pointer-events: auto;
+   }
+
+   .tab-container-zone {
+       position: absolute;
+       top: 50%;       
+       transform: translateY(-50%);
+       pointer-events: auto;
+       z-index: 1000;
+       /* Position based on zone location */
+   }
+
+   /* Position zone tabs appropriately based on their location */
+   .hover-zone-square:nth-child(1) .tab-container-zone,
+   .hover-zone-square:nth-child(4) .tab-container-zone,
+   .hover-zone-square:nth-child(7) .tab-container-zone,
+   .hover-zone-square:nth-child(10) .tab-container-zone,
+   .hover-zone-square:nth-child(13) .tab-container-zone {
+       /* Left zones - show tab on left */
+       right: 100%;
+       left: auto;
+       margin-right: 10px;
+   }
+
+   .hover-zone-square:nth-child(3) .tab-container-zone,
+   .hover-zone-square:nth-child(6) .tab-container-zone,
+   .hover-zone-square:nth-child(9) .tab-container-zone,
+   .hover-zone-square:nth-child(12) .tab-container-zone,
+   .hover-zone-square:nth-child(15) .tab-container-zone {
+       /* Right zones - show tab on right */
+       left: 100%;
+       right: auto;
+       margin-left: 10px;
+   }
+
+   .hover-zone-square:nth-child(2) .tab-container-zone,
+   .hover-zone-square:nth-child(5) .tab-container-zone,
+   .hover-zone-square:nth-child(8) .tab-container-zone,
+   .hover-zone-square:nth-child(11) .tab-container-zone,
+   .hover-zone-square:nth-child(14) .tab-container-zone,
+   .hover-zone-square:nth-child(16) .tab-container-zone {
+       /* Center zones - show tab on right */
+       left: 100%;
+       right: auto;
+       margin-left: 10px;
+   }
+ </style>

@@ -258,7 +258,7 @@
        <h1>{playerTeam.subs.length}</h1>
         <div class="content-wrapper">
             {#key formationKey}
-                <Formation team={playerTeam} />
+                <Formation team={playerTeam} base={true}/>
                 <SelectedList team={playerTeam} />
             {/key}
         </div>
