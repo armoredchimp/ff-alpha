@@ -9,7 +9,7 @@
     import { getLeagueState } from "$lib/stores/league.svelte";
     import { onMount } from "svelte";
     import { createFormationStructure, resetScores, populateLineup, delay, extractPlayerIds } from "$lib/utils";
-    import { calculateTotalScores } from "$lib/utils";
+    import { calculateTotalScores, setSelected } from "$lib/utils";
     import type { Team } from "$lib/types/types";
     
     // Key for #key to force formation to re-render and all its child components
@@ -76,139 +76,152 @@
         formationKey++
     }
     
-    async function uploadLeaguePlayers(): Promise<void> {
-        uploading = true;
-        uploadMessage = '';
+    export async function uploadLeaguePlayers(allTeams): Promise<void> {
+    uploading = true;
+    uploadMessage = '';
 
-        const playerToId = (playerArray: any) => {
-            if (!Array.isArray(playerArray)) return [];
-            return playerArray.map(player => player.id);
-        };
+    const playerToId = (playerArray: any) => {
+        if (!Array.isArray(playerArray)) return [];
+        return playerArray.map(player => player.id);
+    };
+    
+    try {
+        // Prepare team players data identical to draft
+        const teamPlayersData = [];
+        const teamFormations = []; // Add formations array
         
-        try {
-            // Prepare team players data identical to draft
-            const teamPlayersData = [];
-            const teamFormations = []; // Add formations array
-            
-            // Add player team
-            console.log('Processing player team...');
-            console.log('playerTeam.dbId:', playerTeam.dbId);
-            
-            if (playerTeam.dbId) {
-                // Extract IDs for selected, subs, unused
-                const lightweightPlayerTeam = extractPlayerIds(playerTeam);
-                
-                const playerTeamData = {
-                    team_id: playerTeam.dbId,
-                    attackers: playerToId(playerTeam.attackers) || [],
-                    midfielders: playerToId(playerTeam.midfielders) || [],
-                    defenders: playerToId(playerTeam.defenders) || [],
-                    keepers: playerToId(playerTeam.keepers) || [],
-                    selected: lightweightPlayerTeam.selected,
-                    subs: lightweightPlayerTeam.subs,
-                    unused: lightweightPlayerTeam.unused
-                };
-                console.log('Player team data prepared:', playerTeamData);
-                teamPlayersData.push(playerTeamData);
-                
-                // Add formation data
-                teamFormations.push({
-                    team_id: playerTeam.dbId,
-                    formation: playerTeam.formation
-                });
-            } else {
-                console.error('Player team missing database ID');
-            }
-            
-            const leagueState = getLeagueState()
-
-            if(!leagueState || !leagueState.numOfTeams){
-                console.error('League state error')
-                return;
-            }
-
-            // console.log('Processing AI teams...');
-            // for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
-            //     const teamKey = `team${i}` as keyof typeof teams;
-            //     const team = teams[teamKey];
-                
-            //     if (team && team.dbId && team.dbId > 0) {
-            //         console.log(`Processing team ${i}...`);
-                    
-            //         // Extract IDs for selected, subs, unused
-            //         const lightweightTeam = extractPlayerIds(team);
-                    
-            //         const aiTeamData = {
-            //             team_id: team.dbId,
-            //             attackers: playerToId(team.attackers) || [],
-            //             midfielders: playerToId(team.midfielders) || [],
-            //             defenders: playerToId(team.defenders) || [],
-            //             keepers: playerToId(team.keepers) || [],
-            //             selected: lightweightTeam.selected,
-            //             subs: lightweightTeam.subs,
-            //             unused: lightweightTeam.unused
-            //         };
-            //         console.log(`Team ${i} data prepared:`, aiTeamData);
-            //         teamPlayersData.push(aiTeamData);
-                    
-            //         // Add formation data
-            //         teamFormations.push({
-            //             team_id: team.dbId,
-            //             formation: team.formation
-            //         });
-            //     }
-            // }
-            
-            // console.log('Total teams to upload:', teamPlayersData.length);
-            
-            if (teamPlayersData.length === 0) {
-                uploadMessage = '✗ No teams with valid data to upload';
-                return;
-            }
-            
-            // Upload team players using FormData exactly like draft
-            const uploadFormData = new FormData();
+        // Add player team
+        console.log('Processing player team...');
+        console.log('playerTeam.dbId:', playerTeam.dbId);
         
-            uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
-            uploadFormData.append('teamFormations', JSON.stringify(teamFormations)); // Add formations
+        if (playerTeam.dbId) {
+            // Extract IDs for selected, subs, unused
+            const lightweightPlayerTeam = extractPlayerIds(playerTeam);
             
-        
-
-            console.log('Calling /api/supabase/player_upload...');
-            const response = await fetch('/api/supabase/player_upload', {
-                method: 'POST',
-                body: uploadFormData
+            const playerTeamData = {
+                team_id: playerTeam.dbId,
+                attackers: playerToId(playerTeam.attackers) || [],
+                midfielders: playerToId(playerTeam.midfielders) || [],
+                defenders: playerToId(playerTeam.defenders) || [],
+                keepers: playerToId(playerTeam.keepers) || [],
+                selected: lightweightPlayerTeam.selected,
+                subs: lightweightPlayerTeam.subs,
+                unused: lightweightPlayerTeam.unused
+            };
+            console.log('Player team data prepared:', playerTeamData);
+            teamPlayersData.push(playerTeamData);
+            
+            // Add formation data
+            teamFormations.push({
+                team_id: playerTeam.dbId,
+                formation: playerTeam.formation
             });
-            
-            console.log('Response status:', response.status);
-            const result = await response.json();
-            console.log('Result:', result);
-            
-            if (response.ok && result.success) {
-                uploadMessage = `✓ Successfully uploaded ${teamPlayersData.length} teams`;
-                console.log('Upload successful');
-            } else {
-                uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
-                console.error('Upload failed:', result);
-            }
-        } catch (error) {
-            uploadMessage = '✗ Network error during upload';
-            console.error('Upload error:', error);
-        } finally {
-            uploading = false;
-            // Clear message after 5 seconds
-            setTimeout(() => {
-                uploadMessage = '';
-            }, 5000);
+        } else {
+            console.error('Player team missing database ID');
         }
+        
+        const leagueState = getLeagueState()
+
+        if(!leagueState || !leagueState.numOfTeams){
+            console.error('League state error')
+            return;
+        }
+
+        if(allTeams){
+            console.log('Processing AI teams...');
+            setSelected(teams)
+            for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
+                const teamKey = `team${i}` as keyof typeof teams;
+                const team = teams[teamKey];
+                
+                if (team && team.dbId && team.dbId > 0) {
+                    console.log(`Processing team ${i}...`);
+                    
+                    // Extract IDs for selected, subs, unused
+                    const lightweightTeam = extractPlayerIds(team);
+                    
+                    const aiTeamData = {
+                        team_id: team.dbId,
+                        attackers: playerToId(team.attackers) || [],
+                        midfielders: playerToId(team.midfielders) || [],
+                        defenders: playerToId(team.defenders) || [],
+                        keepers: playerToId(team.keepers) || [],
+                        selected: lightweightTeam.selected,
+                        subs: lightweightTeam.subs,
+                        unused: lightweightTeam.unused
+                    };
+                    console.log(`Team ${i} data prepared:`, aiTeamData);
+                    teamPlayersData.push(aiTeamData);
+                    
+                    // Add formation data
+                    teamFormations.push({
+                        team_id: team.dbId,
+                        formation: team.formation
+                    });
+                }
+            }
+        }
+        
+        console.log('Total teams to upload:', teamPlayersData.length);
+        
+        if (teamPlayersData.length === 0) {
+            uploadMessage = '✗ No teams with valid data to upload';
+            return;
+        }
+        
+        // Upload team players using FormData exactly like draft
+        const uploadFormData = new FormData();
+    
+        uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
+        uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
+        
+        // ADD THIS: Flag to indicate if this is a partial update (only player team)
+        uploadFormData.append('isPartialUpdate', (!allTeams).toString());
+
+        console.log('Calling /api/supabase/player_upload...');
+        console.log('Is partial update:', !allTeams);
+        
+        const response = await fetch('/api/supabase/player_upload', {
+            method: 'POST',
+            body: uploadFormData
+        });
+        
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Result:', result);
+        
+        if (response.ok && result.success) {
+            uploadMessage = `✓ Successfully uploaded ${teamPlayersData.length} team${teamPlayersData.length > 1 ? 's' : ''}`;
+            console.log('Upload successful');
+        } else {
+            uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
+            console.error('Upload failed:', result);
+        }
+    } catch (error) {
+        uploadMessage = '✗ Network error during upload';
+        console.error('Upload error:', error);
+    } finally {
+        uploading = false;
+        // Clear message after 5 seconds
+        setTimeout(() => {
+            uploadMessage = '';
+        }, 5000);
     }
+}
 </script>
 
 <div class="page-container">
     <div class="top-buttons">
         <button><a href="/teams/player/matchup">Matchup</a></button>
         <button 
-            onclick={() => uploadLeaguePlayers()}
+            onclick={() => uploadLeaguePlayers(false)}
+            disabled={uploading}
+            class="upload-button"
+        >
+            {uploading ? 'Uploading...' : 'Upload Player Team Players'}
+        </button>
+        <button 
+            onclick={() => uploadLeaguePlayers(true)}
             disabled={uploading}
             class="upload-button"
         >

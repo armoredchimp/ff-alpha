@@ -224,11 +224,12 @@ export function hydrateSelected(team: Team): void {
     });
 }
 
-export function setSelected(teamsArr) {
-    teamsArr.forEach((team)=>{
+export function setSelected(teams) {
+   Object.values(teams).forEach((team: Team) => {
         if(team.formation){
             createFormationStructure(team.formation)
+            populateLineup(team)
         }
-        populateLineup(team)
-    })
+   })
 }
+
