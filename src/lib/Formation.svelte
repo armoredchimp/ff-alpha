@@ -1,11 +1,13 @@
 <script lang="ts">
-    import FormationPlayer from "./FormationPlayer.svelte";
-    import FormationTab from "./FormationTab.svelte";
-    import type { Team } from "$lib/types/types";
+  import FormationPlayer from "./FormationPlayer.svelte";
+  import FormationTab from "./FormationTab.svelte";
+  import type { Team } from "$lib/types/types";
 	import PlayerMini from "./PlayerMini.svelte";
 
     let {
       team = {} as Team,
+      opponent = {} as Team,
+      viewOpponent = true,
       base = true,
       zonesVisible = true
     } = $props();
@@ -77,7 +79,7 @@
         .reduce((sum, posData) => sum + posData.players.length, 0);
 
     // Helper: Returns an array of formation slots for the given zone
-    function getSlotsByZone(zone) {
+    function getSlotsByZone(zone, team) {
       const slots = [];
       if (!team.selected) return slots;
       Object.values(team.selected).forEach(group => {
@@ -398,293 +400,581 @@
     {/if}
     {/if}
 
-    <!-- Zone 15 -->
-    {#if getSlotsByZone(15).length}
-      <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
-        {#each getSlotsByZone(15) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={15}
-            hide={focusedZone !== 15 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 15 -->
+{#if getSlotsByZone(15, team).length || getSlotsByZone(15, opponent).length}
+    <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
+        {#if base}
+            {#each getSlotsByZone(15, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={15}
+                    hide={focusedZone !== 15 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(15, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(15, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(15, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(15, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 16 -->
-    {#if getSlotsByZone(16).length}
-      <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
-        {#each getSlotsByZone(16) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={16}
-            hide={focusedZone !== 16 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 16 -->
+{#if getSlotsByZone(16, team).length || getSlotsByZone(16, opponent).length}
+    <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
+        {#if base}
+            {#each getSlotsByZone(16, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={16}
+                    hide={focusedZone !== 16 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(16, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(16, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(16, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(16, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 17 -->
-    {#if getSlotsByZone(17).length}
-      <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
-        {#each getSlotsByZone(17) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={17}
-            hide={focusedZone !== 17 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 17 -->
+{#if getSlotsByZone(17, team).length || getSlotsByZone(17, opponent).length}
+    <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
+        {#if base}
+            {#each getSlotsByZone(17, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={17}
+                    hide={focusedZone !== 17 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(17, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(17, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(17, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(17, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 12 -->
-    {#if getSlotsByZone(12).length}
-      <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
-        {#each getSlotsByZone(12) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={12}
-            hide={focusedZone !== 12 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 12 -->
+{#if getSlotsByZone(12, team).length || getSlotsByZone(12, opponent).length}
+    <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
+        {#if base}
+            {#each getSlotsByZone(12, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={12}
+                    hide={focusedZone !== 12 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(12, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(12, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(12, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(12, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 13 -->
-    {#if getSlotsByZone(13).length}
-      <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
-        {#each getSlotsByZone(13) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={13}
-            hide={focusedZone !== 13 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 13 -->
+{#if getSlotsByZone(13, team).length || getSlotsByZone(13, opponent).length}
+    <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
+        {#if base}
+            {#each getSlotsByZone(13, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={13}
+                    hide={focusedZone !== 13 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(13, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(13, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(13, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(13, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 14 -->
-    {#if getSlotsByZone(14).length}
-      <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
-        {#each getSlotsByZone(14) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={14}
-            hide={focusedZone !== 14 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 14 -->
+{#if getSlotsByZone(14, team).length || getSlotsByZone(14, opponent).length}
+    <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
+        {#if base}
+            {#each getSlotsByZone(14, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={14}
+                    hide={focusedZone !== 14 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(14, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(14, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(14, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(14, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 9 -->
-    {#if getSlotsByZone(9).length}
-      <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
-        {#each getSlotsByZone(9) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={9}
-            hide={focusedZone !== 9 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 9 -->
+{#if getSlotsByZone(9, team).length || getSlotsByZone(9, opponent).length}
+    <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
+        {#if base}
+            {#each getSlotsByZone(9, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={9}
+                    hide={focusedZone !== 9 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(9, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(9, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(9, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(9, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 10 -->
-    {#if getSlotsByZone(10).length}
-      <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
-        {#each getSlotsByZone(10) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={10}
-            hide={focusedZone !== 10 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 10 -->
+{#if getSlotsByZone(10, team).length || getSlotsByZone(10, opponent).length}
+    <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
+        {#if base}
+            {#each getSlotsByZone(10, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={10}
+                    hide={focusedZone !== 10 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(10, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(10, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(10, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(10, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 11 -->
-    {#if getSlotsByZone(11).length}
-      <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
-        {#each getSlotsByZone(11) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={11}
-            hide={focusedZone !== 11 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 11 -->
+{#if getSlotsByZone(11, team).length || getSlotsByZone(11, opponent).length}
+    <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
+        {#if base}
+            {#each getSlotsByZone(11, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={11}
+                    hide={focusedZone !== 11 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(11, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(11, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(11, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(11, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 6 -->
-    {#if getSlotsByZone(6).length}
-      <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
-        {#each getSlotsByZone(6) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={6}
-            hide={focusedZone !== 6 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 6 -->
+{#if getSlotsByZone(6, team).length || getSlotsByZone(6, opponent).length}
+    <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
+        {#if base}
+            {#each getSlotsByZone(6, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={6}
+                    hide={focusedZone !== 6 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(6, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(6, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(6, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(6, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 7 -->
-    {#if getSlotsByZone(7).length}
-      <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
-        {#each getSlotsByZone(7) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={7}
-            hide={focusedZone !== 7 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 7 -->
+{#if getSlotsByZone(7, team).length || getSlotsByZone(7, opponent).length}
+    <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
+        {#if base}
+            {#each getSlotsByZone(7, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={7}
+                    hide={focusedZone !== 7 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(7, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(7, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(7, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(7, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 8 -->
-    {#if getSlotsByZone(8).length}
-      <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
-        {#each getSlotsByZone(8) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={8}
-            hide={focusedZone !== 8 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 8 -->
+{#if getSlotsByZone(8, team).length || getSlotsByZone(8, opponent).length}
+    <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
+        {#if base}
+            {#each getSlotsByZone(8, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={8}
+                    hide={focusedZone !== 8 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(8, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(8, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(8, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(8, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 3 -->
-    {#if getSlotsByZone(3).length}
-      <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
-        {#each getSlotsByZone(3) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={3}
-            hide={focusedZone !== 3 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 3 -->
+{#if getSlotsByZone(3, team).length || getSlotsByZone(3, opponent).length}
+    <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
+        {#if base}
+            {#each getSlotsByZone(3, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={3}
+                    hide={focusedZone !== 3 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(3, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(3, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(3, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(3, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 4 -->
-    {#if getSlotsByZone(4).length}
-      <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
-        {#each getSlotsByZone(4) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={4}
-            hide={focusedZone !== 4 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 4 -->
+{#if getSlotsByZone(4, team).length || getSlotsByZone(4, opponent).length}
+    <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
+        {#if base}
+            {#each getSlotsByZone(4, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={4}
+                    hide={focusedZone !== 4 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(4, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(4, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(4, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(4, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 5 -->
-    {#if getSlotsByZone(5).length}
-      <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
-        {#each getSlotsByZone(5) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={5}
-            hide={focusedZone !== 5 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 5 -->
+{#if getSlotsByZone(5, team).length || getSlotsByZone(5, opponent).length}
+    <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
+        {#if base}
+            {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={5}
+                    hide={focusedZone !== 5 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(5, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(5, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(5, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 
-    <!-- Zone 1 -->
-    {#if getSlotsByZone(1).length}
-      <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
-        {#each getSlotsByZone(1) as slot, i (slot.currentPosition + '-' + i)}
-          {#if base}
-          <FormationPlayer
-            player={slot.player}
-            currentPosition={slot.currentPosition}
-            zone={1}
-            hide={focusedZone !== 1 && dropdownActive}
-          />
-          {:else}
-          <PlayerMini player={slot.player} showPopup={true}/>
-          {/if}
-        {/each}
-      </div>
-    {/if}
+<!-- Zone 1 -->
+{#if getSlotsByZone(1, team).length || getSlotsByZone(1, opponent).length}
+    <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
+        {#if base}
+            {#each getSlotsByZone(1, team) as slot, i (slot.currentPosition + '-' + i)}
+                <FormationPlayer
+                    player={slot.player}
+                    currentPosition={slot.currentPosition}
+                    zone={1}
+                    hide={focusedZone !== 1 && dropdownActive}
+                />
+            {/each}
+        {:else}
+            <div class="zone-players-container">
+                <!-- Friendly team row -->
+                {#if getSlotsByZone(1, team).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(1, team) as slot, i (slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
+                        {/each}
+                    </div>
+                {/if}
+                
+                <!-- Opponent team row -->
+                {#if viewOpponent && getSlotsByZone(1, opponent).length > 0}
+                    <div class="player-row">
+                        {#each getSlotsByZone(1, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </div>
+{/if}
 </div>
 
 <style>
@@ -823,6 +1113,20 @@
        z-index: 1000;
        /* Position based on zone location */
    }
+
+
+    .zone-players-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1.6rem;
+    }
+    
+    .player-row {
+        display: flex;
+        flex-direction: row;
+        gap: 1.2rem;
+        justify-content: center;
+    }
 
    /* Position zone tabs appropriately based on their location */
    .hover-zone-square:nth-child(1) .tab-container-zone,

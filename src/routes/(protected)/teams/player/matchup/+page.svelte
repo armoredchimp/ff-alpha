@@ -8,6 +8,6 @@
 
     
     
-    <Formation team={playerTeam} base={false} />
+    <Formation team={playerTeam} base={false} opponent={teams.team2} viewOpponent={true}/>
 
 </div>
