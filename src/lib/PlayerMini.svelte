@@ -49,11 +49,11 @@
     }
 
     .player-photo.border-blue {
-        border: 2px solid #60A5FA;
+        border: 0.25rem solid #60a5fab2;
     }
 
     .player-photo.border-red {
-        border: 2px solid #F87171;
+        border: 0.25rem solid #c04b4bb0;
     }
    
     .player-popup {
