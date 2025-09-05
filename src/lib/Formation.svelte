@@ -8,6 +8,7 @@
       team = {} as Team,
       opponent = {} as Team,
       viewOpponent = true,
+      opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view
       base = true,
       zonesVisible = true
     } = $props();
@@ -36,39 +37,36 @@
         1: 'keepers'
     };
 
-const zoneMatchups = {
-  // Defensive zones vs Attacking zones
-  1: 19,   // GK vs opposing GK
-  3: 17,   // LB vs RW
-  4: 16,   // CB vs ST
-  5: 15,   // RB vs LW
-  
-  // Midfield zones (these would typically face opposing midfield)
-  6: 14,   // LM vs RF
-  7: 13,   // CM vs CF
-  8: 12,   // RM vs LF
-  
-  9: 11,   // LAM vs RAM
-  10: 10,  // CAM vs CAM (mirrors)
-  11: 9,   // RAM vs LAM
-  
-  // Forward zones vs Defensive zones
-  12: 8,   // LF vs RM
-  13: 7,   // CF vs CM
-  14: 6,   // RF vs LM
-  
-  15: 5,   // LW vs RB
-  16: 4,   // ST vs CB
-  17: 3,   // RW vs LB
-  
-  19: 1,   // Opposing GK vs GK
-  
-  // Unused zones
-  0: null,
-  2: null,
-  18: null,
-  20: null
-};
+    const zoneMatchups = {
+    // Defensive zones vs Attacking zones
+    3: 17,   // LB vs RW
+    4: 16,   // CB vs ST
+    5: 15,   // RB vs LW
+    
+    // Midfield zones (these would typically face opposing midfield)
+    6: 14,   // LM vs RF
+    7: 13,   // CM vs CF
+    8: 12,   // RM vs LF
+    
+    9: 11,   // LAM vs RAM
+    10: 10,  // CAM vs CAM (mirrors)
+    11: 9,   // RAM vs LAM
+    
+    // Forward zones vs Defensive zones
+    12: 8,   // LF vs RM
+    13: 7,   // CF vs CM
+    14: 6,   // RF vs LM
+    
+    15: 5,   // LW vs RB
+    16: 4,   // ST vs CB
+    17: 3,   // RW vs LB
+    
+    // Unused zones
+    0: null,
+    2: null,
+    18: null,
+    20: null
+    };
 
     // Get zone-specific scores when in zone mode
     function getZoneScores(zone) {
@@ -82,7 +80,7 @@ const zoneMatchups = {
 
     // Get zone-specific player count
     function getZonePlayerCount(zone) {
-        return getSlotsByZone(zone).filter(slot => slot.player).length;
+        return getSlotsByZone(zone, team).filter(slot => slot.player).length;
     }
 
     // Handle focus event from FormationPlayer
@@ -115,6 +113,27 @@ const zoneMatchups = {
     // Helper: Returns an array of formation slots for the given zone
     function getSlotsByZone(zone, team) {
       const slots = [];
+      if (!team.selected) return slots;
+      Object.values(team.selected).forEach(group => {
+        Object.entries(group).forEach(([positionName, positionData]) => {
+          if (positionData.zone === zone) {
+            for (let i = 0; i < positionData.max; i++) {
+              const player = i < positionData.players.length ? positionData.players[i] : null;
+              
+              slots.push({
+                player,
+                currentPosition: positionName
+              });
+            }
+          }
+        });
+      });
+      return slots;
+    }
+
+    // Get opponent slots for matchup view
+    function getSlotsByZone(zone, team) {
+        const slots = [];
       if (!team.selected) return slots;
       Object.values(team.selected).forEach(group => {
         Object.entries(group).forEach(([positionName, positionData]) => {
@@ -434,8 +453,10 @@ const zoneMatchups = {
     {/if}
     {/if}
 
+
+    
 <!-- Zone 15 -->
-{#if getSlotsByZone(15, team).length || getSlotsByZone(15, opponent).length}
+{#if getSlotsByZone(15, team).length || getSlotsByZone(15, opponent).length || getSlotsByZone(5,opponent).length}
     <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
         {#if base}
             {#each getSlotsByZone(15, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -448,7 +469,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(15, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(15, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -457,13 +477,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(15, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(15, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(15, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(15, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(5, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(5, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -471,7 +504,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 16 -->
-{#if getSlotsByZone(16, team).length || getSlotsByZone(16, opponent).length}
+{#if getSlotsByZone(16, team).length || getSlotsByZone(16, opponent).length || getSlotsByZone(4,opponent).length}
     <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
         {#if base}
             {#each getSlotsByZone(16, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -484,7 +517,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(16, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(16, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -493,13 +525,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(16, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(16, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(16, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(16, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(4, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(4, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -507,7 +552,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 17 -->
-{#if getSlotsByZone(17, team).length || getSlotsByZone(17, opponent).length}
+{#if getSlotsByZone(17, team).length || getSlotsByZone(17, opponent).length || getSlotsByZone(3,opponent).length}
     <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
         {#if base}
             {#each getSlotsByZone(17, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -520,7 +565,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(17, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(17, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -529,13 +573,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(17, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(17, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(17, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(17, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(3, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(3, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -543,7 +600,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 12 -->
-{#if getSlotsByZone(12, team).length || getSlotsByZone(12, opponent).length}
+{#if getSlotsByZone(12, team).length || getSlotsByZone(12, opponent).length || getSlotsByZone(8,opponent).length}
     <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
         {#if base}
             {#each getSlotsByZone(12, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -556,7 +613,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(12, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(12, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -565,13 +621,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(12, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(12, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(12, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(12, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(8, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(8, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -579,7 +648,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 13 -->
-{#if getSlotsByZone(13, team).length || getSlotsByZone(13, opponent).length}
+{#if getSlotsByZone(13, team).length || getSlotsByZone(13, opponent).length || getSlotsByZone(7,opponent).length}
     <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
         {#if base}
             {#each getSlotsByZone(13, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -592,7 +661,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(13, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(13, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -601,13 +669,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(13, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(13, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(13, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(13, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(7, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(7, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -615,7 +696,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 14 -->
-{#if getSlotsByZone(14, team).length || getSlotsByZone(14, opponent).length}
+{#if getSlotsByZone(14, team).length || getSlotsByZone(14, opponent).length  || getSlotsByZone(6,opponent).length}
     <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
         {#if base}
             {#each getSlotsByZone(14, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -628,7 +709,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(14, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(14, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -637,13 +717,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(14, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(14, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(14, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(14, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(6, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(6, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -651,7 +744,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 9 -->
-{#if getSlotsByZone(9, team).length || getSlotsByZone(9, opponent).length}
+{#if getSlotsByZone(9, team).length || getSlotsByZone(9, opponent).length || getSlotsByZone(11,opponent).length}
     <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
         {#if base}
             {#each getSlotsByZone(9, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -664,7 +757,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(9, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(9, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -673,13 +765,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(9, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(9, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(9, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(9, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(11, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(11, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -700,7 +805,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(10, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(10, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -709,13 +813,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(10, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(10, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(10, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(10, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(10, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(10, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -723,7 +840,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 11 -->
-{#if getSlotsByZone(11, team).length || getSlotsByZone(11, opponent).length}
+{#if getSlotsByZone(11, team).length || getSlotsByZone(11, opponent).length || getSlotsByZone(9,opponent).length}
     <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
         {#if base}
             {#each getSlotsByZone(11, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -736,7 +853,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(11, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(11, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -745,13 +861,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(11, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(11, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(11, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(11, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(9, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(9, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -759,7 +888,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 6 -->
-{#if getSlotsByZone(6, team).length || getSlotsByZone(6, opponent).length}
+{#if getSlotsByZone(6, team).length || getSlotsByZone(6, opponent).length || getSlotsByZone(14,opponent).length}
     <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
         {#if base}
             {#each getSlotsByZone(6, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -772,7 +901,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(6, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(6, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -781,13 +909,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(6, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(6, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(6, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(6, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(14, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(14, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -795,7 +936,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 7 -->
-{#if getSlotsByZone(7, team).length || getSlotsByZone(7, opponent).length}
+{#if getSlotsByZone(7, team).length || getSlotsByZone(7, opponent).length || getSlotsByZone(13,opponent).length}
     <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
         {#if base}
             {#each getSlotsByZone(7, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -808,7 +949,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(7, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(7, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -817,13 +957,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(7, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(7, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(7, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(7, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(13, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(13, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -831,7 +984,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 8 -->
-{#if getSlotsByZone(8, team).length || getSlotsByZone(8, opponent).length}
+{#if getSlotsByZone(8, team).length || getSlotsByZone(8, opponent).length || getSlotsByZone(12,opponent).length}
     <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
         {#if base}
             {#each getSlotsByZone(8, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -844,7 +997,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(8, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(8, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -853,13 +1005,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(8, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(8, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(8, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(8, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(12, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(12, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -867,7 +1032,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 3 -->
-{#if getSlotsByZone(3, team).length || getSlotsByZone(3, opponent).length}
+{#if getSlotsByZone(3, team).length || getSlotsByZone(3, opponent).length  || getSlotsByZone(17,opponent).length}
     <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
         {#if base}
             {#each getSlotsByZone(3, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -880,7 +1045,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(3, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(3, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -889,13 +1053,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(3, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(3, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(3, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(3, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(17, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(17, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -903,7 +1080,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 4 -->
-{#if getSlotsByZone(4, team).length || getSlotsByZone(4, opponent).length}
+{#if getSlotsByZone(4, team).length || getSlotsByZone(4, opponent).length || getSlotsByZone(16,opponent).length}
     <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
         {#if base}
             {#each getSlotsByZone(4, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -916,7 +1093,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(4, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(4, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -925,13 +1101,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(4, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(4, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(4, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(4, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(16, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(16, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -939,7 +1128,7 @@ const zoneMatchups = {
 {/if}
 
 <!-- Zone 5 -->
-{#if getSlotsByZone(5, team).length || getSlotsByZone(5, opponent).length}
+{#if getSlotsByZone(5, team).length || getSlotsByZone(5, opponent).length || getSlotsByZone(15,opponent).length}
     <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
         {#if base}
             {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -952,7 +1141,6 @@ const zoneMatchups = {
             {/each}
         {:else}
             <div class="zone-players-container">
-                <!-- Friendly team row -->
                 {#if getSlotsByZone(5, team).length > 0}
                     <div class="player-row">
                         {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
@@ -961,13 +1149,26 @@ const zoneMatchups = {
                     </div>
                 {/if}
                 
-                <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(5, opponent).length > 0}
-                    <div class="player-row">
-                        {#each getSlotsByZone(5, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                        {/each}
-                    </div>
+                {#if viewOpponent}
+                    {#if opponentMode === 0}
+                        <!-- Comparison mode: same zone opponents -->
+                        {#if getSlotsByZone(5, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(5, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {:else}
+                        <!-- Matchup mode: opposing position opponents -->
+                        {#if getSlotsByZone(15, opponent).length > 0}
+                            <div class="player-row">
+                                {#each getSlotsByZone(15, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                                {/each}
+                            </div>
+                        {/if}
+                    {/if}
                 {/if}
             </div>
         {/if}
@@ -998,7 +1199,7 @@ const zoneMatchups = {
                 {/if}
                 
                 <!-- Opponent team row -->
-                {#if viewOpponent && getSlotsByZone(1, opponent).length > 0}
+                {#if viewOpponent && getSlotsByZone(1, opponent).length > 0 && opponentMode === 0}
                     <div class="player-row">
                         {#each getSlotsByZone(1, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
                             <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
