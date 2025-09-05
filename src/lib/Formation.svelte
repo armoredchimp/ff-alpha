@@ -2,7 +2,7 @@
   import FormationPlayer from "./FormationPlayer.svelte";
   import FormationTab from "./FormationTab.svelte";
   import type { Team } from "$lib/types/types";
-	import PlayerMini from "./PlayerMini.svelte";
+  import PlayerMini from "./PlayerMini.svelte";
 
     let {
       team = {} as Team,
@@ -35,6 +35,40 @@
         3: 'defenders', 4: 'defenders', 5: 'defenders',
         1: 'keepers'
     };
+
+const zoneMatchups = {
+  // Defensive zones vs Attacking zones
+  1: 19,   // GK vs opposing GK
+  3: 17,   // LB vs RW
+  4: 16,   // CB vs ST
+  5: 15,   // RB vs LW
+  
+  // Midfield zones (these would typically face opposing midfield)
+  6: 14,   // LM vs RF
+  7: 13,   // CM vs CF
+  8: 12,   // RM vs LF
+  
+  9: 11,   // LAM vs RAM
+  10: 10,  // CAM vs CAM (mirrors)
+  11: 9,   // RAM vs LAM
+  
+  // Forward zones vs Defensive zones
+  12: 8,   // LF vs RM
+  13: 7,   // CF vs CM
+  14: 6,   // RF vs LM
+  
+  15: 5,   // LW vs RB
+  16: 4,   // ST vs CB
+  17: 3,   // RW vs LB
+  
+  19: 1,   // Opposing GK vs GK
+  
+  // Unused zones
+  0: null,
+  2: null,
+  18: null,
+  20: null
+};
 
     // Get zone-specific scores when in zone mode
     function getZoneScores(zone) {
