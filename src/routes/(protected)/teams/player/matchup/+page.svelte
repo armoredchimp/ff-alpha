@@ -74,6 +74,6 @@
     
     .formation-wrapper {
         display: flex;
-        justify-content: center;
+        justify-content: left;
     }
 </style>

@@ -3,6 +3,7 @@
     import FormationTab from "./FormationTab.svelte";
     import type { Team } from "$lib/types/types";
     import PlayerMini from "./PlayerMini.svelte";
+    import ZoneDisplay from "./ZoneDisplay.svelte";
     import { teams } from "./stores/teams.svelte";
 
     let {
@@ -470,8 +471,14 @@
           style="left: 35%; top: 0%; width: 30%; height: 17.5%;"
         >
           {#if activeZone === 16}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 16" scores={getZoneScores(16)} playerCount={getZonePlayerCount(16)}/>
+                {@const displayData = getZoneDisplay(16)}
+            <div class="zone-display-container">
+                <ZoneDisplay 
+                fieldPosition={"Centre Forward"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={16}
+                mode={opponentMode} />
             </div>
           {/if}
         </div>
@@ -1415,6 +1422,15 @@
        top: 50%;       
        transform: translateY(-50%);
        pointer-events: auto;
+   }
+
+     .zone-display-container {
+       position: absolute;
+       left: 220%;     
+       top: 50%;       
+       transform: translateY(-30%);
+       pointer-events: auto;
+       z-index: 1000;
    }
 
    .tab-container-zone {
