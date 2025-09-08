@@ -1,14 +1,16 @@
 <script lang="ts">
-  import FormationPlayer from "./FormationPlayer.svelte";
-  import FormationTab from "./FormationTab.svelte";
-  import type { Team } from "$lib/types/types";
-  import PlayerMini from "./PlayerMini.svelte";
+    import FormationPlayer from "./FormationPlayer.svelte";
+    import FormationTab from "./FormationTab.svelte";
+    import type { Team } from "$lib/types/types";
+    import PlayerMini from "./PlayerMini.svelte";
+    import { teams } from "./stores/teams.svelte";
 
     let {
       team = {} as Team,
       opponent = {} as Team,
       viewOpponent = true,
-      opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view
+      opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view,
+      tabDisplay = 0, // 0 = Positional groups // 2 = Individual zones (to be created)
       base = true,
       zonesVisible = true
     } = $props();
@@ -18,15 +20,8 @@
     let focusedZone = $state(null) 
     let previousFocusedZone = $state(null)
     let dropdownActive = $state(false) 
+    let zoneData = $state({});
    
-    function setActiveTab(tab){
-        activeTab = tab;
-    }
-
-    function setActiveZone(zone){
-        activeZone = zone;
-    }
-
     // Zone to group mapping for zone-based highlighting
     const zoneToGroup = {
         15: 'attackers', 16: 'attackers', 17: 'attackers',
@@ -37,36 +32,225 @@
         1: 'keepers'
     };
 
-    const zoneMatchups = {
-    // Defensive zones vs Attacking zones
-    3: 17,   // LB vs RW
-    4: 16,   // CB vs ST
-    5: 15,   // RB vs LW
     
-    // Midfield zones (these would typically face opposing midfield)
-    6: 14,   // LM vs RF
-    7: 13,   // CM vs CF
-    8: 12,   // RM vs LF
-    
-    9: 11,   // LAM vs RAM
-    10: 10,  // CAM vs CAM (mirrors)
-    11: 9,   // RAM vs LAM
-    
-    // Forward zones vs Defensive zones
-    12: 8,   // LF vs RM
-    13: 7,   // CF vs CM
-    14: 6,   // RF vs LM
-    
-    15: 5,   // LW vs RB
-    16: 4,   // ST vs CB
-    17: 3,   // RW vs LB
-    
-    // Unused zones
-    0: null,
-    2: null,
-    18: null,
-    20: null
+    const zoneMatchups ={
+        3: 17,   // LB vs RW
+        4: 16,   // CB vs ST
+        5: 15,   // RB vs LW
+        
+        6: 14,   // LM vs RF
+        7: 13,   // CM vs CF
+        8: 12,   // RM vs LF
+        
+        9: 11,   // LAM vs RAM
+        10: 10,  // CAM vs CAM (mirrors)
+        11: 9,   // RAM vs LAM
+        
+        12: 8,   // LF vs RM
+        13: 7,   // CF vs CM
+        14: 6,   // RF vs LM
+        
+        15: 5,   // LW vs RB
+        16: 4,   // ST vs CB
+        17: 3,   // RW vs LB
+        
+        // Unused zones
+        0: null,
+        2: null,
+    }
+
+    const zoneAdjacency = {
+        1: [],  // Keeper not factored for matchup view
+        3: [4, 6],
+        4: [3, 5, 7],
+        5: [4, 8],
+        6: [3, 7, 9],
+        7: [4, 6, 8, 10],
+        8: [5, 7, 11],
+        9: [6, 10, 12],
+        10: [7, 9, 11, 13],
+        11: [8, 10, 14],
+        12: [9, 13, 15],
+        13: [10, 12, 14, 16],
+        14: [11, 13, 17],
+        15: [12, 16],
+        16: [13, 15, 17],
+        17: [14, 16]
     };
+
+    zoneData = initializeZoneData()
+
+    function setActiveTab(tab){
+        activeTab = tab;
+    }
+
+    function setActiveZone(zone){
+        activeZone = zone;
+    }
+
+    function getZoneDisplay(zone) {
+        const data = zoneData[zone];
+        if (!data) return null;
+        
+        return {
+            teamPlayers: data.teamPlayers,
+            opponentPlayers: data.opponentPlayers,
+            scores: data.scores,
+            strengthValue: data.scores?.total || 0,
+            isEmpty: data.isEmpty,
+            sourceZones: data.sourceZones
+        };
+    }
+    
+    function initializeZoneData() {
+        const data = {};
+        const emptyZones = [];
+        
+        // Process each zone
+        const zones = [1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+        for (const zone of zones) {
+            const zoneResult = processZone(zone, team, opponent, opponentMode);
+            data[zone] = zoneResult;
+            
+            if (zoneResult.isEmpty) {
+                emptyZones.push(zone);
+            }
+        }
+        
+        // Second pass: Calculate empty zone scores based on adjacent filled zones
+        for (const zone of emptyZones) {
+            const adjacentZones = zoneAdjacency[zone] || [];
+            const filledAdjacent = adjacentZones.filter(adj => !data[adj]?.isEmpty);
+            
+            if (filledAdjacent.length > 0) {
+                const scores = averageAdjacentScores(filledAdjacent, data);
+                data[zone] = {
+                    ...data[zone],
+                    scores,
+                    sourceZones: filledAdjacent
+                };
+            } else {
+                data[zone] = {
+                    ...data[zone],
+                    scores: { total: 0, finishing: 0, attacking: 0, possession: 0, passing: 0, defensive: 0 },
+                    sourceZones: []
+                };
+            }
+        }
+        
+        return data;
+    }
+
+    function processZone(zone, team, opponent, opponentMode) {
+        const teamPlayers = [];
+        const opponentPlayers = [];
+        
+        // Get team players
+        if (team.selected) {
+            Object.values(team.selected).forEach(group => {
+                Object.entries(group).forEach(([positionName, positionData]) => {
+                    if (positionData.zone === zone) {
+                        positionData.players.forEach(player => {
+                            if (player) {
+                                teamPlayers.push({
+                                    player,
+                                    currentPosition: positionName  
+                                });
+                            }    
+                        });
+                    }
+                });
+            });
+        }
+        
+        // Get opponent players based on current mode only
+        if (opponent.selected) {
+            const targetZone = opponentMode === 0 ? zone : zoneMatchups[zone];
+            
+            if (targetZone) {
+                Object.values(opponent.selected).forEach(group => {
+                    Object.entries(group).forEach(([positionName, positionData]) => {
+                        if (positionData.zone === targetZone) {
+                            positionData.players.forEach(player => {
+                                if (player) {
+                                    opponentPlayers.push({
+                                        player,
+                                        currentPosition: positionName  
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        }
+        
+        const isEmpty = teamPlayers.length === 0 && opponentPlayers.length === 0;
+        
+        return {
+            teamPlayers,
+            opponentPlayers,
+            scores: isEmpty ? null : calculateAllMatchups(
+                teamPlayers.map(tp => tp.player), 
+                opponentPlayers.map(op => op.player)  
+            ),
+            isEmpty
+        };
+    }
+
+    function calculateAllMatchups(teamPlayers, opponentPlayers) {
+        return {
+            total: calculateMatchup(teamPlayers, opponentPlayers, 'total_score'),
+            finishing: calculateMatchup(teamPlayers, opponentPlayers, 'finishing_score'),
+            attacking: calculateMatchup(teamPlayers, opponentPlayers, 'attacking_score'),
+            possession: calculateMatchup(teamPlayers, opponentPlayers, 'possession_score'),
+            passing: calculateMatchup(teamPlayers, opponentPlayers, 'passing_score'),
+            defensive: calculateMatchup(teamPlayers, opponentPlayers, 'defensive_score'),
+        };
+    }
+
+    function averageAdjacentScores(adjacentZones, data) {
+        const scores = {
+            total: 0,
+            finishing: 0,
+            attacking: 0,
+            possession: 0,
+            passing: 0,
+            defensive: 0
+        };
+        
+        let validCount = 0;
+        adjacentZones.forEach(zone => {
+            const zoneScores = data[zone].scores
+            if (zoneScores) {
+                Object.keys(scores).forEach(key => {
+                    scores[key] += zoneScores[key] || 0;
+                });
+                validCount++;
+            }
+        });
+        
+        // Average the scores
+        if (validCount > 0) {
+            Object.keys(scores).forEach(key => {
+                scores[key] = scores[key] / validCount * 0.5; // Reduce strength for interpolated zones
+            });
+        }
+        
+        return scores;
+    }
+
+    function getZoneColor(strength, scoreType = 'total') {
+        const value = typeof strength === 'object' 
+            ? strength.scores?.[scoreType] || 0
+            : strength;
+        
+        if (Math.abs(value) < 5) return 'transparent';
+        
+        const color = value > 0 ? '59, 130, 246' : '239, 68, 68';
+        const opacity = Math.min(Math.abs(value) / 100 * 0.35, 0.35);
+        return `rgba(${color}, ${opacity})`;
+    }
 
     // Get zone-specific scores when in zone mode
     function getZoneScores(zone) {
@@ -131,25 +315,44 @@
       return slots;
     }
 
-    // Get opponent slots for matchup view
-    function getSlotsByZone(zone, team) {
-        const slots = [];
-      if (!team.selected) return slots;
-      Object.values(team.selected).forEach(group => {
-        Object.entries(group).forEach(([positionName, positionData]) => {
-          if (positionData.zone === zone) {
-            for (let i = 0; i < positionData.max; i++) {
-              const player = i < positionData.players.length ? positionData.players[i] : null;
-              
-              slots.push({
-                player,
-                currentPosition: positionName
-              });
-            }
-          }
-        });
-      });
-      return slots;
+ 
+
+    function getPlayersInZone(zone, team){
+        const players = [];
+        if(!team.selected) return players;
+
+        Object.values(team.selected).forEach(group => {
+            Object.entries(group).forEach(([positionName, positionData]) => {
+                if(positionData.zone === zone){
+                    positionData.players.forEach(player => {
+                        if(player){
+                            players.push(player)
+                        }
+                    })
+                }
+            })
+        })
+
+        return players;
+    }
+
+    function calculateMatchup(teamPlayers, opponentPlayers, scoreType) {
+        const teamScore = teamPlayers.reduce((sum, player) => {
+            const score = scoreType === 'keeper_score' ? (player[scoreType] || 0) : player[scoreType];
+            return sum + score;
+        }, 0);
+        
+        const opponentScore = opponentPlayers.reduce((sum, player) => {
+            const score = scoreType === 'keeper_score' ? (player[scoreType] || 0) : player[scoreType];
+            return sum + score;
+        }, 0);
+        
+        // Return difference: positive = team stronger, negative = opponent stronger
+        // Scale to -100 to 100 range (adjust divisor as needed based on your score ranges)
+        const difference = teamScore - opponentScore;
+        const scaledDifference = Math.max(-100, Math.min(100, difference / 10));
+        
+        return scaledDifference;
     }
 </script>
 
@@ -166,6 +369,21 @@
       <div class="vertical-line" style="left: 35%;"></div>
       <div class="vertical-line" style="left: 65%;"></div>
     </div>
+
+    {#if !base}
+        <!-- Zone overlays for strength visualization -->
+        <div class="zone-overlays">
+            {#each [1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17] as zone}
+                {@const displayData = getZoneDisplay(zone)}
+                {#if displayData && displayData.scores}
+                    <div 
+                        class="zone-overlay zone-overlay-{zone}"
+                        style="background-color: {getZoneColor(displayData.strengthValue)}"
+                    ></div>
+                {/if}
+            {/each}
+        </div>
+    {/if}
 
     <!-- Conditional hover zones based on 'base' prop -->
     {#if base}
@@ -539,7 +757,7 @@
                         <!-- Matchup mode: opposing position opponents -->
                         {#if getSlotsByZone(4, opponent).length > 0}
                             <div class="player-row">
-                                {#each getSlotsByZone(4, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
+                                {#each getSlotsByZone(5, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
                                     <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
                                 {/each}
                             </div>
@@ -1128,10 +1346,10 @@
 {/if}
 
 <!-- Zone 5 -->
-{#if getSlotsByZone(5, team).length || getSlotsByZone(5, opponent).length || getSlotsByZone(15,opponent).length}
+{#if getZoneDisplay(5).teamPlayers.length || getZoneDisplay(5).opponentPlayers.length}
     <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
         {#if base}
-            {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
+            {#each getZoneDisplay(5).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1140,35 +1358,23 @@
                 />
             {/each}
         {:else}
+            {@const displayData = getZoneDisplay(5)}
+            
             <div class="zone-players-container">
-                {#if getSlotsByZone(5, team).length > 0}
+                {#if displayData.teamPlayers.length > 0}
                     <div class="player-row">
-                        {#each getSlotsByZone(5, team) as slot, i (slot.currentPosition + '-' + i)}
+                        {#each displayData.teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
                             <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
                         {/each}
                     </div>
                 {/if}
                 
-                {#if viewOpponent}
-                    {#if opponentMode === 0}
-                        <!-- Comparison mode: same zone opponents -->
-                        {#if getSlotsByZone(5, opponent).length > 0}
-                            <div class="player-row">
-                                {#each getSlotsByZone(5, opponent) as slot, i ('opponent-' + slot.currentPosition + '-' + i)}
-                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                                {/each}
-                            </div>
-                        {/if}
-                    {:else}
-                        <!-- Matchup mode: opposing position opponents -->
-                        {#if getSlotsByZone(15, opponent).length > 0}
-                            <div class="player-row">
-                                {#each getSlotsByZone(15, opponent) as slot, i ('matchup-' + slot.currentPosition + '-' + i)}
-                                    <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
-                                {/each}
-                            </div>
-                        {/if}
-                    {/if}
+                {#if viewOpponent && displayData.opponentPlayers.length > 0}
+                    <div class="player-row">
+                        {#each displayData.opponentPlayers as slot, i ('opponent-' + slot.player.id + '-' + i)}
+                            <PlayerMini player={slot.player} showPopup={true} borderCode={2}/>
+                        {/each}
+                    </div>
                 {/if}
             </div>
         {/if}
@@ -1235,6 +1441,45 @@
     .zone > :global(*) {
       pointer-events: auto;
     }
+
+    .zone-overlays {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1; /* Above field, below players */
+    }
+
+    .zone-overlay {
+        position: absolute;
+        transition: background-color 0.3s ease;
+    }
+
+    /* Match your existing zone positions and sizes */
+    .zone-overlay-15 { left: 0%; top: 0%; width: 35%; height: 17.5%; }
+    .zone-overlay-16 { left: 35%; top: 0%; width: 30%; height: 17.5%; }
+    .zone-overlay-17 { left: 65%; top: 0%; width: 35%; height: 17.5%; }
+
+    .zone-overlay-12 { left: 0%; top: 17.5%; width: 35%; height: 15%; }
+    .zone-overlay-13 { left: 35%; top: 17.5%; width: 30%; height: 15%; }
+    .zone-overlay-14 { left: 65%; top: 17.5%; width: 35%; height: 15%; }
+
+    .zone-overlay-9 { left: 0%; top: 32.5%; width: 35%; height: 15%; }
+    .zone-overlay-10 { left: 35%; top: 32.5%; width: 30%; height: 15%; }
+    .zone-overlay-11 { left: 65%; top: 32.5%; width: 35%; height: 15%; }
+
+    .zone-overlay-6 { left: 0%; top: 47.5%; width: 35%; height: 15%; }
+    .zone-overlay-7 { left: 35%; top: 47.5%; width: 30%; height: 15%; }
+    .zone-overlay-8 { left: 65%; top: 47.5%; width: 35%; height: 15%; }
+
+    .zone-overlay-3 { left: 0%; top: 62.5%; width: 35%; height: 17.5%; }
+    .zone-overlay-4 { left: 35%; top: 62.5%; width: 30%; height: 17.5%; }
+    .zone-overlay-5 { left: 65%; top: 62.5%; width: 35%; height: 17.5%; }
+
+    .zone-overlay-1 { left: 35%; top: 80%; width: 30%; height: 20%; }
+
     /* Attacker Row (Row 6, Top: Zones 15, 16, 17) */
     .zone-15 { position: absolute; left: 20%; top: 10%; transform: translate(-50%, -50%); }
     .zone-16 { position: absolute; left: 50%; top: 10%; transform: translate(-50%, -50%); }
