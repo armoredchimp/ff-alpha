@@ -81,6 +81,9 @@
 
     zoneData = initializeZoneData()
 
+
+  
+
     function setActiveTab(tab){
         activeTab = tab;
     }
@@ -316,27 +319,6 @@
       return slots;
     }
 
- 
-
-    function getPlayersInZone(zone, team){
-        const players = [];
-        if(!team.selected) return players;
-
-        Object.values(team.selected).forEach(group => {
-            Object.entries(group).forEach(([positionName, positionData]) => {
-                if(positionData.zone === zone){
-                    positionData.players.forEach(player => {
-                        if(player){
-                            players.push(player)
-                        }
-                    })
-                }
-            })
-        })
-
-        return players;
-    }
-
     function calculateMatchup(teamPlayers, opponentPlayers, scoreType) {
         const teamScore = teamPlayers.reduce((sum, player) => {
             const score = scoreType === 'keeper_score' ? (player[scoreType] || 0) : player[scoreType];
@@ -459,7 +441,7 @@
         >
           {#if activeZone === 15}
             {@const displayData = getZoneDisplay(15)}
-            <div class="zone-display-container-left">
+            <div class="zone-display-container-left top-left" >
                 <ZoneDisplay 
                 fieldPosition={"Left Wing"} 
                 teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
@@ -481,7 +463,7 @@
         >
           {#if activeZone === 16}
             {@const displayData = getZoneDisplay(16)}
-            <div class="zone-display-container">
+            <div class="zone-display-container" >
                 <ZoneDisplay 
                 fieldPosition={"Centre Forward"} 
                 teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
@@ -503,7 +485,7 @@
         >
           {#if activeZone === 17}
             {@const displayData = getZoneDisplay(17)}
-            <div class="zone-display-container-right">
+            <div class="zone-display-container-right" >
                 <ZoneDisplay 
                 fieldPosition={"Right Wing"} 
                 teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
@@ -1566,7 +1548,7 @@
      .zone-display-container {
        position: absolute;
        left: 220%;     
-       top: 50%;       
+       /* top: 50%;        */
        transform: translateY(-30%);
        pointer-events: auto;
        z-index: 1000;
@@ -1575,7 +1557,7 @@
    .zone-display-container-right {
         position: absolute;
         left: 102%;     
-        top: 50%;       
+        /* top: 50%;        */
         transform: translateY(-30%);
         pointer-events: auto;
         z-index: 1000;
@@ -1584,10 +1566,15 @@
       .zone-display-container-left {
         position: absolute;
         left: 289%;     
-        top: 50%;       
-        transform: translateY(-30%);
+        /* top: 50%;        */
+        /* transform: translateY(-30%); */
         pointer-events: auto;
         z-index: 1000;
+   }
+
+   .top-left {
+        top: 60%;
+        transform: translateY(-20%);
    }
 
    .tab-container-zone {
