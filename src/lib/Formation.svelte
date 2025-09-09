@@ -458,8 +458,17 @@
           style="left: 0%; top: 0%; width: 35%; height: 17.5%;"
         >
           {#if activeZone === 15}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 15" scores={getZoneScores(15)} playerCount={getZonePlayerCount(15)}/>
+            {@const displayData = getZoneDisplay(15)}
+            <div class="zone-display-container-left">
+                <ZoneDisplay 
+                fieldPosition={"Left Wing"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={15}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -471,14 +480,17 @@
           style="left: 35%; top: 0%; width: 30%; height: 17.5%;"
         >
           {#if activeZone === 16}
-                {@const displayData = getZoneDisplay(16)}
+            {@const displayData = getZoneDisplay(16)}
             <div class="zone-display-container">
                 <ZoneDisplay 
                 fieldPosition={"Centre Forward"} 
                 teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
                 opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
                 zone={16}
-                mode={opponentMode} />
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -490,8 +502,17 @@
           style="left: 65%; top: 0%; width: 35%; height: 17.5%;"
         >
           {#if activeZone === 17}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 17" scores={getZoneScores(17)} playerCount={getZonePlayerCount(17)}/>
+            {@const displayData = getZoneDisplay(17)}
+            <div class="zone-display-container-right">
+                <ZoneDisplay 
+                fieldPosition={"Right Wing"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={17}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -505,8 +526,17 @@
           style="left: 0%; top: 17.5%; width: 35%; height: 15%;"
         >
           {#if activeZone === 12}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 12" scores={getZoneScores(12)} playerCount={getZonePlayerCount(12)}/>
+            {@const displayData = getZoneDisplay(12)}
+            <div class="zone-display-container-left">
+                <ZoneDisplay 
+                fieldPosition={"Left Wing"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={12}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -518,8 +548,17 @@
           style="left: 35%; top: 17.5%; width: 30%; height: 15%;"
         >
           {#if activeZone === 13}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 13" scores={getZoneScores(13)} playerCount={getZonePlayerCount(13)}/>
+            {@const displayData = getZoneDisplay(13)}
+            <div class="zone-display-container">
+                <ZoneDisplay 
+                fieldPosition={"Attacking Midfield"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={13}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -531,8 +570,17 @@
           style="left: 65%; top: 17.5%; width: 35%; height: 15%;"
         >
           {#if activeZone === 14}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 14" scores={getZoneScores(14)} playerCount={getZonePlayerCount(14)}/>
+            {@const displayData = getZoneDisplay(14)}
+            <div class="zone-display-container-right">
+                <ZoneDisplay 
+                fieldPosition={"Right Wing"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={14}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -546,11 +594,21 @@
           style="left: 0%; top: 32.5%; width: 35%; height: 15%;"
         >
           {#if activeZone === 9}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 9" scores={getZoneScores(9)} playerCount={getZonePlayerCount(9)}/>
+            {@const displayData = getZoneDisplay(9)}
+            <div class="zone-display-container-left">
+                <ZoneDisplay 
+                fieldPosition={"Left Midfield"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={9}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(10)}
@@ -559,11 +617,21 @@
           style="left: 35%; top: 32.5%; width: 30%; height: 15%;"
         >
           {#if activeZone === 10}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 10" scores={getZoneScores(10)} playerCount={getZonePlayerCount(10)}/>
+            {@const displayData = getZoneDisplay(10)}
+            <div class="zone-display-container">
+                <ZoneDisplay 
+                fieldPosition={"Central Midfield"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={10}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(11)}
@@ -571,11 +639,20 @@
           class="hover-zone-square"
           style="left: 65%; top: 32.5%; width: 35%; height: 15%;"
         >
-          {#if activeZone === 11}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 11" scores={getZoneScores(11)} playerCount={getZonePlayerCount(11)}/>
+        {#if activeZone === 11}
+            {@const displayData = getZoneDisplay(11)}
+            <div class="zone-display-container-right">
+                <ZoneDisplay 
+                fieldPosition={"Right Midfield"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={11}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
-          {/if}
+        {/if}
         </div>
 
         <!-- Row 3: Zones 6, 7, 8 -->
@@ -587,11 +664,21 @@
           style="left: 0%; top: 47.5%; width: 35%; height: 15%;"
         >
           {#if activeZone === 6}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 6" scores={getZoneScores(6)} playerCount={getZonePlayerCount(6)}/>
+            {@const displayData = getZoneDisplay(6)}
+            <div class="zone-display-container-left">
+                <ZoneDisplay 
+                fieldPosition={"Left Wingback"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={6}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(7)}
@@ -600,11 +687,21 @@
           style="left: 35%; top: 47.5%; width: 30%; height: 15%;"
         >
           {#if activeZone === 7}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 7" scores={getZoneScores(7)} playerCount={getZonePlayerCount(7)}/>
+            {@const displayData = getZoneDisplay(7)}
+            <div class="zone-display-container">
+                <ZoneDisplay 
+                fieldPosition={"Defensive Midfield"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={7}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(8)}
@@ -613,8 +710,17 @@
           style="left: 65%; top: 47.5%; width: 35%; height: 15%;"
         >
           {#if activeZone === 8}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 8" scores={getZoneScores(8)} playerCount={getZonePlayerCount(8)}/>
+            {@const displayData = getZoneDisplay(8)}
+            <div class="zone-display-container-right">
+                <ZoneDisplay 
+                fieldPosition={"Right Wingback"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={8}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
@@ -628,11 +734,21 @@
           style="left: 0%; top: 62.5%; width: 35%; height: 17.5%;"
         >
           {#if activeZone === 3}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 3" scores={getZoneScores(3)} playerCount={getZonePlayerCount(3)}/>
+            {@const displayData = getZoneDisplay(3)}
+            <div class="zone-display-container-left">
+                <ZoneDisplay 
+                fieldPosition={"Left Fullback"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={3}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(4)}
@@ -641,11 +757,21 @@
           style="left: 35%; top: 62.5%; width: 30%; height: 17.5%;"
         >
           {#if activeZone === 4}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 4" scores={getZoneScores(4)} playerCount={getZonePlayerCount(4)}/>
+            {@const displayData = getZoneDisplay(4)}
+            <div class="zone-display-container">
+                <ZoneDisplay 
+                fieldPosition={"Centre Back"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={4}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
+
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(5)}
@@ -654,13 +780,23 @@
           style="left: 65%; top: 62.5%; width: 35%; height: 17.5%;"
         >
           {#if activeZone === 5}
-            <div class="tab-container-zone">
-              <FormationTab group="Zone 5" scores={getZoneScores(5)} playerCount={getZonePlayerCount(5)}/>
+            {@const displayData = getZoneDisplay(5)}
+            <div class="zone-display-container-right">
+                <ZoneDisplay 
+                fieldPosition={"Right Fullback"} 
+                teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
+                opponentPlayers={displayData.opponentPlayers.map(op => op.player)}
+                zone={5}
+                mode={opponentMode}
+                teamName={team.name}
+                opponentName={opponent.name}
+                />
             </div>
           {/if}
         </div>
 
         <!-- Row 1 (Bottom): Zone 1 (Keeper) -->
+        {#if opponentMode !== 1}
         <div
           role="presentation"
           onmouseenter={()=> setActiveZone(1)}
@@ -674,6 +810,7 @@
             </div>
           {/if}
         </div>
+        {/if}
       </div>
     {/if}
     {/if}
@@ -1221,6 +1358,7 @@
 {/if}
 
 <!-- Zone 1 -->
+
 {#if getSlotsByZone(1, team).length || getSlotsByZone(1, opponent).length}
     <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
         {#if base}
@@ -1235,7 +1373,7 @@
         {:else}
             <div class="zone-players-container">
                 <!-- Friendly team row -->
-                {#if getSlotsByZone(1, team).length > 0}
+                {#if getSlotsByZone(1, team).length > 0 && opponentMode === 0}
                     <div class="player-row">
                         {#each getSlotsByZone(1, team) as slot, i (slot.currentPosition + '-' + i)}
                             <PlayerMini player={slot.player} showPopup={true} borderCode={1}/>
@@ -1255,6 +1393,7 @@
         {/if}
     </div>
 {/if}
+
 </div>
 
 <style>
@@ -1431,6 +1570,24 @@
        transform: translateY(-30%);
        pointer-events: auto;
        z-index: 1000;
+   }
+
+   .zone-display-container-right {
+        position: absolute;
+        left: 102%;     
+        top: 50%;       
+        transform: translateY(-30%);
+        pointer-events: auto;
+        z-index: 1000;
+   }
+
+      .zone-display-container-left {
+        position: absolute;
+        left: 289%;     
+        top: 50%;       
+        transform: translateY(-30%);
+        pointer-events: auto;
+        z-index: 1000;
    }
 
    .tab-container-zone {

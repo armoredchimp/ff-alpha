@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Player } from "./types/types";
+    import { playerLastName } from "./utils/common";
 
     let {
         fieldPosition = '',
@@ -7,16 +8,24 @@
         teamPlayers = [],
         opponentPlayers = [],
         mode = 0,
+        teamName = '',
+        opponentName = ''
     } = $props<{
         fieldPosition: string;
         zone: number;
         teamPlayers: Player[];
         opponentPlayers: Player[];
         mode: number;
+        teamName: string;
+        opponentName: string
     }>();
 
     // Determine which scores to display based on position
     const isGoalkeeper = $derived(fieldPosition === 'Goalkeeper');
+    
+    // Check if we have players
+    const hasPlayers = $derived(teamPlayers.length > 0 || opponentPlayers.length > 0);
+    const hasBothTeams = $derived(teamPlayers.length > 0 && opponentPlayers.length > 0);
     
     // Calculate aggregated scores for each team
     const teamScores = $derived(calculateTeamScores(teamPlayers));
@@ -27,6 +36,9 @@
         ...Object.values(teamScores),
         ...Object.values(opponentScores)
     ));
+
+    // Calculate score differences for horizontal bars
+    const scoreDifferences = $derived(calculateScoreDifferences());
 
     function calculateTeamScores(players: Player[]) {
         if (isGoalkeeper) {
@@ -71,6 +83,37 @@
         return (value / maxScore) * 100;
     }
 
+    function calculateScoreDifferences() {
+        const differences: Record<string, { 
+            teamValue: number;
+            opponentValue: number;
+            difference: number;
+            percentage: number;
+            winner: 'team' | 'opponent' | 'tie' 
+        }> = {};
+        
+        Object.keys(teamScores).forEach(key => {
+            const teamValue = teamScores[key as keyof typeof teamScores];
+            const opponentValue = opponentScores[key as keyof typeof opponentScores];
+            const difference = teamValue - opponentValue;
+            const maxDiff = Math.max(Math.abs(difference), 1); // Avoid division by zero
+            const maxPossible = Math.max(teamValue, opponentValue, 1);
+            
+            // Calculate percentage for bar width (0-50 scale from center)
+            const percentage = Math.min((Math.abs(difference) / maxPossible) * 50, 50);
+            
+            differences[key] = {
+                teamValue,
+                opponentValue,
+                difference,
+                percentage,
+                winner: difference > 0 ? 'team' : difference < 0 ? 'opponent' : 'tie'
+            };
+        });
+        
+        return differences;
+    }
+
     // Score labels and colors
     const scoreConfig = {
         total: { label: 'Total', color: '#3b82f6' },
@@ -87,83 +130,163 @@
     <!-- Position Header -->
     <h1 class="position-title">{mode === 0 ? fieldPosition : `Zone ${zone}`}</h1>
     
-    <!-- Players Display -->
-    <div class="players-section">
-        <!-- Team Players (Left) -->
-        <div class="team-side">
-            <div class="players-grid">
-                {#each teamPlayers as player}
-                    <div class="player-card">
-                        <img 
-                            src={player.image_path} 
-                            alt={player.player_name}
-                            class="player-image"
-                        />
-                        <p class="player-name">{player.player_name}</p>
-                    </div>
-                {/each}
-            </div>
-        </div>
-
-        <!-- Opponent Players (Right) -->
-        <div class="opponent-side">
-            <div class="players-grid">
-                {#each opponentPlayers as player}
-                    <div class="player-card">
-                        <img 
-                            src={player.image_path} 
-                            alt={player.player_name}
-                            class="player-image"
-                        />
-                        <p class="player-name">{player.player_name}</p>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    </div>
-
-    <!-- Score Comparison -->
-    <div class="score-comparison">
-        <!-- Team Bar Chart -->
-        <div class="chart-container">
-            <h3 class="chart-title">Team</h3>
-            <div class="bars-wrapper">
-                {#each Object.entries(teamScores) as [key, value]}
-                    <div class="bar-group">
-                        <div class="bar-column">
-                            <div 
-                                class="bar"
-                                style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
-                            >
-                                <span class="bar-value">{Math.round(value)}</span>
+    {#if hasPlayers}
+        <!-- Players Display -->
+        <div class="players-section">
+            <!-- Team Players (Left) -->
+            {#if teamPlayers.length > 0}
+                <div class="team-side">
+                    <div class="players-grid">
+                        {#each teamPlayers as player}
+                            <div class="player-card">
+                                <img 
+                                    src={player.image_path} 
+                                    alt={player.player_name}
+                                    class="player-image"
+                                />
+                                <p class="player-name">{playerLastName(player.player_name)}</p>
                             </div>
-                        </div>
-                        <span class="bar-label">{scoreConfig[key].label}</span>
+                        {/each}
                     </div>
-                {/each}
-            </div>
+                </div>
+            {/if}
+
+            <!-- Opponent Players (Right) -->
+            {#if opponentPlayers.length > 0}
+                <div class="opponent-side">
+                    <div class="players-grid">
+                        {#each opponentPlayers as player}
+                            <div class="player-card">
+                                <img 
+                                    src={player.image_path} 
+                                    alt={player.player_name}
+                                    class="player-image"
+                                />
+                                <p class="player-name">{playerLastName(player.player_name)}</p>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
         </div>
 
-        <!-- Opponent Bar Chart -->
-        <div class="chart-container">
-            <h3 class="chart-title">Opponent</h3>
-            <div class="bars-wrapper">
-                {#each Object.entries(opponentScores) as [key, value]}
-                    <div class="bar-group">
-                        <div class="bar-column">
-                            <div 
-                                class="bar"
-                                style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
-                            >
-                                <span class="bar-value">{Math.round(value)}</span>
-                            </div>
+  
+        {#if hasPlayers}
+            <div class="score-comparison">
+                {#if teamPlayers.length > 0}
+                    <!-- Team Bar Chart -->
+                    <div class="chart-container">
+                        <h3 class="chart-title">{teamName}</h3>
+                        <div class="bars-wrapper">
+                            {#each Object.entries(teamScores) as [key, value]}
+                                <div class="bar-group">
+                                    <div class="bar-column">
+                                        <div 
+                                            class="bar"
+                                            style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
+                                        >
+                                            <span class="bar-value">{Math.round(value)}</span>
+                                        </div>
+                                    </div>
+                                    <span class="bar-label">{scoreConfig[key].label}</span>
+                                </div>
+                            {/each}
                         </div>
-                        <span class="bar-label">{scoreConfig[key].label}</span>
                     </div>
-                {/each}
+                {/if}
+
+                {#if opponentPlayers.length > 0}
+                    <!-- Opponent Bar Chart -->
+                    <div class="chart-container">
+                        <h3 class="chart-title">{opponentName}</h3>
+                        <div class="bars-wrapper">
+                            {#each Object.entries(opponentScores) as [key, value]}
+                                <div class="bar-group">
+                                    <div class="bar-column">
+                                        <div 
+                                            class="bar"
+                                            style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
+                                        >
+                                            <span class="bar-value">{Math.round(value)}</span>
+                                        </div>
+                                    </div>
+                                    <span class="bar-label">{scoreConfig[key].label}</span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
             </div>
-        </div>
-    </div>
+
+            {#if hasBothTeams}
+                <!-- Comparison Chart -->
+                <div class="comparison-chart">
+                    <div class="chart-header">
+                        <span class="team-label">{teamName}</span>
+                        <span class="opponent-label">{opponentName}</span>
+                    </div>
+                    
+                    <div class="comparison-bars">
+                        {#each Object.entries(scoreDifferences) as [key, data]}
+                            <div class="comparison-row">
+                                <span class="metric-label">{scoreConfig[key].label}</span>
+                                
+                                <div class="bar-container">
+                                    <!-- Team side score -->
+                                    <div class="team-score">
+                                        {Math.round(data.teamValue)}
+                                    </div>
+                                    
+                                    <!-- Horizontal bar wrapper -->
+                                    <div class="horizontal-bar-wrapper">
+                                        <div class="horizontal-bar-background"></div>
+                                        <div class="center-line"></div>
+                                        
+                                        {#if data.winner === 'team'}
+                                            <!-- Bar extends to the left (team winning) -->
+                                            <div 
+                                                class="horizontal-bar team-winning"
+                                                style="
+                                                    left: {50 - data.percentage}%;
+                                                    right: 50%;
+                                                    background-color: #3b82f6;
+                                                "
+                                            ></div>
+                                        {:else if data.winner === 'opponent'}
+                                            <!-- Bar extends to the right (opponent winning) -->
+                                            <div 
+                                                class="horizontal-bar opponent-winning"
+                                                style="
+                                                    left: 50%;
+                                                    right: {50 - data.percentage}%;
+                                                    background-color: #ef4444;
+                                                "
+                                            ></div>
+                                        {:else}
+                                            <!-- Tie - just show center line -->
+                                            <div 
+                                                class="horizontal-bar tie"
+                                                style="
+                                                    left: 49.5%;
+                                                    right: 49.5%;
+                                                    background-color: #9ca3af;
+                                                "
+                                            ></div>
+                                        {/if}
+                                    </div>
+                                    
+                                    <!-- Opponent side score -->
+                                    <div class="opponent-score">
+                                        {Math.round(data.opponentValue)}
+                                    </div>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+        {/if}
+    {/if}
 </div>
 
 <style>
@@ -175,7 +298,7 @@
     background: white;
     border-radius: 0.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    width: 35rem;
+    width: 34rem;
     max-height: 80rem;
     overflow-y: auto;
 }
@@ -232,6 +355,7 @@
     white-space: nowrap;
 }
 
+/* Original Bar Chart Styles */
 .score-comparison {
     display: flex;
     gap: 0.75rem;
@@ -301,5 +425,127 @@
     color: #6b7280;
     text-align: center;
     line-height: 1;
+}
+
+/* New Comparison Chart Styles */
+.comparison-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.team-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.opponent-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.comparison-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comparison-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.7rem;
+    color: #4b5563;
+    min-width: 60px;
+    text-align: right;
+}
+
+.bar-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.team-score,
+.opponent-score {
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+}
+
+.team-score {
+    color: #3b82f6;
+}
+
+.opponent-score {
+    color: #ef4444;
+}
+
+.horizontal-bar-wrapper {
+    flex: 1;
+    height: 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.horizontal-bar-background {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+.center-line {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: #9ca3af;
+    z-index: 1;
+}
+
+.horizontal-bar {
+    position: absolute;
+    height: 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.horizontal-bar.team-winning {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.horizontal-bar.opponent-winning {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.horizontal-bar.tie {
+    border-radius: 2px;
 }
 </style>
