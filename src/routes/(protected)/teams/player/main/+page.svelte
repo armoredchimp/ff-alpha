@@ -8,10 +8,18 @@
     import TeamScores from "$lib/TeamScores.svelte";
     import { getLeagueState } from "$lib/stores/league.svelte";
     import { onMount } from "svelte";
-    import { createFormationStructure, resetScores, populateLineup, delay, extractPlayerIds } from "$lib/utils";
-    import { calculateTotalScores, setSelected } from "$lib/utils";
+    import { 
+        createFormationStructure, 
+        resetScores, 
+        populateLineup, 
+        delay, 
+        extractPlayerIds,
+        calculateTotalScores,
+        setSelected,
+        dePopulateTeam
+    } from "$lib/utils";
     import type { Team } from "$lib/types/types";
-	import { dePopulateTeam } from "$lib/utils/formation";
+	
     
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
