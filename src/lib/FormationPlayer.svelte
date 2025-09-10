@@ -181,26 +181,39 @@
     if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
     
     const removedPlayer = currentSlot.player;
-    const subIndex = subSlot;
     
-    // Ensure subs array exists and has enough slots
+    // Ensure subs array exists
     if (!playerTeam.subs) {
-      playerTeam.subs = [];
+        playerTeam.subs = [];
     }
     
-    // Ensure we have at least subIndex + 1 slots
-    while (playerTeam.subs.length <= subIndex) {
-      playerTeam.subs.push(null);
+    // Check if subs is already full (7 players)
+    const subsCount = playerTeam.subs.filter(s => s !== null && s !== undefined).length;
+    
+    if (subsCount < 7) {
+        // Add to subs as before
+        const subIndex = subSlot;
+        
+        // Ensure we have at least subIndex + 1 slots
+        while (playerTeam.subs.length <= subIndex) {
+            playerTeam.subs.push(null);
+        }
+        
+        // Move player to subs
+        playerTeam.subs[subIndex] = removedPlayer;
+    } else {
+        // Subs is full, add to unused instead
+        if (!playerTeam.unused) {
+            playerTeam.unused = [];
+        }
+        playerTeam.unused.push(removedPlayer);
     }
     
     // Update the selected position to null
     if (currentSlot.positionGroup && currentSlot.detailedPosition && 
         currentSlot.playerIndex !== undefined) {
-      playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = null;
+        playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = null;
     }
-    
-    // Move player to subs
-    playerTeam.subs[subIndex] = removedPlayer;
     
     // Update local state
     player = null;
@@ -214,7 +227,7 @@
     
     // Dispatch event
     import.meta.env.SSR || document.dispatchEvent(new CustomEvent('playerSwapped'));
-  }
+}
 
   function findReplacementSlot(replacementPlayer: Player): ReplacementSlot | null {
     if (!replacementPlayer || !replacementPlayer.id) return null;

@@ -361,7 +361,6 @@
       <div class="horizontal-line" style="top: 47.5%;"></div>
       <div class="horizontal-line" style="top: 62.5%;"></div>
       <div class="horizontal-line" style="top: 80%;"></div>
-  
       <div class="vertical-line" style="left: 35%;"></div>
       <div class="vertical-line" style="left: 65%;"></div>
     </div>
@@ -454,7 +453,7 @@
         >
           {#if activeZone === 15}
             {@const displayData = getZoneDisplay(15)}
-            <div class="zone-display-container-left top-left" >
+            <div class="zone-display-container-left" >
                 <ZoneDisplay 
                 fieldPosition={"Left Wing"} 
                 teamPlayers={displayData.teamPlayers.map(tp => tp.player)}
