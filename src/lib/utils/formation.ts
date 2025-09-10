@@ -1,4 +1,5 @@
 import { formationConfig } from "$lib/data/formationConfig";
+import type { Player } from "$lib/types/types";
 import { playersByID } from "$lib/stores/generic.svelte";
 import { resetScores } from "./team";
 import { getFallbackPos } from "$lib/data/fallbackOrder";
@@ -222,6 +223,49 @@ export function hydrateSelected(team: Team): void {
         }
         return player;
     });
+}
+
+
+export function dePopulateTeam(team: Team): void {
+    // Collect all players currently in the selected formation
+    const selectedPlayers: Player[] = [];
+    
+    Object.entries(team.selected).forEach(([group, positions]) => {
+        Object.entries(positions).forEach(([pos, cfg]) => {
+            // Add all non-null players from this position
+            cfg.players.forEach(player => {
+                if (player !== null && player !== undefined) {
+                    selectedPlayers.push(player as Player);
+                }
+            });
+            // Clear the players array after collecting them
+            cfg.players = [];
+        });
+    });
+    
+    // Create a set of existing player IDs to avoid duplicates
+    const existingIds = new Set<number>();
+    team.subs.forEach(p => {
+        if (p) existingIds.add((p as Player).id);
+    });
+    team.unused.forEach(p => {
+        if (p) existingIds.add((p as Player).id);
+    });
+    
+    // Filter out players that are already in subs or unused
+    const newPlayers = selectedPlayers.filter(p => !existingIds.has(p.id));
+    
+    // Fill subs first (up to 7 slots total)
+    newPlayers.forEach(player => {
+        if (team.subs.length < 7) {
+            team.subs.push(player);
+        } else {
+            team.unused.push(player);
+        }
+    });
+    
+    // Reset scores since the lineup has been cleared
+    resetScores(team);
 }
 
 export function setSelected(teams) {

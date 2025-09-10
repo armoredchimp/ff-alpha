@@ -11,6 +11,7 @@
     import { createFormationStructure, resetScores, populateLineup, delay, extractPlayerIds } from "$lib/utils";
     import { calculateTotalScores, setSelected } from "$lib/utils";
     import type { Team } from "$lib/types/types";
+	import { dePopulateTeam } from "$lib/utils/formation";
     
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
@@ -66,8 +67,10 @@
     function formationChange(e: Event): void {
         const target = e.target as HTMLSelectElement;
         playerTeam.formation = target.value;
+        dePopulateTeam(playerTeam)
         resetScores(playerTeam as Team)
         playerTeam.selected = createFormationStructure(playerTeam.formation)
+        console.log('New selected structure:', playerTeam.selected);
         formationKey++;
     }
     

@@ -266,6 +266,19 @@
         return group === 'keepers' ? team.scores.keeper : team.scores[group];
     }
 
+    function hasZoneInFormation(zone, team) {
+        if (!team.selected) return false;
+        for (const group of Object.values(team.selected)) {
+            for (const positionData of Object.values(group)) {
+                if (positionData.zone === zone) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
     // Get zone-specific player count
     function getZonePlayerCount(zone) {
         return getSlotsByZone(zone, team).filter(slot => slot.player).length;
@@ -800,10 +813,12 @@
 
     
 <!-- Zone 15 -->
-{#if getZoneDisplay(15).teamPlayers.length || getZoneDisplay(15).opponentPlayers.length}
+<!-- Zone 15 -->
+{#if base ? hasZoneInFormation(15, team) : (getZoneDisplay(15).teamPlayers.length || getZoneDisplay(15).opponentPlayers.length)}
     <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
         {#if base}
-            {#each getZoneDisplay(15).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(15, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -836,10 +851,11 @@
 {/if}
 
 <!-- Zone 16 -->
-{#if getZoneDisplay(16).teamPlayers.length || getZoneDisplay(16).opponentPlayers.length}
+{#if base ? hasZoneInFormation(16, team) : (getZoneDisplay(16).teamPlayers.length || getZoneDisplay(16).opponentPlayers.length)}
     <div class="zone zone-16" style="z-index: {getZoneZIndex(16)}">
         {#if base}
-            {#each getZoneDisplay(16).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(16, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -872,10 +888,11 @@
 {/if}
 
 <!-- Zone 17 -->
-{#if getZoneDisplay(17).teamPlayers.length || getZoneDisplay(17).opponentPlayers.length}
+{#if base ? hasZoneInFormation(17, team) : (getZoneDisplay(17).teamPlayers.length || getZoneDisplay(17).opponentPlayers.length)}
     <div class="zone zone-17" style="z-index: {getZoneZIndex(17)}">
         {#if base}
-            {#each getZoneDisplay(17).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(17, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -908,10 +925,11 @@
 {/if}
 
 <!-- Zone 12 -->
-{#if getZoneDisplay(12).teamPlayers.length || getZoneDisplay(12).opponentPlayers.length}
+{#if base ? hasZoneInFormation(12, team) : (getZoneDisplay(12).teamPlayers.length || getZoneDisplay(12).opponentPlayers.length)}
     <div class="zone zone-12" style="z-index: {getZoneZIndex(12)}">
         {#if base}
-            {#each getZoneDisplay(12).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(12, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -944,10 +962,11 @@
 {/if}
 
 <!-- Zone 13 -->
-{#if getZoneDisplay(13).teamPlayers.length || getZoneDisplay(13).opponentPlayers.length}
+{#if base ? hasZoneInFormation(13, team) : (getZoneDisplay(13).teamPlayers.length || getZoneDisplay(13).opponentPlayers.length)}
     <div class="zone zone-13" style="z-index: {getZoneZIndex(13)}">
         {#if base}
-            {#each getZoneDisplay(13).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(13, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -980,10 +999,11 @@
 {/if}
 
 <!-- Zone 14 -->
-{#if getZoneDisplay(14).teamPlayers.length || getZoneDisplay(14).opponentPlayers.length}
+{#if base ? hasZoneInFormation(14, team) : (getZoneDisplay(14).teamPlayers.length || getZoneDisplay(14).opponentPlayers.length)}
     <div class="zone zone-14" style="z-index: {getZoneZIndex(14)}">
         {#if base}
-            {#each getZoneDisplay(14).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(14, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1016,10 +1036,11 @@
 {/if}
 
 <!-- Zone 9 -->
-{#if getZoneDisplay(9).teamPlayers.length || getZoneDisplay(9).opponentPlayers.length}
+{#if base ? hasZoneInFormation(9, team) : (getZoneDisplay(9).teamPlayers.length || getZoneDisplay(9).opponentPlayers.length)}
     <div class="zone zone-9" style="z-index: {getZoneZIndex(9)}">
         {#if base}
-            {#each getZoneDisplay(9).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(9, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1052,10 +1073,11 @@
 {/if}
 
 <!-- Zone 10 -->
-{#if getZoneDisplay(10).teamPlayers.length || getZoneDisplay(10).opponentPlayers.length}
+{#if base ? hasZoneInFormation(10, team) : (getZoneDisplay(10).teamPlayers.length || getZoneDisplay(10).opponentPlayers.length)}
     <div class="zone zone-10" style="z-index: {getZoneZIndex(10)}">
         {#if base}
-            {#each getZoneDisplay(10).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(10, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1088,10 +1110,11 @@
 {/if}
 
 <!-- Zone 11 -->
-{#if getZoneDisplay(11).teamPlayers.length || getZoneDisplay(11).opponentPlayers.length}
+{#if base ? hasZoneInFormation(11, team) : (getZoneDisplay(11).teamPlayers.length || getZoneDisplay(11).opponentPlayers.length)}
     <div class="zone zone-11" style="z-index: {getZoneZIndex(11)}">
         {#if base}
-            {#each getZoneDisplay(11).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(11, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1124,10 +1147,11 @@
 {/if}
 
 <!-- Zone 6 -->
-{#if getZoneDisplay(6).teamPlayers.length || getZoneDisplay(6).opponentPlayers.length}
+{#if base ? hasZoneInFormation(6, team) : (getZoneDisplay(6).teamPlayers.length || getZoneDisplay(6).opponentPlayers.length)}
     <div class="zone zone-6" style="z-index: {getZoneZIndex(6)}">
         {#if base}
-            {#each getZoneDisplay(6).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(6, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1160,10 +1184,11 @@
 {/if}
 
 <!-- Zone 7 -->
-{#if getZoneDisplay(7).teamPlayers.length || getZoneDisplay(7).opponentPlayers.length}
+{#if base ? hasZoneInFormation(7, team) : (getZoneDisplay(7).teamPlayers.length || getZoneDisplay(7).opponentPlayers.length)}
     <div class="zone zone-7" style="z-index: {getZoneZIndex(7)}">
         {#if base}
-            {#each getZoneDisplay(7).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(7, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1196,10 +1221,11 @@
 {/if}
 
 <!-- Zone 8 -->
-{#if getZoneDisplay(8).teamPlayers.length || getZoneDisplay(8).opponentPlayers.length}
+{#if base ? hasZoneInFormation(8, team) : (getZoneDisplay(8).teamPlayers.length || getZoneDisplay(8).opponentPlayers.length)}
     <div class="zone zone-8" style="z-index: {getZoneZIndex(8)}">
         {#if base}
-            {#each getZoneDisplay(8).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(8, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1232,10 +1258,11 @@
 {/if}
 
 <!-- Zone 3 -->
-{#if getZoneDisplay(3).teamPlayers.length || getZoneDisplay(3).opponentPlayers.length}
+{#if base ? hasZoneInFormation(3, team) : (getZoneDisplay(3).teamPlayers.length || getZoneDisplay(3).opponentPlayers.length)}
     <div class="zone zone-3" style="z-index: {getZoneZIndex(3)}">
         {#if base}
-            {#each getZoneDisplay(3).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(3, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1268,10 +1295,11 @@
 {/if}
 
 <!-- Zone 4 -->
-{#if getZoneDisplay(4).teamPlayers.length || getZoneDisplay(4).opponentPlayers.length}
+{#if base ? hasZoneInFormation(4, team) : (getZoneDisplay(4).teamPlayers.length || getZoneDisplay(4).opponentPlayers.length)}
     <div class="zone zone-4" style="z-index: {getZoneZIndex(4)}">
         {#if base}
-            {#each getZoneDisplay(4).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(4, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
@@ -1304,15 +1332,16 @@
 {/if}
 
 <!-- Zone 5 -->
-{#if getZoneDisplay(5).teamPlayers.length || getZoneDisplay(5).opponentPlayers.length}
-    <div class="zone zone-5" style="z-index: {getZoneZIndex(5)}">
+{#if base ? hasZoneInFormation(5, team) : (getZoneDisplay(5).teamPlayers.length || getZoneDisplay(4).opponentPlayers.length)}
+    <div class="zone zone-5" style="z-index: {getZoneZIndex(4)}">
         {#if base}
-            {#each getZoneDisplay(5).teamPlayers as slot, i ('team-' + slot.player.id + '-' + i)}
+            {@const slots = getSlotsByZone(5, team)}
+            {#each slots as slot, i (slot.currentPosition + '-' + i)}
                 <FormationPlayer
                     player={slot.player}
                     currentPosition={slot.currentPosition}
                     zone={5}
-                    hide={focusedZone !== 5 && dropdownActive}
+                    hide={focusedZone !== 4 && dropdownActive}
                 />
             {/each}
         {:else}
@@ -1340,7 +1369,6 @@
 {/if}
 
 <!-- Zone 1 -->
-
 {#if getSlotsByZone(1, team).length || getSlotsByZone(1, opponent).length}
     <div class="zone zone-1" style="z-index: {getZoneZIndex(1)}">
         {#if base}
@@ -1567,7 +1595,7 @@
         position: absolute;
         left: 289%;     
         /* top: 50%;        */
-        /* transform: translateY(-30%); */
+        transform: translateY(-30%);
         pointer-events: auto;
         z-index: 1000;
    }

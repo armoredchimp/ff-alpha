@@ -21,6 +21,7 @@
     playerIndex: number;
     player: Player | null;
     sub: boolean;
+    unused: boolean;
   }
 
   let {
@@ -65,6 +66,10 @@
   });
 
   onMount(() => {
+    // console.log('=== FormationPlayer MOUNT ===');
+    // console.log('Position:', currentPosition);
+    // console.log('Player:', player);
+    // console.log('Zone:', zone);
     recalculateSectionScores(playerTeam)
     // Always get eligible positions based on currentPosition
     getEligiblePositions();
@@ -73,6 +78,8 @@
     
     
     currentSlot = getSelectedSlot();
+    // console.log('Initial currentSlot:', currentSlot);
+
     if(player && player.id){
       nationImage = getCountryUrl(player.nationality)
     }
@@ -231,7 +238,8 @@
               detailedPosition: detailedPos,
               playerIndex: i,
               player: currentPlayer as Player,
-              sub: false
+              sub: false,
+              unused: false
             };
           }
         }
@@ -239,62 +247,103 @@
     }
     
     // Check subs
+   console.log('Checking subs array:', playerTeam.subs);
     if (playerTeam.subs && playerTeam.subs.length > 0) {
       for (let i = 0; i < playerTeam.subs.length; i++){
         const sub = playerTeam.subs[i];
+        console.log(`Sub at index ${i}:`, sub);
         if (sub && typeof sub !== 'number' && 
             'id' in sub && sub.id === replacementPlayer.id) {
+          console.log('Found player in subs at index:', i);
           return {
             playerIndex: i,
             player: sub as Player,
-            sub: true
+            sub: true,
+            unused: false
           };
         }
       }
     }
     
+    if (playerTeam.unused && playerTeam.unused.length > 0) {
+        for (let i = 0; i < playerTeam.unused.length; i++) {
+            const unusedPlayer = playerTeam.unused[i];
+            if (unusedPlayer && typeof unusedPlayer !== 'number' && 
+                'id' in unusedPlayer && unusedPlayer.id === replacementPlayer.id) {
+                return {
+                    playerIndex: i,
+                    player: unusedPlayer as Player,
+                    sub: false,  
+                    unused: true
+                };
+            }
+        }
+    }
+
     return null;
   }
 
   function replacePlayer(replacementPlayer: Player): void {
     if (!replacementPlayer) return;
 
+    console.log('=== REPLACE PLAYER DEBUG ===');
+    console.log('Current player:', player);
+    console.log('Current position:', currentPosition);
+    console.log('Current slot before logic:', currentSlot);
+    console.log('Team selected structure:', playerTeam.selected);
+
+
     // If current slot is empty, we need to find where to place the replacement
     if (!currentSlot || !currentSlot.path || !player) {
-      // Find the current component's position in the formation
-      for (const group of positionGroups) {
-        if (!playerTeam.selected[group]) continue;
+        console.log('Entering empty slot logic...');
         
-        const detailedPositions = Object.keys(playerTeam.selected[group]);
-        for (const detailedPos of detailedPositions) {
-          if (detailedPos === currentPosition) {
-            const positionData = playerTeam.selected[group][detailedPos];
-            if (!positionData || !positionData.players) continue;
+        // Find the current component's position in the formation
+        for (const group of positionGroups) {
+            if (!playerTeam.selected[group]) continue;
             
-            // Find the first null slot in this position
-            for (let i = 0; i < positionData.players.length; i++) {
-              if (!positionData.players[i]) {
-                currentSlot = {
-                  positionGroup: group,
-                  detailedPosition: detailedPos,
-                  playerIndex: i,
-                  path: ['selected', group, detailedPos, 'players', i.toString()],
-                  player: null
-                };
-                break;
-              }
+            console.log(`Checking group: ${group}`);
+            const detailedPositions = Object.keys(playerTeam.selected[group]);
+            console.log(`Positions in ${group}:`, detailedPositions);
+            
+            for (const detailedPos of detailedPositions) {
+                console.log(`Comparing ${detailedPos} === ${currentPosition}`);
+                
+                if (detailedPos === currentPosition) {
+                    console.log('MATCH FOUND!');
+                    const positionData = playerTeam.selected[group][detailedPos];
+                    console.log('Position data:', positionData);
+                    
+                    if (!positionData || !positionData.players) continue;
+                    
+                    // Find the first null slot in this position
+                    for (let i = 0; i < positionData.max; i++) {
+                        console.log(`Checking slot ${i}:`, positionData.players[i]);
+                        if (!positionData.players[i]) {
+                            console.log(`Found empty slot at index ${i}`);
+                            currentSlot = {
+                                positionGroup: group,
+                                detailedPosition: detailedPos,
+                                playerIndex: i,
+                                path: ['selected', group, detailedPos, 'players', i.toString()],
+                                player: null
+                            };
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
-            break;
-          }
+            if (currentSlot.path) break;
         }
-        if (currentSlot.path) break;
-      }
+        
+        console.log('Current slot after search:', currentSlot);
     }
 
     if (!currentSlot || !currentSlot.path || 
         !currentSlot.positionGroup || !currentSlot.detailedPosition || 
         currentSlot.playerIndex === undefined) {
       console.error('Could not find valid slot for replacement');
+      console.error('Final currentSlot state:', currentSlot);
       return;
     }
 
@@ -332,6 +381,23 @@
       // Perform the swap
       playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = swapPlayer;
       playerTeam.selected[replacementSlot.positionGroup][replacementSlot.detailedPosition].players[replacementSlot.playerIndex] = currentPlayer;
+      
+      // Update local state
+      player = replacementPlayer;
+      currentSlot.player = replacementPlayer;
+    } else if (replacementSlot.unused){
+      const unusedPlayer = playerTeam.unused[replacementSlot.playerIndex];
+      
+      // Place unused player in the current position
+      playerTeam.selected[currentSlot.positionGroup][currentSlot.detailedPosition].players[currentSlot.playerIndex] = unusedPlayer;
+      
+      if (currentPlayer) {
+          // If there was a player in the position, move them to unused
+          playerTeam.unused[replacementSlot.playerIndex] = currentPlayer;
+      } else {
+          // If position was empty, remove from unused array
+          playerTeam.unused.splice(replacementSlot.playerIndex, 1);
+      }
       
       // Update local state
       player = replacementPlayer;
