@@ -364,7 +364,7 @@
       <div class="vertical-line" style="left: 35%;"></div>
       <div class="vertical-line" style="left: 65%;"></div>
     </div>
-
+    {/if}
     {#if !base}
         <!-- Zone overlays for strength visualization -->
         <div class="zone-overlays">
@@ -865,7 +865,7 @@
         {/if}
       </div>
     {/if}
-    {/if}
+    
 
 
     
