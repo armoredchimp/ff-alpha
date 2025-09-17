@@ -9,7 +9,7 @@
     let {
       team = {} as Team,
       opponent = {} as Team,
-      viewOpponent = true,
+      viewOpponent = false,
       opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view,
       tabDisplay = 0, // 0 = Positional groups // 2 = Individual zones (to be created)
       base = true,
@@ -440,7 +440,65 @@
           {/if}
         </div>
       </div>
-    {:else}
+    {:else if !base && tabDisplay === 0}
+      <div class="hover-zones">
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('attackers')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 0%; height: 32.5%;"
+        >
+          {#if activeTab === 'attackers'}
+            <div class="tab-container">
+              <FormationTab group="attackers" scores={team.scores.attackers} playerCount={playerCount('attackers')}/>
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('midfielders')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 32.5%; height: 30%;"
+        >
+          {#if activeTab === 'midfielders'}
+            <div class="tab-container">
+              <FormationTab group="midfielders" scores={team.scores.midfielders} playerCount={playerCount('midfielders')}/>
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('defenders')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 62.5%; height: 17.5%;"
+        >
+          {#if activeTab === 'defenders'}
+            <div class="tab-container">
+              <FormationTab group="defenders" scores={team.scores.defenders} playerCount={playerCount('defenders')}/>
+            </div>
+          {/if}
+        </div>
+  
+        <div
+          role="presentation"
+          onmouseenter={()=> setActiveTab('keepers')}
+          onmouseleave={()=> setActiveTab(null)}
+          class="hover-zone"
+          style="top: 80%; height: 20%;"
+        >
+          {#if activeTab === 'keepers'}
+            <div class="tab-container">
+              <FormationTab group="keepers" scores={team.scores.keeper} playerCount={playerCount('keepers')}/>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {:else if !base && tabDisplay === 1}
       <!-- Zone-based hover zones (new behavior) -->
       <div class="hover-zones-detailed">
         <!-- Row 6 (Top): Zones 15, 16, 17 -->

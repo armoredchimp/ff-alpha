@@ -3,12 +3,20 @@
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     
     let opponentMode = $state(0); // 0 = Comparison, 1 = Matchup
+    let tabDisplay = $state(0); //0 = Pos Groups, 1 = Zonal
 </script>
 
 <div class="formation-container">
     <div class="controls">
         <label class="mode-toggle">
             <span>View Mode:</span>
+            <select bind:value={tabDisplay}>
+                <option value={0}>Positional Groups</option>
+                <option value={1}>Zones</option>
+            </select>
+        </label>
+        <label class="mode-toggle">
+            <span>Opponent View:</span>
             <select bind:value={opponentMode}>
                 <option value={0}>Comparison View</option>
                 <option value={1}>Matchup View</option>
@@ -16,7 +24,7 @@
         </label>
     </div>
     
-    {#key opponentMode}
+    {#key opponentMode || tabDisplay}
         <div class="formation-wrapper">
             <Formation 
                 team={playerTeam} 
@@ -24,6 +32,7 @@
                 opponent={teams.team2} 
                 viewOpponent={true} 
                 {opponentMode}
+                {tabDisplay}
             />
         </div>
     {/key}
@@ -42,6 +51,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        gap: 5rem;
         padding: 1rem;
         background: #f5f5f5;
         border-radius: 8px;
