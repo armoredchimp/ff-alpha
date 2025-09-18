@@ -1,4 +1,4 @@
-import { supabase, supabaseScaling } from '$lib/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
 import { getLeagueId } from '$lib/server/auth';
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';

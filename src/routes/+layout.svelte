@@ -2,13 +2,12 @@
 	import axios from "axios";
     import '../app.css';
     import { Amplify } from 'aws-amplify';
-    import amplifyConfig from "$lib/api/aws/amplifyConfig";
+    import amplifyConfig from "$lib/client/aws/amplifyConfig";
 	import { onMount } from "svelte";
     import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
-    import { supabase } from "$lib/supabase/supaClient";
+    import { supabase } from "$lib/client/supabase/supaClient";
     import { delay, calculateAge } from "$lib/utils";
-    import { getPlayerPicture } from "../lib/api/sportsmonk/utils/apiUtils.svelte";
     import { getCountry } from '$lib/data/countries';
     import { allPlayers, outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
@@ -34,6 +33,17 @@
     function capScore(score) {
         return Math.min(score, 5000);
     }
+
+    async function getPlayerPicture(id) {
+    try {
+        const lad = await axios.get(`/api/players/${id}`);
+        if(lad){
+            return lad.data.data.image_path;
+        }
+    } catch(err){
+        console.error(err)
+    }
+}
 
     async function checkUser(){
         try{

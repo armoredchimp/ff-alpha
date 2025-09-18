@@ -1,4 +1,4 @@
-import { supabaseScaling } from '$lib/supabase/supaClient';
+import { supabaseScaling } from '$lib/client/supabase/supaClient';
 import { fail, redirect } from '@sveltejs/kit';
 import { updateSession, getSession } from '$lib/server/auth';
 import type { Actions } from './$types';

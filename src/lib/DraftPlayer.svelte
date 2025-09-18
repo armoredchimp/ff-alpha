@@ -1,6 +1,6 @@
 <script>
     import axios from "axios";
-    import { supabase } from "./supabase/supaClient";
+    import { supabase } from "./client/supabase/supaClient";
     import { draft } from "./stores/draft.svelte";
     import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
     import { delay } from "./utils";
