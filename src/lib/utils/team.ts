@@ -121,3 +121,29 @@ export function recalculateSectionScores(team: Team): void {
         }
     });
 }
+
+export function getPlayersFromGroup(team: Team, group: string): Player[] {
+    const players: Player[] = [];
+    
+    if (!team.selected || !team.selected[group]) {
+        return players;
+    }
+    
+    // Iterate through all positions in the group (e.g., 'LW', 'ST', 'RW' for attackers)
+    Object.values(team.selected[group]).forEach((positionData: unknown) => {
+        // Type guard to check if positionData has the expected structure
+        if (positionData && typeof positionData === 'object' && 'players' in positionData) {
+            const posData = positionData as PositionData;
+            if (posData.players && Array.isArray(posData.players)) {
+                posData.players.forEach(player => {
+                    // Only add actual Player objects (not nulls or numbers)
+                    if (player && typeof player !== 'number' && 'player_name' in player) {
+                        players.push(player as Player);
+                    }
+                });
+            }
+        }
+    });
+    
+    return players;
+}

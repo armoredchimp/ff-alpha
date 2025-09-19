@@ -4,6 +4,7 @@
     import type { Team } from "$lib/types/types";
     import PlayerMini from "./PlayerMini.svelte";
     import ZoneDisplay from "./ZoneDisplay.svelte";
+    import PosGroupDisplay from "./PosGroupDisplay.svelte";
     import { teams } from "./stores/teams.svelte";
 
     let {
@@ -39,17 +40,17 @@
         4: 16,   // CB vs ST
         5: 15,   // RB vs LW
         
-        6: 14,   // LM vs RF
-        7: 13,   // CM vs CF
-        8: 12,   // RM vs LF
+        6: 14,   
+        7: 13,   
+        8: 12,   
         
-        9: 11,   // LAM vs RAM
-        10: 10,  // CAM vs CAM (mirrors)
-        11: 9,   // RAM vs LAM
+        9: 11,   
+        10: 10,  
+        11: 9,   
         
-        12: 8,   // LF vs RM
-        13: 7,   // CF vs CM
-        14: 6,   // RF vs LM
+        12: 8,   
+        13: 7,   
+        14: 6,   
         
         15: 5,   // LW vs RB
         16: 4,   // ST vs CB
@@ -440,64 +441,66 @@
           {/if}
         </div>
       </div>
-    {:else if !base && tabDisplay === 0}
-      <div class="hover-zones">
+
+
+   {:else if !base && tabDisplay === 0}
+    <div class="hover-zones">
         <div
-          role="presentation"
-          onmouseenter={()=> setActiveTab('attackers')}
-          onmouseleave={()=> setActiveTab(null)}
-          class="hover-zone"
-          style="top: 0%; height: 32.5%;"
+            role="presentation"
+            onmouseenter={()=> setActiveTab('attackers')}
+            onmouseleave={()=> setActiveTab(null)}
+            class="hover-zone"
+            style="top: 0%; height: 32.5%;"
         >
-          {#if activeTab === 'attackers'}
-            <div class="tab-container">
-              <FormationTab group="attackers" scores={team.scores.attackers} playerCount={playerCount('attackers')}/>
-            </div>
-          {/if}
+            {#if activeTab === 'attackers'}
+                <div class="tab-container">
+                    <PosGroupDisplay group="attackers" {team} opponentTeam={opponent} {opponentMode}/>
+                </div>
+            {/if}
         </div>
-  
+
         <div
-          role="presentation"
-          onmouseenter={()=> setActiveTab('midfielders')}
-          onmouseleave={()=> setActiveTab(null)}
-          class="hover-zone"
-          style="top: 32.5%; height: 30%;"
+            role="presentation"
+            onmouseenter={()=> setActiveTab('midfielders')}
+            onmouseleave={()=> setActiveTab(null)}
+            class="hover-zone"
+            style="top: 32.5%; height: 30%;"
         >
-          {#if activeTab === 'midfielders'}
-            <div class="tab-container">
-              <FormationTab group="midfielders" scores={team.scores.midfielders} playerCount={playerCount('midfielders')}/>
-            </div>
-          {/if}
+            {#if activeTab === 'midfielders'}
+                <div class="tab-container">
+                    <PosGroupDisplay group="midfielders" {team} opponentTeam={opponent} {opponentMode}/>
+                </div>
+            {/if}
         </div>
-  
+
         <div
-          role="presentation"
-          onmouseenter={()=> setActiveTab('defenders')}
-          onmouseleave={()=> setActiveTab(null)}
-          class="hover-zone"
-          style="top: 62.5%; height: 17.5%;"
+            role="presentation"
+            onmouseenter={()=> setActiveTab('defenders')}
+            onmouseleave={()=> setActiveTab(null)}
+            class="hover-zone"
+            style="top: 62.5%; height: 17.5%;"
         >
-          {#if activeTab === 'defenders'}
-            <div class="tab-container">
-              <FormationTab group="defenders" scores={team.scores.defenders} playerCount={playerCount('defenders')}/>
-            </div>
-          {/if}
+            {#if activeTab === 'defenders'}
+                <div class="tab-container">
+                    <PosGroupDisplay group="defenders" {team} opponentTeam={opponent} {opponentMode}/>
+                </div>
+            {/if}
         </div>
-  
+
         <div
-          role="presentation"
-          onmouseenter={()=> setActiveTab('keepers')}
-          onmouseleave={()=> setActiveTab(null)}
-          class="hover-zone"
-          style="top: 80%; height: 20%;"
+            role="presentation"
+            onmouseenter={()=> setActiveTab('keepers')}
+            onmouseleave={()=> setActiveTab(null)}
+            class="hover-zone"
+            style="top: 80%; height: 20%;"
         >
-          {#if activeTab === 'keepers'}
-            <div class="tab-container">
-              <FormationTab group="keepers" scores={team.scores.keeper} playerCount={playerCount('keepers')}/>
-            </div>
-          {/if}
+            {#if activeTab === 'keepers'}
+                <div class="tab-container">
+                    <PosGroupDisplay group="keepers" {team} opponentTeam={opponent} {opponentMode}/>
+                </div>
+            {/if}
         </div>
-      </div>
+    </div>
     {:else if !base && tabDisplay === 1}
       <!-- Zone-based hover zones (new behavior) -->
       <div class="hover-zones-detailed">
