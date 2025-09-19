@@ -62,7 +62,7 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
             console.log('Deleted team_players for teams:', teamIdsToUpdate);
             
         } else {
-            // FULL UPDATE: Replace all teams (existing behavior)
+            // FULL UPDATE: Replace all teams
             console.log('Performing full update - replacing all teams');
             
             // Delete all existing team_players for this league

@@ -41,6 +41,9 @@
     const scoreDifferences = $derived(calculateScoreDifferences());
 
     function calculateTeamScores(players: Player[]) {
+        // Calculate dilution factor based on number of players
+        const dilutionFactor = players.length === 2 ? 0.9 : players.length >= 3 ? 0.8 : 1;
+        
         if (isGoalkeeper) {
             const scores = {
                 total: 0,
@@ -53,6 +56,11 @@
                 scores.passing += player.passing_score || 0;
                 scores.keeper += player.keeper_score || 0;
             });
+
+            // Apply dilution factor
+            scores.total *= dilutionFactor;
+            scores.passing *= dilutionFactor;
+            scores.keeper *= dilutionFactor;
 
             return scores;
         } else {
@@ -73,6 +81,14 @@
                 scores.possession += player.possession_score || 0;
                 scores.defensive += player.defensive_score || 0;
             });
+
+            // Apply dilution factor
+            scores.total *= dilutionFactor;
+            scores.passing *= dilutionFactor;
+            scores.finishing *= dilutionFactor;
+            scores.attacking *= dilutionFactor;
+            scores.possession *= dilutionFactor;
+            scores.defensive *= dilutionFactor;
 
             return scores;
         }
@@ -170,121 +186,94 @@
             {/if}
         </div>
 
-  
-        {#if hasPlayers}
-            <div class="score-comparison">
-                {#if teamPlayers.length > 0}
-                    <!-- Team Bar Chart -->
-                    <div class="chart-container">
-                        <h3 class="chart-title">{teamName}</h3>
-                        <div class="bars-wrapper">
-                            {#each Object.entries(teamScores) as [key, value]}
-                                <div class="bar-group">
-                                    <div class="bar-column">
-                                        <div 
-                                            class="bar"
-                                            style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
-                                        >
-                                            <span class="bar-value">{Math.round(value)}</span>
-                                        </div>
-                                    </div>
-                                    <span class="bar-label">{scoreConfig[key].label}</span>
+        {#if hasBothTeams}
+            <!-- Only show comparison chart when both teams present -->
+            <div class="comparison-chart">
+                <div class="chart-header">
+                    <span class="team-label">{teamName}</span>
+                    <span class="opponent-label">{opponentName}</span>
+                </div>
+                
+                <div class="comparison-bars">
+                    {#each Object.entries(scoreDifferences) as [key, data]}
+                        <div class="comparison-row">
+                            <span class="metric-label">{scoreConfig[key].label}</span>
+                            
+                            <div class="bar-container">
+                                <!-- Team side score -->
+                                <div class="team-score">
+                                    {Math.round(data.teamValue)}
                                 </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-
-                {#if opponentPlayers.length > 0}
-                    <!-- Opponent Bar Chart -->
-                    <div class="chart-container">
-                        <h3 class="chart-title">{opponentName}</h3>
-                        <div class="bars-wrapper">
-                            {#each Object.entries(opponentScores) as [key, value]}
-                                <div class="bar-group">
-                                    <div class="bar-column">
-                                        <div 
-                                            class="bar"
-                                            style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
-                                        >
-                                            <span class="bar-value">{Math.round(value)}</span>
-                                        </div>
-                                    </div>
-                                    <span class="bar-label">{scoreConfig[key].label}</span>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-            </div>
-
-            {#if hasBothTeams}
-                <!-- Comparison Chart -->
-                <div class="comparison-chart">
-                    <div class="chart-header">
-                        <span class="team-label">{teamName}</span>
-                        <span class="opponent-label">{opponentName}</span>
-                    </div>
-                    
-                    <div class="comparison-bars">
-                        {#each Object.entries(scoreDifferences) as [key, data]}
-                            <div class="comparison-row">
-                                <span class="metric-label">{scoreConfig[key].label}</span>
                                 
-                                <div class="bar-container">
-                                    <!-- Team side score -->
-                                    <div class="team-score">
-                                        {Math.round(data.teamValue)}
-                                    </div>
+                                <!-- Horizontal bar wrapper -->
+                                <div class="horizontal-bar-wrapper">
+                                    <div class="horizontal-bar-background"></div>
+                                    <div class="center-line"></div>
                                     
-                                    <!-- Horizontal bar wrapper -->
-                                    <div class="horizontal-bar-wrapper">
-                                        <div class="horizontal-bar-background"></div>
-                                        <div class="center-line"></div>
-                                        
-                                        {#if data.winner === 'team'}
-                                            <!-- Bar extends to the left (team winning) -->
-                                            <div 
-                                                class="horizontal-bar team-winning"
-                                                style="
-                                                    left: {50 - data.percentage}%;
-                                                    right: 50%;
-                                                    background-color: #3b82f6;
-                                                "
-                                            ></div>
-                                        {:else if data.winner === 'opponent'}
-                                            <!-- Bar extends to the right (opponent winning) -->
-                                            <div 
-                                                class="horizontal-bar opponent-winning"
-                                                style="
-                                                    left: 50%;
-                                                    right: {50 - data.percentage}%;
-                                                    background-color: #ef4444;
-                                                "
-                                            ></div>
-                                        {:else}
-                                            <!-- Tie - just show center line -->
-                                            <div 
-                                                class="horizontal-bar tie"
-                                                style="
-                                                    left: 49.5%;
-                                                    right: 49.5%;
-                                                    background-color: #9ca3af;
-                                                "
-                                            ></div>
-                                        {/if}
-                                    </div>
-                                    
-                                    <!-- Opponent side score -->
-                                    <div class="opponent-score">
-                                        {Math.round(data.opponentValue)}
-                                    </div>
+                                    {#if data.winner === 'team'}
+                                        <!-- Bar extends to the left (team winning) -->
+                                        <div 
+                                            class="horizontal-bar team-winning"
+                                            style="
+                                                left: {50 - data.percentage}%;
+                                                right: 50%;
+                                                background-color: #3b82f6;
+                                            "
+                                        ></div>
+                                    {:else if data.winner === 'opponent'}
+                                        <!-- Bar extends to the right (opponent winning) -->
+                                        <div 
+                                            class="horizontal-bar opponent-winning"
+                                            style="
+                                                left: 50%;
+                                                right: {50 - data.percentage}%;
+                                                background-color: #ef4444;
+                                            "
+                                        ></div>
+                                    {:else}
+                                        <!-- Tie - just show center line -->
+                                        <div 
+                                            class="horizontal-bar tie"
+                                            style="
+                                                left: 49.5%;
+                                                right: 49.5%;
+                                                background-color: #9ca3af;
+                                            "
+                                        ></div>
+                                    {/if}
+                                </div>
+                                
+                                <!-- Opponent side score -->
+                                <div class="opponent-score">
+                                    {Math.round(data.opponentValue)}
                                 </div>
                             </div>
-                        {/each}
-                    </div>
+                        </div>
+                    {/each}
                 </div>
-            {/if}
+            </div>
+        {:else if hasPlayers}
+            <!-- Single team bar chart - compact version -->
+            <div class="single-team-chart">
+                <h3 class="chart-title">
+                    {teamPlayers.length > 0 ? teamName : opponentName}
+                </h3>
+                <div class="compact-bars-wrapper">
+                    {#each Object.entries(teamPlayers.length > 0 ? teamScores : opponentScores) as [key, value]}
+                        <div class="compact-bar-group">
+                            <div class="compact-bar-column">
+                                <div 
+                                    class="compact-bar"
+                                    style="height: {getBarHeight(value)}%; background-color: {scoreConfig[key].color};"
+                                >
+                                    <span class="compact-bar-value">{Math.round(value)}</span>
+                                </div>
+                            </div>
+                            <span class="compact-bar-label">{scoreConfig[key].label}</span>
+                        </div>
+                    {/each}
+                </div>
+            </div>
         {/if}
     {/if}
 </div>
@@ -355,79 +344,72 @@
     white-space: nowrap;
 }
 
-/* Original Bar Chart Styles */
-.score-comparison {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-}
-
-.chart-container {
-    flex: 1;
+/* Single Team Compact Bar Chart */
+.single-team-chart {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .chart-title {
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #374151;
     margin: 0;
 }
 
-.bars-wrapper {
+.compact-bars-wrapper {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: flex-end;
-    height: 120px;
-    padding: 0.3rem;
+    gap: 0.75rem;
+    height: 140px;
+    padding: 0.75rem;
     background: #f9fafb;
     border-radius: 0.375rem;
 }
 
-.bar-group {
+.compact-bar-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    flex: 1;
+    gap: 0.25rem;
 }
 
-.bar-column {
-    height: 100px;
+.compact-bar-column {
+    height: 120px;
     display: flex;
     align-items: flex-end;
-    width: 100%;
 }
 
-.bar {
-    width: 20px;
-    margin: 0 auto;
-    border-radius: 0.15rem 0.15rem 0 0;
+.compact-bar {
+    width: 45px;
+    border-radius: 0.25rem 0.25rem 0 0;
     transition: height 0.3s ease;
     position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 0.1rem;
+    padding-top: 0.25rem;
 }
 
-.bar-value {
+.compact-bar-value {
     color: white;
-    font-size: 0.5rem;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 
-.bar-label {
-    font-size: 0.5rem;
+.compact-bar-label {
+    font-size: 0.6rem;
     color: #6b7280;
     text-align: center;
     line-height: 1;
+    max-width: 45px;
 }
 
-/* New Comparison Chart Styles */
+/* Comparison Chart Styles */
 .comparison-chart {
     display: flex;
     flex-direction: column;

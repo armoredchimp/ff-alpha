@@ -4,7 +4,7 @@
     
     let opponentMode = $state(0); // 0 = Comparison, 1 = Matchup
     let tabDisplay = $state(0); //0 = Pos Groups, 1 = Zonal
-    
+   
 </script>
 
 <div class="formation-container">
@@ -34,7 +34,7 @@
                 viewOpponent={true} 
                 {opponentMode}
                 {tabDisplay}
-                zonesVisible={tabDisplay === 1 ? true : false}
+                zonesVisible={tabDisplay === 1}
             />
         </div>
     {/key}

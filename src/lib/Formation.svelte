@@ -21,7 +21,7 @@
     let focusedZone = $state(null) 
     let previousFocusedZone = $state(null)
     let dropdownActive = $state(false) 
-    let zoneData = $state({});
+    let zoneData = $derived(initializeZoneData());
    
     // Zone to group mapping for zone-based highlighting
     const zoneToGroup = {
@@ -79,7 +79,7 @@
         17: [14, 16]
     };
 
-    zoneData = initializeZoneData()
+    // zoneData = initializeZoneData()
 
 
   
@@ -867,9 +867,6 @@
     {/if}
     
 
-
-    
-<!-- Zone 15 -->
 <!-- Zone 15 -->
 {#if base ? hasZoneInFormation(15, team) : (getZoneDisplay(15).teamPlayers.length || getZoneDisplay(15).opponentPlayers.length)}
     <div class="zone zone-15" style="z-index: {getZoneZIndex(15)}">
