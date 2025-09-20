@@ -5,6 +5,7 @@
     import PlayerMini from "./PlayerMini.svelte";
     import ZoneDisplay from "./ZoneDisplay.svelte";
     import PosGroupDisplay from "./PosGroupDisplay.svelte";
+    import { calculateGroupMatchup, getGroupStrengthColor } from "./utils/team";
     import { teams } from "./stores/teams.svelte";
 
     let {
@@ -23,7 +24,14 @@
     let previousFocusedZone = $state(null)
     let dropdownActive = $state(false) 
     let zoneData = $derived(initializeZoneData());
-   
+
+    const groupStrengths = $derived({
+        attackers: calculateGroupMatchup(team, opponent, 'attackers', opponentMode),
+        midfielders: calculateGroupMatchup(team, opponent, 'midfielders', opponentMode),
+        defenders: calculateGroupMatchup(team, opponent, 'defenders', opponentMode),
+        keepers: calculateGroupMatchup(team, opponent, 'keepers', opponentMode)
+    });
+
     // Zone to group mapping for zone-based highlighting
     const zoneToGroup = {
         15: 'attackers', 16: 'attackers', 17: 'attackers',
@@ -450,7 +458,7 @@
             onmouseenter={()=> setActiveTab('attackers')}
             onmouseleave={()=> setActiveTab(null)}
             class="hover-zone"
-            style="top: 0%; height: 32.5%;"
+            style="top: 0%; height: 32.5%; background-color: {getGroupStrengthColor(groupStrengths.attackers)};"
         >
             {#if activeTab === 'attackers'}
                 <div class="tab-container">
@@ -464,7 +472,7 @@
             onmouseenter={()=> setActiveTab('midfielders')}
             onmouseleave={()=> setActiveTab(null)}
             class="hover-zone"
-            style="top: 32.5%; height: 30%;"
+            style="top: 32.5%; height: 30%; background-color: {getGroupStrengthColor(groupStrengths.midfielders)};"
         >
             {#if activeTab === 'midfielders'}
                 <div class="tab-container">
@@ -478,7 +486,7 @@
             onmouseenter={()=> setActiveTab('defenders')}
             onmouseleave={()=> setActiveTab(null)}
             class="hover-zone"
-            style="top: 62.5%; height: 17.5%;"
+            style="top: 62.5%; height: 17.5%; background-color: {getGroupStrengthColor(groupStrengths.defenders)};"
         >
             {#if activeTab === 'defenders'}
                 <div class="tab-container">
@@ -492,7 +500,7 @@
             onmouseenter={()=> setActiveTab('keepers')}
             onmouseleave={()=> setActiveTab(null)}
             class="hover-zone"
-            style="top: 80%; height: 20%;"
+            style="top: 80%; height: 20%; background-color: {getGroupStrengthColor(groupStrengths.keepers)};"
         >
             {#if activeTab === 'keepers'}
                 <div class="tab-container">
@@ -1590,7 +1598,7 @@
         position: absolute;
         left: 0;
         width: 100%;
-        background-color: transparent;
+        /* background-color: transparent; */
         pointer-events: auto;
         transition: background-color 0.25s ease;
         overflow: visible;
@@ -1598,9 +1606,11 @@
  
     .hover-zone:hover {
         background-color: rgba(255, 255, 255, 0.1);
+        filter: brightness(1.1);
     }
+
     /* Zone-based hover zones (detailed) */
-   .hover-zones-detailed {
+    .hover-zones-detailed {
        position: absolute;
        top: 0; left: 0;
        width: 100%; height: 100%;

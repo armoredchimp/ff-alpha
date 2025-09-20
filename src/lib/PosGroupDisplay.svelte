@@ -1,8 +1,14 @@
 <script lang="ts">
     import type { Team } from "./types/types";
     import { playerLastName } from "./utils/common";
-    import { getPlayersFromGroup } from "./utils/team";
-    import { recalculateSectionScores } from "./utils/team";
+    import { 
+        getPlayersFromGroup,
+        recalculateSectionScores,
+        getDilutionFactor,
+        getGroupScoresWithDilution,
+        getOpponentGroup
+    } from "./utils/team";
+   
    
     let {
         group = '',
@@ -18,27 +24,6 @@
     
     recalculateSectionScores(opponentTeam);
 
-    // Determine which opponent group to display based on opponentMode
-    function getOpponentGroup(group: string, mode: number): string | null {
-        if (mode === 0) {
-            return group; // Comparison mode - same group
-        } else {
-            // Matchup mode
-            switch(group) {
-                case 'keepers':
-                    return null; // Don't show anything for keepers in matchup mode
-                case 'attackers':
-                    return 'defenders'; // Attackers vs Defenders
-                case 'defenders':
-                    return 'attackers'; // Defenders vs Attackers
-                case 'midfielders':
-                    return 'midfielders'; // Midfielders vs Midfielders
-                default:
-                    return group;
-            }
-        }
-    }
-
     const opponentGroupToDisplay = $derived(getOpponentGroup(group, opponentMode));
 
     // Get players for each team from the group
@@ -46,12 +31,6 @@
     const opponentPlayers = $derived(
         opponentGroupToDisplay ? getPlayersFromGroup(opponentTeam, opponentGroupToDisplay) : []
     );
-
-    // Calculate dilution factor based on player count
-    function getDilutionFactor(playerCount: number): number {
-        if (playerCount <= 1) return 1;
-        return Math.max(0.1, 1 - (playerCount - 1) * 0.1);
-    }
 
     // Get the appropriate scores for the group with dilution applied
     const teamScores = $derived(getGroupScoresWithDilution(team, group, teamPlayers.length));
@@ -67,30 +46,6 @@
     
     // Calculate score differences for horizontal bars
     const scoreDifferences = $derived(calculateScoreDifferences());
-
-    function getGroupScoresWithDilution(team: Team, group: string, playerCount: number) {
-        if (!team.scores) return {};
-        
-        const dilutionFactor = getDilutionFactor(playerCount);
-        
-        // Map the group name to the correct scores object
-        const groupMap: Record<string, any> = {
-            'attackers': team.scores.attackers,
-            'midfielders': team.scores.midfielders,
-            'defenders': team.scores.defenders,
-            'keepers': team.scores.keeper
-        };
-        
-        const baseScores = groupMap[group] || {};
-        const dilutedScores: Record<string, number> = {};
-        
-        // Apply dilution factor to each score
-        Object.keys(baseScores).forEach(key => {
-            dilutedScores[key] = baseScores[key] * dilutionFactor;
-        });
-        
-        return dilutedScores;
-    }
 
     function calculateScoreDifferences() {
         const differences: Record<string, { 

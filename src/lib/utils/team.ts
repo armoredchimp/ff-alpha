@@ -147,3 +147,84 @@ export function getPlayersFromGroup(team: Team, group: string): Player[] {
     
     return players;
 }
+
+export function getDilutionFactor(playerCount) {
+    if (playerCount <= 1) return 1;
+    return Math.max(0.1, 1 - (playerCount - 1) * 0.1);
+}
+
+export function getGroupScoresWithDilution(team, group, playerCount) {
+    if (!team.scores) return {};
+    
+    const dilutionFactor = getDilutionFactor(playerCount);
+    
+    const groupMap = {
+        'attackers': team.scores.attackers,
+        'midfielders': team.scores.midfielders,
+        'defenders': team.scores.defenders,
+        'keepers': team.scores.keeper
+    };
+    
+    const baseScores = groupMap[group] || {};
+    const dilutedScores = {};
+    
+    Object.keys(baseScores).forEach(key => {
+        dilutedScores[key] = baseScores[key] * dilutionFactor;
+    });
+    
+    return dilutedScores;
+}
+
+export function calculateGroupMatchup(team, opponent, group, opponentMode) {
+    const opponentGroup = getOpponentGroup(group, opponentMode);
+    if (!opponentGroup) return null;
+    
+    const teamPlayers = getPlayersFromGroup(team, group);
+    const opponentPlayers = getPlayersFromGroup(opponent, opponentGroup);
+    
+    const teamScores = getGroupScoresWithDilution(team, group, teamPlayers.length);
+    const opponentScores = getGroupScoresWithDilution(opponent, opponentGroup, opponentPlayers.length);
+    
+    // Calculate total difference for background color
+    let totalDifference = 0;
+    let scoreCount = 0;
+    
+    Object.keys(teamScores).forEach(key => {
+        const teamValue = teamScores[key] || 0;
+        const opponentValue = opponentScores[key] || 0;
+        totalDifference += (teamValue - opponentValue);
+        scoreCount++;
+    });
+    
+    return scoreCount > 0 ? totalDifference / scoreCount : 0;
+}
+
+export function getOpponentGroup(group, mode) {
+    if (mode === 0) {
+        return group;
+    } else {
+        switch(group) {
+            case 'keepers':
+                return null;
+            case 'attackers':
+                return 'defenders';
+            case 'defenders':
+                return 'attackers';
+            case 'midfielders':
+                return 'midfielders';
+            default:
+                return group;
+        }
+    }
+}
+
+export function getGroupStrengthColor(difference) {
+    if (Math.abs(difference) < 5) return 'transparent';
+    
+    // Set the base color for positive and negative differences (blue and red).
+    const color = difference > 0 ? '59, 130, 246' : '239, 68, 68';
+    
+    const opacity = Math.min(Math.abs(difference) / 100 * 0.4, 0.4);
+    
+    return `rgba(${color}, ${opacity})`;
+}
