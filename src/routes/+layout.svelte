@@ -776,11 +776,11 @@ async function insertPer90s(ninetyTable, id, p90s){
             }
         }
         
-        console.log(`[getLeaguePlayersAndUpload] All players processed, starting score calculation`);
-        await getPlayersThenScore(leagueString, seasonString)
+        // console.log(`[getLeaguePlayersAndUpload] All players processed, starting score calculation`);
+        // await getPlayersThenScore(leagueString, seasonString)
         
-        console.log(`[getLeaguePlayersAndUpload] Score calculation complete, starting stat rankings`);
-        await statRankings(leagueString, seasonString)
+        // console.log(`[getLeaguePlayersAndUpload] Score calculation complete, starting stat rankings`);
+        // await statRankings(leagueString, seasonString)
         
         console.log(`[getLeaguePlayersAndUpload] All processing complete for league ${leagueString}, season ${seasonString}`);
     } else {
@@ -1580,13 +1580,21 @@ async function getNations() {
 
 
 }
-
-async function allLeagues(){
+// 462
+async function allLeaguesLastSeason(){
     await getLeaguePlayersAndUpload(23744, 'bundes','2425')
     await getLeaguePlayersAndUpload(23621, 'laliga','2425')
     await getLeaguePlayersAndUpload(23643, 'ligue1','2425')
     await getLeaguePlayersAndUpload(23614, 'prem','2425')
     await getLeaguePlayersAndUpload(23746, 'seriea','2425')
+}
+
+async function allLeaguesThisSeason(){
+    await getLeaguePlayersAndUpload(25646, 'bundes','2526')
+    await getLeaguePlayersAndUpload(25659, 'laliga','2526')
+    await getLeaguePlayersAndUpload(25651, 'ligue1','2526')
+    await getLeaguePlayersAndUpload(25583, 'prem','2526')
+    await getLeaguePlayersAndUpload(25533, 'seriea','2526')
 }
 
 async function allManagers(){
@@ -1610,7 +1618,8 @@ function toggleDevBar() {
 
 {#if devBarVisible}
     <div class="dev-bar">
-        <button onclick={allLeagues()}>All Leagues</button>
+        <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
+        <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
         <button onclick={getLeaguePlayersAndUpload(23614, 'prem','2425')}>Premier League</button>
         <button onclick={getLeaguePlayersAndUpload(23744, 'bundes','2425')}>Bundesliga</button>
         <button onclick={getLeaguePlayersAndUpload(23643, 'ligue1','2425')}>Ligue 1</button>
