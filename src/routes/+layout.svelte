@@ -220,6 +220,322 @@
         }
     }
 
+ async function populatePlayerSeasonLog(lastSeason = '2425', currentSeason = '2526') {
+    // Hash map to store player IDs with their season information
+    const playerSeasonMap = new Map();
+    
+    // Define leagues and their corresponding season IDs
+    const leagues = ['bundes', 'laliga', 'ligue1', 'prem', 'seriea'];
+    
+    const lastSeasonData = [
+        { leagueId: 23744, league: 'bundes', season: '2425' },
+        { leagueId: 23621, league: 'laliga', season: '2425' },
+        { leagueId: 23643, league: 'ligue1', season: '2425' },
+        { leagueId: 23614, league: 'prem', season: '2425' },
+        { leagueId: 23746, league: 'seriea', season: '2425' }
+    ];
+    
+    const currentSeasonData = [
+        { leagueId: 25646, league: 'bundes', season: '2526' },
+        { leagueId: 25659, league: 'laliga', season: '2526' },
+        { leagueId: 25651, league: 'ligue1', season: '2526' },
+        { leagueId: 25583, league: 'prem', season: '2526' },
+        { leagueId: 25533, league: 'seriea', season: '2526' }
+    ];
+    
+    console.log(`Starting to process last season (${lastSeason}) data...`);
+    
+    // Process last season data
+    for (const leagueInfo of lastSeasonData) {
+        const tableName = `${leagueInfo.league}_stats_${leagueInfo.season}`;
+        console.log(`Processing table: ${tableName}`);
+        
+        try {
+            // Fetch all player IDs and names from the table
+            const { data: players, error } = await supabase
+                .from(tableName)
+                .select('id, "Player Name"');
+            
+            if (error) {
+                console.error(`Error fetching from ${tableName}:`, error);
+                continue;
+            }
+            
+            // Add each player to the hash map with their season ID and name
+            for (const player of players) {
+                if (!playerSeasonMap.has(player.id)) {
+                    playerSeasonMap.set(player.id, {
+                        'Player Name': player['Player Name'],
+                        [lastSeason]: leagueInfo.leagueId,
+                        [currentSeason]: null
+                    });
+                }
+            }
+            
+            console.log(`Found ${players.length} players in ${tableName}`);
+        } catch (err) {
+            console.error(`Error processing ${tableName}:`, err);
+        }
+    }
+    
+    console.log(`Total unique players from last season: ${playerSeasonMap.size}`);
+    console.log(`Starting to process current season (${currentSeason}) data...`);
+    
+    // Process current season data
+    for (const leagueInfo of currentSeasonData) {
+        const tableName = `${leagueInfo.league}_stats_${leagueInfo.season}`;
+        console.log(`Processing table: ${tableName}`);
+        
+        try {
+            // Fetch all player IDs and names from the table
+            const { data: players, error } = await supabase
+                .from(tableName)
+                .select('id, "Player Name"');
+            
+            if (error) {
+                console.error(`Error fetching from ${tableName}:`, error);
+                continue;
+            }
+            
+            // Update existing players or add new ones
+            for (const player of players) {
+                if (playerSeasonMap.has(player.id)) {
+                    // Player existed last season, update their current season
+                    const playerData = playerSeasonMap.get(player.id);
+                    playerData[currentSeason] = leagueInfo.leagueId;
+                    // Update name in case it changed (unlikely but possible)
+                    playerData['Player Name'] = player['Player Name'];
+                } else {
+                    // New player this season only
+                    playerSeasonMap.set(player.id, {
+                        'Player Name': player['Player Name'],
+                        [lastSeason]: null,
+                        [currentSeason]: leagueInfo.leagueId
+                    });
+                }
+            }
+            
+            console.log(`Found ${players.length} players in ${tableName}`);
+        } catch (err) {
+            console.error(`Error processing ${tableName}:`, err);
+        }
+    }
+    
+    console.log(`Total unique players across both seasons: ${playerSeasonMap.size}`);
+    console.log('Preparing data for insertion...');
+    
+    // Convert hash map to array for batch insert
+    const playerSeasonLogData = Array.from(playerSeasonMap.entries()).map(([playerId, data]) => ({
+        id: playerId,
+        'Player Name': data['Player Name'],
+        [lastSeason]: data[lastSeason],
+        [currentSeason]: data[currentSeason]
+    }));
+    
+    console.log(`Inserting ${playerSeasonLogData.length} records into player_season_log table...`);
+    
+    // Batch insert into player_season_log table
+    // Using upsert in case we need to run this multiple times
+    const batchSize = 1000; // Supabase has limits on batch operations
+    let inserted = 0;
+    
+    for (let i = 0; i < playerSeasonLogData.length; i += batchSize) {
+        const batch = playerSeasonLogData.slice(i, i + batchSize);
+        
+        const { data, error } = await supabase
+            .from('player_season_log')
+            .upsert(batch, { 
+                onConflict: 'id',
+                ignoreDuplicates: false 
+            });
+        
+        if (error) {
+            console.error(`Error inserting batch ${Math.floor(i / batchSize) + 1}:`, error);
+        } else {
+            inserted += batch.length;
+            console.log(`Inserted batch ${Math.floor(i / batchSize) + 1} (${inserted}/${playerSeasonLogData.length} records)`);
+        }
+    }
+    
+    console.log('Population complete!');
+    console.log(`Total records inserted/updated: ${inserted}`);
+    
+    // Return summary statistics
+    return {
+        totalPlayers: playerSeasonMap.size,
+        playersInBothSeasons: Array.from(playerSeasonMap.values()).filter(p => p[lastSeason] && p[currentSeason]).length,
+        playersOnlyLastSeason: Array.from(playerSeasonMap.values()).filter(p => p[lastSeason] && !p[currentSeason]).length,
+        playersOnlyCurrentSeason: Array.from(playerSeasonMap.values()).filter(p => !p[lastSeason] && p[currentSeason]).length
+    };
+}
+
+async function calculatePer90s(leagueString, seasonString) {
+    console.log(`Starting per90 calculation for league: ${leagueString}, season: ${seasonString}`);
+    
+    const statTable = `${leagueString}_stats_${seasonString}`
+    const ninetyTable = `${leagueString}_stats_${seasonString}_per90`
+
+    console.log(`Tables - stat: ${statTable}, ninety: ${ninetyTable}`);
+
+    try {
+        let { data: players, error } = await supabase
+            .from(statTable)
+            .select('*');
+
+        if (error) {
+            console.error(`ERROR fetching players from ${statTable}:`, error);
+            return;
+        }
+
+        if (!players || players.length === 0) {
+            console.warn(`No players found in ${statTable}`);
+            return;
+        }
+
+        console.log(`Fetched ${players.length} players from ${statTable}`);
+
+        let processedCount = 0;
+        let skippedCount = 0;
+        const skippedPlayers = [];
+
+        for (let i = 0; i < players.length; i++) {
+            const player = players[i];
+            console.log(`Processing player ${i + 1}/${players.length}: ${player["Player Name"]} (ID: ${player.id})`);
+
+            try {
+                await delay(500);
+                
+                if (!player.id) {
+                    console.error(`Player ${player["Player Name"]} has no ID - skipping`);
+                    skippedCount++;
+                    skippedPlayers.push(player["Player Name"]);
+                    continue;
+                }
+
+                if (!player["Player Name"]) {
+                    console.error(`Player ID ${player.id} has no name - skipping`);
+                    skippedCount++;
+                    skippedPlayers.push(`ID: ${player.id}`);
+                    continue;
+                }
+
+                const minutesPlayed = player["Minutes Played"] || 0;
+                const isKeeper = player.Position === 'Goalkeeper';
+
+                // Create minimal entry for low-minute players
+                if (minutesPlayed < 70) {
+                    console.log(`${player["Player Name"]} - Only ${minutesPlayed} minutes played, creating minimal per90 entry`);
+                    
+                    const minimalP90s = {
+                        PlayerName: player["Player Name"],
+                        PlayerTeam: player["Player Team"],
+                        MinutesPlayed: minutesPlayed,
+                        Position: player.Position,
+                        DetailedPosition: player["Detailed Position"]
+                    };
+                    
+                    await insertPer90s(ninetyTable, player.id, minimalP90s);
+                    processedCount++;
+                    continue;
+                }
+
+                // Calculate all per90 stats
+                const per90Factor = minutesPlayed > 0 ? 90 / minutesPlayed : 0;
+                
+                const p90s = {
+                    PlayerName: player["Player Name"],
+                    PlayerTeam: player["Player Team"],
+                    MinutesPlayed: minutesPlayed,
+                    Position: player.Position,
+                    DetailedPosition: player["Detailed Position"],
+                    
+                    // Defensive per90s
+                    TacklesPer90: player.Tackles ? (player.Tackles * per90Factor).toFixed(4) : 0,
+                    FoulsPer90: player.Fouls ? (player.Fouls * per90Factor).toFixed(4) : 0,
+                    CrossesBlockedPer90: player['Crosses Blocked'] ? (player['Crosses Blocked'] * per90Factor).toFixed(4) : 0,
+                    InterceptionsPer90: player.Interceptions ? (player.Interceptions * per90Factor).toFixed(4) : 0,
+                    ShotsBlockedPer90: player['Shots Blocked'] ? (player['Shots Blocked'] * per90Factor).toFixed(4) : 0,
+                    Cleansheets: player.Cleansheets || 0, // Not per90
+                    GoalsConcededPer90: player['Goals Conceded'] ? (player['Goals Conceded'] * per90Factor).toFixed(4) : 0,
+                    ClearancesPer90: player.Clearances ? (player.Clearances * per90Factor).toFixed(4) : 0,
+                    AerialsWonPer90: player['Aerials Won'] ? (player['Aerials Won'] * per90Factor).toFixed(4) : 0,
+                    DuelsWonPer90: player['Duels Won'] ? (player['Duels Won'] * per90Factor).toFixed(4) : 0,
+                    TotalDuelsPer90: player['Total Duels'] ? (player['Total Duels'] * per90Factor).toFixed(4) : 0,
+                    ErrorLeadToGoal: player['Error Lead To Goal'] || 0, // Not per90
+                    DribbledPastPer90: player['Dribbled Past'] ? (player['Dribbled Past'] * per90Factor).toFixed(4) : 0,
+                    LongBallsWonPer90: player['Long Balls Won'] ? (player['Long Balls Won'] * per90Factor).toFixed(4) : 0,
+                    
+                    // Passing per90s
+                    BigChancesCreatedPer90: player['Big Chances Created'] ? (player['Big Chances Created'] * per90Factor).toFixed(4) : 0,
+                    KeyPassesPer90: player['Key Passes'] ? (player['Key Passes'] * per90Factor).toFixed(4) : 0,
+                    AccuratePassesPercentage: player['Accurate Passes Percentage'] || 0, // Not per90
+                    PassesPer90: player['Passes'] ? (player['Passes'] * per90Factor).toFixed(4) : 0,
+                    AssistsPer90: player['Assists'] ? (player['Assists'] * per90Factor).toFixed(4) : 0,
+                    AccurateCrossesPer90: player['Accurate Crosses'] ? (player['Accurate Crosses'] * per90Factor).toFixed(4) : 0,
+                    ThroughBallsPer90: player['Through Balls'] ? (player['Through Balls'] * per90Factor).toFixed(4) : 0,
+                    
+                    // Possession per90s
+                    AccuratePassesPer90: player['Accurate Passes'] ? (player['Accurate Passes'] * per90Factor).toFixed(4) : 0,
+                    SuccessfulDribblesPer90: player['Successful Dribbles'] ? (player['Successful Dribbles'] * per90Factor).toFixed(4) : 0,
+                    DispossessedPer90: player['Dispossessed'] ? (player['Dispossessed'] * per90Factor).toFixed(4) : 0,
+                    FoulsDrawnPer90: player['Fouls Drawn'] ? (player['Fouls Drawn'] * per90Factor).toFixed(4) : 0,
+                    ShotsOffTargetPer90: player['Shots Off Target'] ? (player['Shots Off Target'] * per90Factor).toFixed(4) : 0,
+                    ThroughBallsWonPer90: player['Through Balls Won'] ? (player['Through Balls Won'] * per90Factor).toFixed(4) : 0,
+                    OffsidesPer90: player['Offsides'] ? (player['Offsides'] * per90Factor).toFixed(4) : 0,
+                    
+                    // Attacking per90s  
+                    GoalsPer90: player['Goals'] ? (player['Goals'] * per90Factor).toFixed(4) : 0,
+                    ShotsOnTargetPer90: player['Shots On Target'] ? (player['Shots On Target'] * per90Factor).toFixed(4) : 0,
+                    
+                    // Finishing per90s
+                    BigChancesMissedPer90: player['Big Chances Missed'] ? (player['Big Chances Missed'] * per90Factor).toFixed(4) : 0,
+                    HitWoodworkPer90: player['Hit Woodwork'] ? (player['Hit Woodwork'] * per90Factor).toFixed(4) : 0,
+                    BlockedShotsPer90: player['Blocked Shots'] ? (player['Blocked Shots'] * per90Factor).toFixed(4) : 0,
+                    
+                    // Keeper per90s (will be 0 for outfield players)
+                    SavesPer90: player['Saves'] ? (player['Saves'] * per90Factor).toFixed(4) : 0,
+                    SavesInsideBoxPer90: player['Saves Insidebox'] ? (player['Saves Insidebox'] * per90Factor).toFixed(4) : 0,
+                };
+
+                // Calculate duels won percentage
+                const duelsWonPercentage = player['Total Duels'] > 0 
+                    ? ((player['Duels Won'] || 0) / player['Total Duels'] * 100).toFixed(2) 
+                    : 0;
+                p90s.DuelsWonPercentage = duelsWonPercentage;
+
+                console.log(`${player["Player Name"]} - Inserting per90s data to ${ninetyTable}`);
+                await insertPer90s(ninetyTable, player.id, p90s);
+                
+                processedCount++;
+                console.log(`Successfully processed player ${player["Player Name"]} (ID: ${player.id})`);
+                
+            } catch(playerErr) {
+                console.error(`ERROR processing player ${player["Player Name"]} (ID: ${player.id}):`, playerErr);
+                skippedCount++;
+                skippedPlayers.push(player["Player Name"]);
+            }
+        }
+
+        console.log(`FINAL SUMMARY:`);
+        console.log(`Total players in initial data: ${players.length}`);
+        console.log(`Successfully processed: ${processedCount}`);
+        console.log(`Skipped/Failed: ${skippedCount}`);
+        if (skippedPlayers.length > 0) {
+            console.log(`Skipped players:`, skippedPlayers);
+        }
+
+        console.log(`All players processed and per90s uploaded.`);
+        
+    } catch (err) {
+        console.error(`CRITICAL ERROR in main function:`, err);
+        console.error(`Error stack:`, err.stack);
+    }
+}
+
+
+
+
+
    async function getPlayersThenScore(leagueString, seasonString) {
     console.log(`[getPlayersThenScore] Starting for league: ${leagueString}, season: ${seasonString}`);
     
@@ -1597,6 +1913,14 @@ async function allLeaguesThisSeason(){
     await getLeaguePlayersAndUpload(25533, 'seriea','2526')
 }
 
+async function allPer90s(){
+    await calculatePer90s('bundes', '2526')
+    await calculatePer90s('laliga', '2526')
+    await calculatePer90s('ligue1', '2526')
+    await calculatePer90s('prem', '2526')
+    await calculatePer90s('seriea', '2526')
+}
+
 async function allManagers(){
     await getCoachesToDB(23614, 'prem')
     await getCoachesToDB(23621, 'laliga')
@@ -1620,6 +1944,8 @@ function toggleDevBar() {
     <div class="dev-bar">
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
+        <button onclick={allPer90s()}>All Per 90s</button>
+        <button onclick={populatePlayerSeasonLog('2425', '2526')}>Run Player Season Log</button>
         <button onclick={getLeaguePlayersAndUpload(23614, 'prem','2425')}>Premier League</button>
         <button onclick={getLeaguePlayersAndUpload(23744, 'bundes','2425')}>Bundesliga</button>
         <button onclick={getLeaguePlayersAndUpload(23643, 'ligue1','2425')}>Ligue 1</button>
