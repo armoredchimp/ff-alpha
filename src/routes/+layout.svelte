@@ -1942,6 +1942,7 @@ function toggleDevBar() {
 
 {#if devBarVisible}
     <div class="dev-bar">
+        <button><a href={'/dev'}>Scoring</a></button>
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
         <button onclick={allPer90s()}>All Per 90s</button>
@@ -1957,8 +1958,8 @@ function toggleDevBar() {
         <button onclick={statRankings}>Stat Rankings</button>
         <button onclick={allManagers}>Managers to DB</button>
         <button onclick={getNations}>Nations</button>
-        <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
-        <button onclick={getPlayerImages('prem_mini_2425')}>Player Images to Mini</button>
+        <!-- <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
+        <button onclick={getPlayerImages('prem_mini_2425')}>Player Images to Mini</button> -->
     </div>  
 {/if}
 {#if userStore.user}

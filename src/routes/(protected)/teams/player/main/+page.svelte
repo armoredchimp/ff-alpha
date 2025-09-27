@@ -266,7 +266,7 @@
             </select>
         </div>
         <button onclick={() => autoPick()}>Auto-Pick Team</button>
-       <h1>{playerTeam.subs.length}</h1>
+        <h1>{playerTeam.subs.length}</h1>
         <div class="content-wrapper">
             {#key formationKey}
                 <Formation team={playerTeam} base={true}/>
