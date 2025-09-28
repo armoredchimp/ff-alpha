@@ -19,18 +19,18 @@
     const leagueStrengthWeights = {
         'prem': 1.0,
         'laliga': 0.9,
-        'bundes': 0.85,
-        'seriea': 0.8,
-        'ligue1': 0.8
+        'bundes': 0.8,
+        'seriea': 0.7,
+        'ligue1': 0.7
     };
 
     // Individual matchweeks for each league
     let matchweeks = {
-        prem: 10,
-        laliga: 10,
-        bundes: 9,
-        seriea: 10,
-        ligue1: 9
+        prem: 6,
+        laliga: 6,
+        bundes: 6,
+        seriea: 6,
+        ligue1: 6
     };
     
     // League configuration
@@ -325,7 +325,7 @@
                 // Calculate minutes adjustment
                 let lastSeasonAdjustmentFactor = 1;
                 if (lastSeasonPlayer?.data && lastSeasonLeagueString) {
-
+                    const lastSeasonMinutes = lastSeasonPlayer.data.MinutesPlayed || 0; 
                     const leagueAvg = leagueAverageMinutes[lastSeasonLeagueString];
                     
                     if (leagueAvg) {
