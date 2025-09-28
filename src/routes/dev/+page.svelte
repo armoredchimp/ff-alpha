@@ -12,7 +12,18 @@
     let leagueProgress = 0;
     let logs = [];
     let leagueResults = {};
+
+    const MIN_MINUTES_FOR_VALID_PER90 = 360;
     
+    // Adjustment to reflect difference between leagues, prem == 100%
+    const leagueStrengthWeights = {
+        'prem': 1.0,
+        'laliga': 0.9,
+        'bundes': 0.85,
+        'seriea': 0.8,
+        'ligue1': 0.8
+    };
+
     // Individual matchweeks for each league
     let matchweeks = {
         prem: 10,
@@ -314,7 +325,7 @@
                 // Calculate minutes adjustment
                 let lastSeasonAdjustmentFactor = 1;
                 if (lastSeasonPlayer?.data && lastSeasonLeagueString) {
-                    const lastSeasonMinutes = lastSeasonPlayer.data.MinutesPlayed || 0;
+
                     const leagueAvg = leagueAverageMinutes[lastSeasonLeagueString];
                     
                     if (leagueAvg) {
@@ -330,91 +341,138 @@
                     }
                 }
                 
-                let currentScores = {};
-                let lastScores = {};
-                let finalScores = {};
-                const maxCurrentMinutes = currentMatchweek * 90;
+            let currentScores = {};
+            let lastScores = {};
+            let finalScores = {};
+            const maxCurrentMinutes = currentMatchweek * 90;
 
-                if (!isKeeper) {
-                    // Score current season
+            const currentLeagueWeight = leagueStrengthWeights[leagueString] || 1.0;
+            const lastLeagueWeight = lastSeasonLeagueString 
+                ? leagueStrengthWeights[lastSeasonLeagueString] || 1.0 
+                : currentLeagueWeight;
+
+            const currentMinutesPlayed = currentPlayer.MinutesPlayed || 0;
+
+            if (!isKeeper) {
+                // Score current season
+                currentScores = {
+                    defensive: scoreDefensive(currentPlayer, detailedPosition),
+                    passing: scorePassing(currentPlayer, detailedPosition),
+                    possession: scorePossession(currentPlayer, detailedPosition),
+                    attacking: scoreAttacking(currentPlayer, detailedPosition),
+                    finishing: scoreFinishing(currentPlayer, detailedPosition)
+                };
+                
+                if (currentMinutesPlayed < MIN_MINUTES_FOR_VALID_PER90) {
+                    const minutesPenalty = Math.pow(currentMinutesPlayed / MIN_MINUTES_FOR_VALID_PER90, 2);
                     currentScores = {
-                        defensive: scoreDefensive(currentPlayer, detailedPosition),
-                        passing: scorePassing(currentPlayer, detailedPosition),
-                        possession: scorePossession(currentPlayer, detailedPosition),
-                        attacking: scoreAttacking(currentPlayer, detailedPosition),
-                        finishing: scoreFinishing(currentPlayer, detailedPosition)
+                        defensive: currentScores.defensive * minutesPenalty * currentLeagueWeight,
+                        passing: currentScores.passing * minutesPenalty * currentLeagueWeight,
+                        possession: currentScores.possession * minutesPenalty * currentLeagueWeight,
+                        attacking: currentScores.attacking * minutesPenalty * currentLeagueWeight,
+                        finishing: currentScores.finishing * minutesPenalty * currentLeagueWeight
                     };
-                    
-                    const currentMinutesPlayed = currentPlayer.MinutesPlayed || 0;
-                    const currentMinutesPercentage = Math.min(currentMinutesPlayed / maxCurrentMinutes, 1); // Cap at 100%
-
-                    currentScores = {
-                        defensive: currentScores.defensive * currentMinutesPercentage,
-                        passing: currentScores.passing * currentMinutesPercentage,
-                        possession: currentScores.possession * currentMinutesPercentage,
-                        attacking: currentScores.attacking * currentMinutesPercentage,
-                        finishing: currentScores.finishing * currentMinutesPercentage
-                    };
-
-                    // Score last season with adjustment
-                    if (lastSeasonPlayer?.data) {
-                        lastScores = {
-                            defensive: scoreDefensive(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
-                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
-                            possession: scorePossession(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
-                            attacking: scoreAttacking(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
-                            finishing: scoreFinishing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor
-                        };
-                    } else {
-                        lastScores = {
-                            defensive: currentScores.defensive * 0.5,
-                            passing: currentScores.passing * 0.5,
-                            possession: currentScores.possession * 0.5,
-                            attacking: currentScores.attacking * 0.5,
-                            finishing: currentScores.finishing * 0.5
-                        };
-                    }
-                    
-                    // Weight and combine
-                    finalScores = {
-                        defensive: (currentScores.defensive * currentSeasonWeight + lastScores.defensive * lastSeasonWeight),
-                        passing: (currentScores.passing * currentSeasonWeight + lastScores.passing * lastSeasonWeight),
-                        possession: (currentScores.possession * currentSeasonWeight + lastScores.possession * lastSeasonWeight),
-                        attacking: (currentScores.attacking * currentSeasonWeight + lastScores.attacking * lastSeasonWeight),
-                        finishing: (currentScores.finishing * currentSeasonWeight + lastScores.finishing * lastSeasonWeight),
-                        keeper: 0
-                    };
-                    
                 } else {
-                    // Goalkeeper scoring
-                    currentScores = {
-                        keeper: scoreKeeper(currentPlayer, detailedPosition),
-                        passing: scorePassing(currentPlayer, detailedPosition)
-                    };
-                  
-                    const currentMinutesPlayed = currentPlayer.MinutesPlayed || 0;
                     const currentMinutesPercentage = Math.min(currentMinutesPlayed / maxCurrentMinutes, 1);
-
                     currentScores = {
-                        keeper: currentScores.keeper * currentMinutesPercentage,
-                        passing: currentScores.passing * currentMinutesPercentage
+                        defensive: currentScores.defensive * currentMinutesPercentage * currentLeagueWeight,
+                        passing: currentScores.passing * currentMinutesPercentage * currentLeagueWeight,
+                        possession: currentScores.possession * currentMinutesPercentage * currentLeagueWeight,
+                        attacking: currentScores.attacking * currentMinutesPercentage * currentLeagueWeight,
+                        finishing: currentScores.finishing * currentMinutesPercentage * currentLeagueWeight
                     };
+                }
 
-                    if (lastSeasonPlayer?.data) {
+                // Score last season with adjustment
+                if (lastSeasonPlayer?.data) {
+                    const lastSeasonMinutes = lastSeasonPlayer.data.MinutesPlayed || 0;
+
+                    if (lastSeasonMinutes < MIN_MINUTES_FOR_VALID_PER90) {
+                        const minutesPenalty = Math.pow(lastSeasonMinutes / MIN_MINUTES_FOR_VALID_PER90, 2);
                         lastScores = {
-                            keeper: scoreKeeper(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
-                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor
+                            defensive: scoreDefensive(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            possession: scorePossession(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            attacking: scoreAttacking(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            finishing: scoreFinishing(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight
                         };
                     } else {
                         lastScores = {
-                            keeper: currentScores.keeper * 0.5,
-                            passing: currentScores.passing * 0.5
+                            defensive: scoreDefensive(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            possession: scorePossession(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            attacking: scoreAttacking(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            finishing: scoreFinishing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight
                         };
                     }
+                } else {
+                    // No last season - use current scores scaled down
+                    lastScores = {
+                        defensive: currentScores.defensive * 0.2,
+                        passing: currentScores.passing * 0.2,
+                        possession: currentScores.possession * 0.2,
+                        attacking: currentScores.attacking * 0.2,
+                        finishing: currentScores.finishing * 0.2
+                    };
+                }
+                
+                // Weight and combine
+                finalScores = {
+                    defensive: (currentScores.defensive * currentSeasonWeight) + (lastScores.defensive * lastSeasonWeight),
+                    passing: (currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight),
+                    possession: (currentScores.possession * currentSeasonWeight) + (lastScores.possession * lastSeasonWeight),
+                    attacking: (currentScores.attacking * currentSeasonWeight) + (lastScores.attacking * lastSeasonWeight),
+                    finishing: (currentScores.finishing * currentSeasonWeight) + (lastScores.finishing * lastSeasonWeight),
+                    keeper: 0
+                };
+                
+            } else {
+                // Goalkeeper scoring
+                currentScores = {
+                    keeper: scoreKeeper(currentPlayer, detailedPosition),
+                    passing: scorePassing(currentPlayer, detailedPosition)
+                };
+                
+                // Apply minutes penalty for goalkeepers too
+                if (currentMinutesPlayed < MIN_MINUTES_FOR_VALID_PER90) {
+                    const minutesPenalty = Math.pow(currentMinutesPlayed / MIN_MINUTES_FOR_VALID_PER90, 2);
+                    currentScores = {
+                        keeper: currentScores.keeper * minutesPenalty * currentLeagueWeight,
+                        passing: currentScores.passing * minutesPenalty * currentLeagueWeight
+                    };
+                } else {
+                    const currentMinutesPercentage = Math.min(currentMinutesPlayed / maxCurrentMinutes, 1);
+                    currentScores = {
+                        keeper: currentScores.keeper * currentMinutesPercentage * currentLeagueWeight,
+                        passing: currentScores.passing * currentMinutesPercentage * currentLeagueWeight
+                    };
+                }
+
+                if (lastSeasonPlayer?.data) {
+                    const lastSeasonMinutes = lastSeasonPlayer.data.MinutesPlayed || 0;
+                    
+                    if (lastSeasonMinutes < MIN_MINUTES_FOR_VALID_PER90) {
+                        const minutesPenalty = Math.pow(lastSeasonMinutes / MIN_MINUTES_FOR_VALID_PER90, 2);
+                        lastScores = {
+                            keeper: scoreKeeper(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * minutesPenalty * lastSeasonAdjustmentFactor * lastLeagueWeight
+                        };
+                    } else {
+                        lastScores = {
+                            keeper: scoreKeeper(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight,
+                            passing: scorePassing(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor * lastLeagueWeight
+                        };
+                    }
+                } else {
+                    lastScores = {
+                        keeper: currentScores.keeper * 0.2,
+                        passing: currentScores.passing * 0.2
+                    };
+                }
                     
                     finalScores = {
-                        keeper: (currentScores.keeper * currentSeasonWeight + lastScores.keeper * lastSeasonWeight),
-                        passing: (currentScores.passing * currentSeasonWeight + lastScores.passing * lastSeasonWeight),
+                        keeper: ((currentScores.keeper * currentSeasonWeight) + (lastScores.keeper * lastSeasonWeight)),
+                        passing: ((currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight)),
                         defensive: 0,
                         possession: 0,
                         attacking: 0,
