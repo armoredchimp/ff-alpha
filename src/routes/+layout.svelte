@@ -1006,6 +1006,49 @@ async function calculatePer90s(leagueString, seasonString) {
         }
     }
 
+async function updateMiniTableFromStats(leagueString, seasonString) {
+    const statsTable = `${leagueString}_stats_${seasonString}`;
+    const miniTable = `${leagueString}_mini_${seasonString}`;
+    
+    console.log(`[updateMiniTableFromStats] Reading from ${statsTable} and updating ${miniTable}`);
+    
+    try {
+        // Read all players from the stats table
+        const { data: statsData, error: readError } = await supabase
+            .from(statsTable)
+            .select('id, Age, "Player Team", Nation');
+        
+        if (readError) {
+            console.error(`[updateMiniTableFromStats] Error reading from ${statsTable}:`, readError);
+            return;
+        }
+        
+        console.log(`[updateMiniTableFromStats] Found ${statsData.length} players in stats table`);
+        
+        // Transform the data for the mini table
+        const miniData = statsData.map(player => ({
+            id: player.id,
+            player_age: player.Age,
+            player_team: player['Player Team'],
+            nationality: player.Nation
+        }));
+        
+        // Batch upsert to mini table
+        const { error: insertError } = await supabase
+            .from(miniTable)
+            .upsert(miniData, { onConflict: 'id' });
+        
+        if (insertError) {
+            console.error(`[updateMiniTableFromStats] Error inserting into ${miniTable}:`, insertError);
+        } else {
+            console.log(`[updateMiniTableFromStats] Successfully updated ${miniData.length} players in ${miniTable}`);
+        }
+        
+    } catch (err) {
+        console.error(`[updateMiniTableFromStats] Exception:`, err);
+    }
+}
+
 
 async function insertPer90s(ninetyTable, id, p90s){
     console.log(`[insertPer90s] Starting insert for player ID ${id} to table ${ninetyTable}`);
@@ -1154,6 +1197,7 @@ async function insertPer90s(ninetyTable, id, p90s){
     async function getPlayerStatsAndUpload(id, teamName, seasonId, leagueString, seasonString) {
 		let seasonStats = null;
         let table = `${leagueString}_stats_${seasonString}`
+        let miniTable = `${leagueString}_mini_${seasonString}`
       
         try {
             // Fetch player data
@@ -1187,6 +1231,12 @@ async function insertPer90s(ninetyTable, id, p90s){
                         Age: calculateAge(playerData.date_of_birth),
                         Nation: getCountry(playerData.nationality_id)
                     };
+
+                    const extraDataMini = {
+                        player_age : statsToInsert["Age"],
+                        player_team: statsToInsert["Player Team"],
+                        nationality: statsToInsert["Nation"]
+                    }
 
                     if ((statsToInsert['Detailed Position']) === 'Right Midfield'){
                         (statsToInsert['Detailed Position']) = 'Central Midfield'
@@ -1270,6 +1320,19 @@ async function insertPer90s(ninetyTable, id, p90s){
                         console.error(`ID ${playerData.id}`, statsToInsert);
                     } else {
                         console.log(`Successfully inserted stats for player ${playerData.display_name}`);
+                    }
+
+                    //Insert extra mini data which doesn't go into per90 table
+
+                    const { miniError } = await supabase  
+                        .from(miniTable)
+                        .upsert([extraDataMini])
+
+                    if (miniError) {
+                        console.error(`Error inserting extra mini data for player ${playerData.display_name}:`, miniError);
+                        console.error(`ID ${playerData.id}`, extraDataMini);
+                    } else {
+                        console.log(`Successfully inserted extra mini data for player ${playerData.display_name}`);
                     }
                 }
             } else {
@@ -1913,6 +1976,14 @@ async function allLeaguesThisSeason(){
     await getLeaguePlayersAndUpload(25533, 'seriea','2526')
 }
 
+async function updateAllMinis(seasonString){
+    await updateMiniTableFromStats('bundes', seasonString)
+    await updateMiniTableFromStats('laliga', seasonString)
+    await updateMiniTableFromStats('ligue1', seasonString)
+    await updateMiniTableFromStats('prem', seasonString)
+    await updateMiniTableFromStats('seriea', seasonString)
+}
+
 async function allPer90s(){
     await calculatePer90s('bundes', '2526')
     await calculatePer90s('laliga', '2526')
@@ -1945,6 +2016,7 @@ function toggleDevBar() {
         <button><a href={'/dev'}>Scoring</a></button>
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
+        <button onclick={updateAllMinis('2526')}>Update All Minis</button>
         <button onclick={allPer90s()}>All Per 90s</button>
         <button onclick={populatePlayerSeasonLog('2425', '2526')}>Run Player Season Log</button>
         <button onclick={getLeaguePlayersAndUpload(23614, 'prem','2425')}>Premier League</button>

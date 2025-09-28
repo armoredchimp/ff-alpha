@@ -501,7 +501,7 @@
                 
                 const playerData = {
                     id: playerId,
-                    player_name: playerName,
+                    player_name: playerName, 
                     position: position,
                     detailed_position: detailedPosition,
                     keeper_score: finalScores.keeper?.toFixed(2) || null,
