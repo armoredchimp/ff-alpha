@@ -333,7 +333,8 @@
                 let currentScores = {};
                 let lastScores = {};
                 let finalScores = {};
-                
+                const maxCurrentMinutes = currentMatchweek * 90;
+
                 if (!isKeeper) {
                     // Score current season
                     currentScores = {
@@ -344,6 +345,17 @@
                         finishing: scoreFinishing(currentPlayer, detailedPosition)
                     };
                     
+                    const currentMinutesPlayed = currentPlayer.MinutesPlayed || 0;
+                    const currentMinutesPercentage = Math.min(currentMinutesPlayed / maxCurrentMinutes, 1); // Cap at 100%
+
+                    currentScores = {
+                        defensive: currentScores.defensive * currentMinutesPercentage,
+                        passing: currentScores.passing * currentMinutesPercentage,
+                        possession: currentScores.possession * currentMinutesPercentage,
+                        attacking: currentScores.attacking * currentMinutesPercentage,
+                        finishing: currentScores.finishing * currentMinutesPercentage
+                    };
+
                     // Score last season with adjustment
                     if (lastSeasonPlayer?.data) {
                         lastScores = {
@@ -379,7 +391,15 @@
                         keeper: scoreKeeper(currentPlayer, detailedPosition),
                         passing: scorePassing(currentPlayer, detailedPosition)
                     };
-                    
+                  
+                    const currentMinutesPlayed = currentPlayer.MinutesPlayed || 0;
+                    const currentMinutesPercentage = Math.min(currentMinutesPlayed / maxCurrentMinutes, 1);
+
+                    currentScores = {
+                        keeper: currentScores.keeper * currentMinutesPercentage,
+                        passing: currentScores.passing * currentMinutesPercentage
+                    };
+
                     if (lastSeasonPlayer?.data) {
                         lastScores = {
                             keeper: scoreKeeper(lastSeasonPlayer.data, detailedPosition) * lastSeasonAdjustmentFactor,
