@@ -73,7 +73,7 @@
                         const leagueState = getLeagueState();
                         leagueState.hasLeague = true;
                         leagueState.leagueId = result.data.league.id;
-                        leagueState.country_code = country_code;
+                        leagueState.countryCode = country_code;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
                         

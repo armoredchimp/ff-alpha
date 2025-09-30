@@ -4,6 +4,7 @@ interface LeagueState {
     canCreateLeague: boolean;
     countryCode: number;
     numOfTeams: number;
+    currentMatchweek: number;
     creationToken: string | null;
     tokenExpiresAt: string | null;
     loading: boolean;
@@ -23,6 +24,7 @@ let leagueState = $state<LeagueState>({
     canCreateLeague: false,
     countryCode: 0,
     numOfTeams: 14,
+    currentMatchweek: 0,
     creationToken: null,
     tokenExpiresAt: null,
     loading: false,
@@ -61,6 +63,13 @@ export const SEASON_ID_LOOKUP: Record<number, number> = {
     5: 23746
 }
 
+export const LEAGUE_MAX_GAMES = {
+    prem: 38,
+    laliga: 38,
+    bundes: 34,
+    seriea: 38,
+    ligue1: 34
+};
 
 export function setLeagueStatus(data: LeagueStatusData): void {
     if (data.status === 'HAS_LEAGUE') {
