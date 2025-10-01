@@ -445,14 +445,14 @@
                 }
                 
                 // Weight and combine
-                finalScores = {
-                    defensive: (currentScores.defensive * currentSeasonWeight) + (lastScores.defensive * lastSeasonWeight),
-                    passing: (currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight),
-                    possession: (currentScores.possession * currentSeasonWeight) + (lastScores.possession * lastSeasonWeight),
-                    attacking: (currentScores.attacking * currentSeasonWeight) + (lastScores.attacking * lastSeasonWeight),
-                    finishing: (currentScores.finishing * currentSeasonWeight) + (lastScores.finishing * lastSeasonWeight),
-                    keeper: 0
-                };
+                    finalScores = {
+                        defensive: capScore((currentScores.defensive * currentSeasonWeight) + (lastScores.defensive * lastSeasonWeight)),
+                        passing: capScore((currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight)),
+                        possession: capScore((currentScores.possession * currentSeasonWeight) + (lastScores.possession * lastSeasonWeight)),
+                        attacking: capScore((currentScores.attacking * currentSeasonWeight) + (lastScores.attacking * lastSeasonWeight)),
+                        finishing: capScore((currentScores.finishing * currentSeasonWeight) + (lastScores.finishing * lastSeasonWeight)),
+                        keeper: 0
+                    };
                 
             } else {
                 // Goalkeeper scoring
@@ -498,14 +498,14 @@
                     };
                 }
                     
-                    finalScores = {
-                        keeper: ((currentScores.keeper * currentSeasonWeight) + (lastScores.keeper * lastSeasonWeight)),
-                        passing: ((currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight)),
-                        defensive: 0,
-                        possession: 0,
-                        attacking: 0,
-                        finishing: 0
-                    };
+                        finalScores = {
+                            keeper: capScore((currentScores.keeper * currentSeasonWeight) + (lastScores.keeper * lastSeasonWeight)),
+                            passing: capScore((currentScores.passing * currentSeasonWeight) + (lastScores.passing * lastSeasonWeight)),
+                            defensive: 0,
+                            possession: 0,
+                            attacking: 0,
+                            finishing: 0
+                        };
                 }
                 
                 // Calculate total
@@ -522,9 +522,12 @@
                         total *= 0.95;
                     }
                     
-                    total = (total / 3.2).toFixed(2);
+                    total = total / 3.2
+                    total = capScore(total)
                 } else {
-                    total = ((finalScores.keeper + finalScores.passing) / 1.9).toFixed(2);
+                    total = ((finalScores.keeper + finalScores.passing) / 1.9)
+                    total = capScore(total);
+                    total = total.toFixed(2);
                 }
                 
                 const playerData = {
