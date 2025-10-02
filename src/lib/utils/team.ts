@@ -1,4 +1,6 @@
+import { teams, playerTeam } from "$lib/stores/teams.svelte";
 import { type Team, type Player } from "$lib/types/types";
+
 
 const positionGroups = ['attackers', 'midfielders', 'defenders', 'keepers'] as const;
 
@@ -227,4 +229,15 @@ export function getGroupStrengthColor(difference) {
     const opacity = Math.min(Math.abs(difference) / 100 * 0.4, 0.4);
     
     return `rgba(${color}, ${opacity})`;
+}
+
+export function getOpponentTeam(opponentId: number) {
+    if (opponentId === -1) return null; 
+    if (opponentId === 0) return playerTeam;
+    return teams[`team${opponentId}`];
+}
+
+export function getOpponentName(opponentId: number): string {
+    const opponent = getOpponentTeam(opponentId);
+    return opponent?.name || 'No Opponent';
 }

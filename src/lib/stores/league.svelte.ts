@@ -1,51 +1,4 @@
-interface LeagueState {
-    hasLeague: boolean;
-    leagueId: string | null;
-    canCreateLeague: boolean;
-    countryCode: number;
-    numOfTeams: number;
-    currentMatchweek: number;
-    creationToken: string | null;
-    tokenExpiresAt: string | null;
-    loading: boolean;
-    error: string | null;
-}
-
-interface LeagueStatusData {
-    status: 'HAS_LEAGUE' | 'CAN_CREATE_LEAGUE';
-    leagueId?: string;
-    creationToken?: string;
-    expiresAt?: string;
-}
-
-let leagueState = $state<LeagueState>({
-    hasLeague: false,
-    leagueId: null,
-    canCreateLeague: false,
-    countryCode: 0,
-    numOfTeams: 14,
-    currentMatchweek: 0,
-    creationToken: null,
-    tokenExpiresAt: null,
-    loading: false,
-    error: null
-});
-
-export function getLeagueState(): LeagueState {
-    return leagueState;
-}
-
-export function setTeamCount(numOfTeams: number) {
-    leagueState.numOfTeams = numOfTeams
-}
-
-export function setCountry(countryCode: number) {
-    leagueState.countryCode = countryCode
-}
-
-export function getCountry(): number {
-    return leagueState.countryCode;
-}
+import type { Schedule } from "$lib/types/types";
 
 export const TABLE_PREFIXES: Record<number, string> = {
     1: 'prem',     // Premier League
@@ -70,6 +23,67 @@ export const LEAGUE_MAX_GAMES = {
     seriea: 38,
     ligue1: 34
 };
+
+
+interface LeagueState {
+    hasLeague: boolean;
+    leagueId: string | null;
+    canCreateLeague: boolean;
+    countryCode: number;
+    numOfTeams: number;
+    currentMatchweek: number;
+    creationToken: string | null;
+    tokenExpiresAt: string | null;
+    loading: boolean;
+    error: string | null;
+    schedule: Schedule
+}
+
+interface LeagueStatusData {
+    status: 'HAS_LEAGUE' | 'CAN_CREATE_LEAGUE';
+    leagueId?: string;
+    creationToken?: string;
+    expiresAt?: string;
+}
+
+let leagueState = $state<LeagueState>({
+    hasLeague: false,
+    leagueId: null,
+    canCreateLeague: false,
+    countryCode: 0,
+    numOfTeams: 14,
+    currentMatchweek: 0,
+    creationToken: null,
+    tokenExpiresAt: null,
+    loading: false,
+    error: null,
+    schedule: null
+});
+
+
+export function getLeagueState(): LeagueState {
+    return leagueState;
+}
+
+export function setTeamCount(numOfTeams: number) {
+    leagueState.numOfTeams = numOfTeams
+}
+
+export function setCountry(countryCode: number) {
+    leagueState.countryCode = countryCode
+}
+
+export function getCountry(): number {
+    return leagueState.countryCode;
+}
+
+export function setMatchweek(currentMatchweek: number){
+    leagueState.currentMatchweek = currentMatchweek
+}
+
+export function setLeagueSchedule(schedule: Schedule): void {
+    leagueState.schedule = schedule
+}
 
 export function setLeagueStatus(data: LeagueStatusData): void {
     if (data.status === 'HAS_LEAGUE') {
@@ -97,4 +111,5 @@ export function clearLeagueState(): void {
     leagueState.tokenExpiresAt = null;
     leagueState.loading = false;
     leagueState.error = null;
+    leagueState.schedule = null;
 }

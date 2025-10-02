@@ -1,71 +1,78 @@
 <script lang="ts">
     import Formation from "$lib/Formation.svelte";
     import TeamHeader from "$lib/TeamHeader.svelte";
-    import { playerTeam } from "$lib/stores/teams.svelte";
     import { getOpponentTeam } from "$lib/utils/team";
+    import type { PageData } from './$types';
+    
+    let { data }: { data: PageData } = $props();
     
     let opponentMode = $state(0); // 0 = Comparison, 1 = Matchup
-    let tabDisplay = $state(0); //0 = Pos Groups, 1 = Zonal
-
-    const opponent = getOpponentTeam(playerTeam.nextOpponentID)
-   
+    let tabDisplay = $state(0); // 0 = Pos Groups, 1 = Zonal
+    
+    // Get the opponent team
+    const opponent = getOpponentTeam(data.team?.nextOpponentID);
 </script>
 
-<div class="formation-container">
-    <div class="team-header">
-            <TeamHeader team={playerTeam} computer={true} />
+{#if data.team}
+    <div class="matchup-container">
+        <div class="team-header">
+            <TeamHeader team={data.team} computer={true} />
         </div>
         
         {#if opponent}
             <div class="vs-indicator">
-                <h2>{playerTeam.name} vs {opponent.name}</h2>
+                <h2>{data.team.name} vs {opponent.name}</h2>
             </div>
         {:else}
             <div class="vs-indicator">
                 <h2>No opponent scheduled</h2>
             </div>
         {/if}
-    <div class="controls">
-        <label class="mode-toggle">
-            <span>View Mode:</span>
-            <select bind:value={tabDisplay}>
-                <option value={0}>Positional Groups</option>
-                <option value={1}>Zones</option>
-            </select>
-        </label>
-        <label class="mode-toggle">
-            <span>Opponent View:</span>
-            <select bind:value={opponentMode}>
-                <option value={0}>Comparison View</option>
-                <option value={1}>Matchup View</option>
-            </select>
-        </label>
-    </div>
-    
-    {#key opponentMode || tabDisplay}
-        <div class="formation-wrapper">
-            <Formation 
-                team={playerTeam} 
-                base={false} 
-                opponent={opponent} 
-                viewOpponent={true} 
-                {opponentMode}
-                {tabDisplay}
-                zonesVisible={tabDisplay === 1}
-            />
+        
+        <div class="controls">
+            <label class="mode-toggle">
+                <span>View Mode:</span>
+                <select bind:value={tabDisplay}>
+                    <option value={0}>Positional Groups</option>
+                    <option value={1}>Zones</option>
+                </select>
+            </label>
+            <label class="mode-toggle">
+                <span>Opponent View:</span>
+                <select bind:value={opponentMode}>
+                    <option value={0}>Comparison View</option>
+                    <option value={1}>Matchup View</option>
+                </select>
+            </label>
         </div>
-    {/key}
-</div>
+        
+        {#key opponentMode || tabDisplay}
+            <div class="formation-wrapper">
+                <Formation
+                    team={data.team}
+                    base={false}
+                    {opponent}
+                    viewOpponent={true}
+                    {opponentMode}
+                    {tabDisplay}
+                    zonesVisible={tabDisplay === 1}
+                />
+            </div>
+        {/key}
+    </div>
+{:else}
+    <p>Team not found</p>
+{/if}
 
 <style>
-    .formation-container {
+    .matchup-container {
         display: flex;
         flex-direction: column;
         gap: 1rem;
         padding: 1rem;
         margin-bottom: 10rem;
     }
-
+    
     .team-header {
         margin-bottom: 1rem;
     }

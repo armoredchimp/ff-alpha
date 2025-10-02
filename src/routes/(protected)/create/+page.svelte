@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { getLeagueState, setCountry, setTeamCount } from "$lib/stores/league.svelte";
+	import { getLeagueState, setCountry, setLeagueSchedule, setTeamCount } from "$lib/stores/league.svelte";
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
     import { enhance } from '$app/forms';
@@ -76,7 +76,7 @@
                         leagueState.countryCode = country_code;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
-                        
+                        setLeagueSchedule(result.data.schedule)
                         await invalidateAll();
                         
                         // Navigate to draft

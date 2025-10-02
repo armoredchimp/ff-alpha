@@ -16,7 +16,8 @@
         extractPlayerIds,
         calculateTotalScores,
         setSelected,
-        dePopulateTeam
+        dePopulateTeam,
+        getOpponentName
     } from "$lib/utils";
     import type { Team } from "$lib/types/types";
 	
@@ -247,6 +248,7 @@
     <div>
         <TeamHeader team={playerTeam} computer={false} />
     </div>
+    <h1>Next Opponent: {getOpponentName(playerTeam.nextOpponentID)}</h1>
     <div>
         <TeamScores
             scores={playerTeam.scores.total}

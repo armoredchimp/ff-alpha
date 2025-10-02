@@ -3,7 +3,7 @@
     import { signUp, confirmSignUp, signIn, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
-    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount } from '$lib/stores/league.svelte';
+    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount, setLeagueSchedule, setMatchweek } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
@@ -12,6 +12,7 @@
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
 	  import { delay } from '../lib/utils';
+	import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -156,8 +157,16 @@ async function signUserIn(values) {
 async function fetchLeagueInfo() {
     try {
         const response = await axios.get('/api/supabase/league_info'); 
+
+        if(response.data.schedule){
+          setLeagueSchedule(response.data.schedule)
+        }
         
-        return response.data; // Returns { draftComplete, countriesCode, redirect }
+        if(response.data.currentMatchweek){
+          setMatchweek(response.data.currentMatchweek)
+        }
+
+        return response.data; 
     } catch (error) {
         console.error('Error fetching league info:', error);
         return null;
@@ -185,6 +194,10 @@ async function handlePostLeagueLoad(leagueData) {
                 }
                 delay(100);
                 hydrateManagers();
+
+                if (leagueData.schedule && leagueData.currentMatchweek){
+                  hydrateNextOpponents(leagueData.schedule, leagueData.currentMatchweek)
+                }
                 goto(leagueData.redirect);
             }
         } else if (leagueData.redirect) {

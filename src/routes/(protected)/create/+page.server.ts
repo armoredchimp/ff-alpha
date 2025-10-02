@@ -1,6 +1,7 @@
 import { supabaseScaling } from '$lib/client/supabase/supaClient';
 import { fail, redirect } from '@sveltejs/kit';
 import { updateSession, getSession } from '$lib/server/auth';
+import { generateLeagueSchedule } from '$lib/utils/league';
 import type { Actions } from './$types';
 
 interface League {
@@ -11,6 +12,16 @@ interface League {
     countries_code: number;
     draft_complete: boolean;
 }
+
+const maxGames = {
+    1: 38,
+    2: 38,
+    3: 34,
+    4: 34,
+    5: 38
+};
+
+
 
 export const actions: Actions = {
     createLeague: async ({ request, cookies }) => {
@@ -25,6 +36,8 @@ export const actions: Actions = {
         const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
         const creationToken = data.get('creationToken') as string;
         const countryCode = parseInt(data.get('countryCode') as string, 10);
+
+        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countryCode])
        
         if (!leagueName?.trim()) {
             return fail(400, { error: 'Please enter a league name' });
@@ -34,21 +47,20 @@ export const actions: Actions = {
             return fail(403, { error: 'Not authorized to create a league' });
         }
 
-        // Validate country code is within valid range
         if (!countryCode || countryCode < 1 || countryCode > 5) {
             return fail(400, { error: 'Invalid country selection' });
         }
        
         try {
-            // Create league in Supabase with the selected country code
             const { data: league, error: supabaseError } = await supabaseScaling
                 .from('leagues')
                 .insert({
                     creator: session.userId,
                     league_name: leagueName,
                     total_teams: selectedTeams,
-                    countries_code: countryCode, // Use the dynamic country code
-                    draft_complete: false
+                    countries_code: countryCode, 
+                    draft_complete: false,
+                    schedule: schedule
                 })
                 .select()
                 .single<League>();
@@ -75,7 +87,8 @@ export const actions: Actions = {
                     id: league.league_id.toString(),
                     name: league.league_name,
                     totalTeams: league.total_teams,
-                    countryCode: league.countries_code
+                    countryCode: league.countries_code,
+                    schedule: schedule
                 }
             };
            

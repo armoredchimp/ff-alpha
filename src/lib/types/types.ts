@@ -110,3 +110,38 @@ export type Manager = {
     league_id: number;
     preferred_formation: string | null;
 };
+
+export interface Schedule {
+  [weekNumber: string]: Array<[number, number]>;
+}
+
+export function isValidSchedule(schedule: unknown): schedule is Schedule {
+  if (!schedule || typeof schedule !== 'object') {
+    return false;
+  }
+  
+  const scheduleObj = schedule as Record<string, unknown>;
+  
+  // Check if all keys are numeric strings and values are valid matchup arrays
+  for (const [key, value] of Object.entries(scheduleObj)) {
+    // Check if key is a numeric string
+    if (!/^\d+$/.test(key)) {
+      return false;
+    }
+    
+    if (!Array.isArray(value)) {
+      return false;
+    }
+    
+    for (const matchup of value) {
+      if (!Array.isArray(matchup) || 
+          matchup.length !== 2 || 
+          typeof matchup[0] !== 'number' || 
+          typeof matchup[1] !== 'number') {
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
