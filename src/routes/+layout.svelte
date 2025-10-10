@@ -2013,7 +2013,8 @@ function toggleDevBar() {
 
 {#if devBarVisible}
     <div class="dev-bar">
-        <button><a href={'/dev'}>Admin</a></button>
+        <button><a href={'/dev/update_players'}>Update Players</a></button>
+        <button><a href={'/dev/weekly'}>Weekly Matches</a></button>
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
         <button onclick={updateAllMinis('2526')}>Update All Minis</button>

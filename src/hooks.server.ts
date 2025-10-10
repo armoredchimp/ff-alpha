@@ -19,6 +19,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     // Handle API proxy routes for SportMonks
     if (event.url.pathname.startsWith('/api/teams') || 
         event.url.pathname.startsWith('/api/players') || 
+        event.url.pathname.startsWith('/api/fixtures') ||
         event.url.pathname.startsWith('/api/coaches')) {
         try {
             const endpoint = event.url.pathname.replace('/api','');
