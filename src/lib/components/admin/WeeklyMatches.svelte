@@ -13,6 +13,8 @@
     let currentPage = 1;
     let statusMessage = '';
     
+
+
     // Function to adjust date by days
     function adjustDate(dateString, days) {
         const date = new Date(dateString);
@@ -94,11 +96,14 @@
                     if (fixture.lineups && Array.isArray(fixture.lineups)) {
                         for (const lineup of fixture.lineups) {
                             // Create base record for player
+
+                       
                             const playerRecord = {
                                 player_id: lineup.player_id,
                                 season_id: seasonId,
                                 fixture_id: fixtureId,
-                                player_name: lineup.player_name
+                                player_name: lineup.player_name,
+                                
                             };
                             
                             // Process each stat detail

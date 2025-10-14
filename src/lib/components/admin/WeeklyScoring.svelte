@@ -1,4 +1,44 @@
 <script>
+    import { supabase } from "$lib/client/supabase/supaClient";
+
+    async function scorePlayer(player_id){
+        const { data, error } = await supabase
+            .from('current_week_stats')
+            .select('*')
+            .eq('player_id', player_id)
+            .single()
+
+            if(error){
+                console.error(error)
+                return;
+            }
+
+            if(data){
+                const minutes = data['minutes_played']
+                
+                // adjustment so subs aren't too impactful
+                let adjustedMinutes = minutes > 20 ? minutes : 20
+                
+
+            let per90Data = {}
+
+               // Populate per90Data by converting all stats
+            for (const [key, value] of Object.entries(data)) {
+                // Skip non-stat fields
+                if (key === 'player_id' || key === 'minutes_played' || value === null) {
+                    continue;
+                }
+                
+                const formattedKey = formatStatName(key);
+                per90Data[formattedKey] = (value / adjustedMinutes);
+            }
+            
+            const detailedPosition = data.position; 
+            const defensiveScore = scoreDefensiveAdvanced(per90Data, detailedPosition);
+            }
+    }
+
+
     function scoreDefensiveAdvanced(per90Data, detailedPosition) {
     const weights = defenseWeightMap[detailedPosition];
     if (!weights) return 0;
