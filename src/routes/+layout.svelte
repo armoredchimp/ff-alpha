@@ -2015,6 +2015,7 @@ function toggleDevBar() {
     <div class="dev-bar">
         <button><a href={'/dev/update_players'}>Update Players</a></button>
         <button><a href={'/dev/weekly'}>Weekly Matches</a></button>
+        <button><a href={'/dev/weight_tables'}>Weight Tables</a></button>
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
         <button onclick={updateAllMinis('2526')}>Update All Minis</button>
@@ -2026,8 +2027,8 @@ function toggleDevBar() {
         <button onclick={getLeaguePlayersAndUpload(23621, 'laliga','2425')}>La Liga</button>
         <button onclick={getLeaguePlayersAndUpload(23746, 'seriea','2425')}>Serie A</button>
         <button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
-        <button onclick={fetchAllWeights}>Weights</button>
-        <button onclick={testWeightMap}>Test Weight to Defense</button>
+        <!-- <button onclick={fetchAllWeights}>Weights</button>
+        <button onclick={testWeightMap}>Test Weight to Defense</button> -->
         <button onclick={statRankings}>Stat Rankings</button>
         <button onclick={allManagers}>Managers to DB</button>
         <button onclick={getNations}>Nations</button>
