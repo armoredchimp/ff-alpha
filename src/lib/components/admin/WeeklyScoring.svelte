@@ -1,5 +1,6 @@
 <script>
     import { supabase } from "$lib/client/supabase/supaClient";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap } from "$lib/stores/generic.svelte";
 
     async function scorePlayer(player_id){
         const { data, error } = await supabase
@@ -15,7 +16,7 @@
 
             if(data){
                 const minutes = data['minutes_played']
-                
+
                 // adjustment so subs aren't too impactful
                 let adjustedMinutes = minutes > 20 ? minutes : 20
                 
@@ -33,13 +34,32 @@
                 per90Data[formattedKey] = (value / adjustedMinutes);
             }
             
-            const detailedPosition = data.position; 
-            const defensiveScore = scoreDefensiveAdvanced(per90Data, detailedPosition);
+            const detailedPosition = data.detailed_position; 
+
+            if(detailedPosition && detailedPosition !== 'Goalkeeper'){
+                const defensiveScore = scoreDefensiveAdvanced(per90Data, detailedPosition);
+                const attackingScore = scoreAttackingAdvanced(per90Data, detailedPosition)
+                const possessionScore = scorePossessionAdvanced(per90Data, detailedPosition)
+                const passingScore = scorePassingAdvanced(per90Data, detailedPosition)
+                const finishingScore = scoreFinishingAdvanced(per90Data, detailedPosition)    
+                
+                console.log(defensiveScore, attackingScore, possessionScore, passingScore, finishingScore)
+
+            } else {
+                const keeperScore = scoreKeeperAdvanced(per90Data, detailedPosition)
+                const passingScore = scorePassingAdvanced(per90Data, detailedPosition)
+
+                console.log(keeperScore, passingScore)
+            }
+
+         
+
+
             }
     }
 
 
-    function scoreDefensiveAdvanced(per90Data, detailedPosition) {
+function scoreDefensiveAdvanced(per90Data, detailedPosition) {
     const weights = defenseWeightMap[detailedPosition];
     if (!weights) return 0;
     
@@ -71,8 +91,8 @@
     score += (per90Data.BallRecoveryPer90 || 0) * (weights.BallRecoveryPer90 || 0);
     score += (per90Data.LongBallsWonPercentage || 0) * (weights.LongBallsWonPercentage || 0);
     
-    score = (score * 0.8);
-    return capScore(score);
+    score = (score * 0.3);
+    return score
 }
 
 function scorePassingAdvanced(per90Data, detailedPosition) {
@@ -103,7 +123,7 @@ function scorePassingAdvanced(per90Data, detailedPosition) {
         score *= 4;
     }
     
-    return capScore(score);
+    return score
 }
 
 function scorePossessionAdvanced(per90Data, detailedPosition) {
@@ -140,13 +160,13 @@ function scorePossessionAdvanced(per90Data, detailedPosition) {
     score += (per90Data.ThroughBallsPer90 || 0) * (weights.ThroughBallsPer90 || 0);
     
     const passAccuracy = per90Data.AccuratePassesPercentage || 0;
-    score = (score / 30) * passAccuracy;
+    score = (score / 60) * passAccuracy;
     
     if (score <= 100) {
         score = passAccuracy;
     }
     
-    return capScore(score);
+    return score
 }
 
 function scoreAttackingAdvanced(per90Data, detailedPosition) {
@@ -178,8 +198,7 @@ function scoreAttackingAdvanced(per90Data, detailedPosition) {
     score += (per90Data.DribbleAttemptsPer90 || 0) * (weights.DribbleAttemptsPer90 || 0);
     score += (per90Data.ThroughBallsWonPer90 || 0) * (weights.ThroughBallsWonPer90 || 0);
     
-    score = score * 2;
-    return capScore(score);
+    return score
 }
 
 function scoreFinishingAdvanced(per90Data, detailedPosition) {
@@ -201,8 +220,7 @@ function scoreFinishingAdvanced(per90Data, detailedPosition) {
     score += (per90Data.PenaltiesScoredPer90 || 0) * (weights.PenaltiesScoredPer90 || 0);
     score += (per90Data.ShotsTotalPer90 || 0) * (weights.ShotsTotalPer90 || 0);
     
-    score = score * 2;
-    return capScore(score);
+    return score
 }
 
 function scoreKeeperAdvanced(per90Data, detailedPosition) {
@@ -230,6 +248,6 @@ function scoreKeeperAdvanced(per90Data, detailedPosition) {
     score += (per90Data.PenaltiesSavedPer90 || 0) * (weights.PenaltiesSavedPer90 || 0);
     
     score = (score / 14);
-    return capScore(score);
+    return score
 }
 </script>
