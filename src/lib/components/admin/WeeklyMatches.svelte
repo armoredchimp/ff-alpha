@@ -22,10 +22,12 @@
     }
 
     function posCheck(positionName) {
-        if (positionName === 'Attacker'){
+        if (positionName === 'Attacker') {
             return 'Centre Forward'
-        } else if (positionName === 'Right Midfield' || positionName === 'Left Midfield'){
-            return 'Central Midfield'
+        } else if (positionName === 'Right Midfield') {
+            return 'Right Wing'
+        } else if (positionName === 'Left Midfield') {
+            return 'Left Wing'
         } else {
             return positionName;
         }
@@ -400,7 +402,7 @@
     .position-button:hover {
         background: #138496;
     }
-    
+
     .upload-button {
         background: #28a745;
     }

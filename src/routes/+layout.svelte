@@ -1239,10 +1239,10 @@ async function insertPer90s(ninetyTable, id, p90s){
                     }
 
                     if ((statsToInsert['Detailed Position']) === 'Right Midfield'){
-                        (statsToInsert['Detailed Position']) = 'Central Midfield'
+                        (statsToInsert['Detailed Position']) = 'Right Wing'
                     }
                     if ((statsToInsert['Detailed Position']) === 'Left Midfield'){
-                        (statsToInsert['Detailed Position']) = 'Central Midfield'
+                        (statsToInsert['Detailed Position']) = 'Left Wing'
                     }
                     if ((statsToInsert['Detailed Position']) === 'Secondary Striker'){
                         (statsToInsert['Detailed Position']) = 'Centre Forward'
