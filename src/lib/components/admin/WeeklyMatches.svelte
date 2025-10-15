@@ -14,6 +14,23 @@
     let statusMessage = '';
     
 
+    const defaultPositions = {
+        24 : 'Goalkeeper',
+        25 : 'Central Midfield',
+        26 : 'Attacking Midfield',
+        27 : 'Centre Forward'
+    }
+
+    function posCheck(positionName) {
+        if (positionName === 'Attacker'){
+            return 'Centre Forward'
+        } else if (positionName === 'Right Midfield' || positionName === 'Left Midfield'){
+            return 'Central Midfield'
+        } else {
+            return positionName;
+        }
+    }
+
 
     // Function to adjust date by days
     function adjustDate(dateString, days) {
@@ -165,6 +182,7 @@
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
+
             
             statusMessage = `Successfully processed ${totalPlayers} player records!`;
             progress = 100;
@@ -178,6 +196,110 @@
         }
     }
     
+
+    async function weeklyPositions(){
+        loading = true;
+        error = null;
+        progress = 0;
+        totalPlayers = 0;
+        processedPlayers = 0;
+        currentPage = 1;
+        let hasMore = true;
+
+        try {
+            statusMessage = 'Starting position data processing...';
+            
+            while (hasMore) {
+                statusMessage = `Fetching positions page ${currentPage}...`;
+                
+                const response = await axios.get(`/api/fixtures/between/${startDate}/${endDate}`, {
+                    params: {
+                        include: 'lineups.detailedposition',
+                        page: currentPage
+                    }
+                });
+
+                if (!response.data || !response.data.data) {
+                    throw new Error('Invalid response structure');
+                }
+                        
+                const fixtures = response.data.data;
+                const pagination = response.data.pagination;
+                hasMore = pagination?.has_more || false;
+
+                const playerData = [];
+
+                for(const fixture of fixtures){
+                    if(fixture.lineups && Array.isArray(fixture.lineups)) {
+                        for (const lineup of fixture.lineups) {
+                            let detailed_position = null;
+                            
+                            if(lineup.detailedposition && lineup.detailedposition.name) {
+                                detailed_position = posCheck(lineup.detailedposition.name);
+                            } else if (lineup.position_id){
+                                // if no detailed position, use position id for a default position by group
+                                detailed_position = defaultPositions[lineup.position_id];
+                            } else {
+                                console.error(`Unable to find position for player ${lineup.player_id}`);
+                            }
+
+                            const player = {
+                                player_id: lineup.player_id,
+                                detailed_position: detailed_position
+                            };
+
+                            playerData.push(player);
+                        }
+                    }    
+                }
+
+                totalPlayers += playerData.length;
+                
+                // Batch insert to Supabase
+                if (playerData.length > 0) {
+                    statusMessage = `Uploading ${playerData.length} position records from page ${currentPage}...`;
+                    
+                    // Process in smaller batches to avoid timeouts
+                    const BATCH_SIZE = 100;
+                    for (let i = 0; i < playerData.length; i += BATCH_SIZE) {
+                        const batch = playerData.slice(i, Math.min(i + BATCH_SIZE, playerData.length));
+                        
+                        const { data, error: supabaseError } = await supabase
+                            .from('current_week_stats')
+                            .upsert(batch, { 
+                                onConflict: 'player_id',
+                                ignoreDuplicates: false 
+                            });
+                        
+                        if (supabaseError) {
+                            console.error('Supabase error:', supabaseError);
+                            throw new Error(`Failed to upload batch: ${supabaseError.message}`);
+                        }
+                        
+                        processedPlayers += batch.length;
+                        progress = Math.round((processedPlayers / totalPlayers) * 100);
+                    }
+                }
+                
+                currentPage++;
+                
+                // Add a small delay to avoid rate limiting
+                if (hasMore) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            
+            statusMessage = `Successfully processed ${totalPlayers} position records!`;
+            progress = 100;
+            
+        } catch (err) {
+            error = err.message || 'Failed to process position data';
+            statusMessage = 'Error occurred during position processing';
+            console.error('Error processing position data:', err);
+        } finally {
+            loading = false;
+        }
+    }
 
 </script>
 
@@ -269,6 +391,14 @@
     
     .week-button:hover {
         background: #545b62;
+    }
+    
+    .position-button {
+        background: #17a2b8;
+    }
+
+    .position-button:hover {
+        background: #138496;
     }
     
     .upload-button {
@@ -426,6 +556,14 @@
                 disabled={loading}
             >
                 {loading ? 'Processing...' : 'Upload to Supabase'}
+            </button>
+
+            <button 
+                class="position-button" 
+                on:click={weeklyPositions}
+                disabled={loading}
+            >
+                {loading ? 'Processing...' : 'Upload Positions'}
             </button>
         </div>
     </div>
