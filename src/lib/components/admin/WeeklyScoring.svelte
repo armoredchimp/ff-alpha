@@ -115,8 +115,6 @@ function scorePassingAdvanced(per90Data, detailedPosition) {
     score += (per90Data.BackwardPassesPer90 || 0) * (weights.BackwardPassesPer90 || 0);
     score += (per90Data.PassesInFinalThirdPer90 || 0) * (weights.PassesInFinalThirdPer90 || 0);
     score += (per90Data.AccuratePassesPer90 || 0) * (weights.AccuratePassesPer90 || 0);
-    score += (per90Data.ThroughBallsWonPer90 || 0) * (weights.ThroughBallsWonPer90 || 0);
-    score += (per90Data.TotalCrossesPer90 || 0) * (weights.TotalCrossesPer90 || 0);
     score += (per90Data.SuccessfulCrossesPercentage || 0) * (weights.SuccessfulCrossesPercentage || 0);
     
     if (detailedPosition === 'Goalkeeper') {
