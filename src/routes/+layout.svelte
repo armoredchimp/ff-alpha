@@ -2015,6 +2015,7 @@ function toggleDevBar() {
     <div class="dev-bar">
         <button><a href={'/dev/update_players'}>Update Players</a></button>
         <button><a href={'/dev/weekly'}>Weekly Matches</a></button>
+        <button><a href={'/dev/weekly_scoring'}>Weekly Scoring</a></button>
         <button><a href={'/dev/weight_tables'}>Weight Tables</a></button>
         <button onclick={allLeaguesLastSeason()}>All Leagues Last Season</button>
         <button onclick={allLeaguesThisSeason()}>All Leagues This Season</button>
