@@ -1,8 +1,14 @@
 <script>
     import { supabase } from "$lib/client/supabase/supaClient";
-    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap } from "$lib/stores/generic.svelte";
+    import { 
+        defenseWeightMap, 
+        passingWeightMap, 
+        possessionWeightMap, 
+        attackingWeightMap, 
+        keepingWeightMap, 
+        finishingWeightMap 
+    } from "$lib/stores/generic.svelte";
     
-
     const statTypeMap = {
         'cleansheets': false,
         'error_lead_to_goal': false,
@@ -14,39 +20,275 @@
     };
 
     function formatStatName(snakeCaseStr, addPer90 = null) {
-        // Check if there's an exception in the map
         const mappedValue = statTypeMap[snakeCaseStr.toLowerCase()];
         const shouldAddPer90 = mappedValue !== undefined ? mappedValue : (addPer90 !== null ? addPer90 : true);
         
-        // Convert snake_case to PascalCase
         const pascalCase = snakeCaseStr
             .split('_')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join('');
         
-        // Add Per90 suffix if needed
         return shouldAddPer90 ? `${pascalCase}Per90` : pascalCase;
     }
 
-    async function scorePlayer(player_id){
+    // Generic scoring function with detailed logging
+    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor = 1) {
+        console.log(`\n======= ${categoryName} Score Calculation =======`);
+        console.log(`Position weights:`, weights);
+        
+        let totalScore = 0;
+        
+        statKeys.forEach(statKey => {
+            const statValue = per90Data[statKey] || 0;
+            const weight = weights[statKey] || 0;
+            const contribution = statValue * weight;
+            totalScore += contribution;
+            
+            // Log each stat's contribution
+            if (statValue !== 0 || weight !== 0) {
+                console.log(`${statKey}:`);
+                console.log(`  Value: ${statValue.toFixed(4)}`);
+                console.log(`  Weight: ${weight}`);
+                console.log(`  Contribution: ${contribution.toFixed(4)}`);
+                console.log(`  Running Total: ${totalScore.toFixed(4)}`);
+            }
+        });
+        
+        // Apply scale factor if needed
+        const finalScore = totalScore * scaleFactor;
+        
+        console.log(`\nRaw Total: ${totalScore.toFixed(4)}`);
+        if (scaleFactor !== 1) {
+            console.log(`Scale Factor: ${scaleFactor}`);
+            console.log(`Final Score: ${finalScore.toFixed(4)}`);
+        }
+        console.log(`======= End ${categoryName} =======\n`);
+        
+        return finalScore;
+    }
+
+    function scoreDefensiveAdvanced(per90Data, detailedPosition) {
+        const weights = defenseWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No defensive weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const defenseStats = [
+            'TacklesPer90',
+            'FoulsPer90',
+            'InterceptionsPer90',
+            'ClearancesPer90',
+            'AerialsWonPer90',
+            'DuelsWonPercentage',
+            'Cleansheets',
+            'ErrorLeadToGoal',
+            'DribbledPastPer90',
+            'BlockedShotsPer90',
+            'GoalsConcededPer90',
+            'CrossesBlockedPer90',
+            'LongBallsWonPer90',
+            'ClearanceOfflinePer90',
+            'ErrorLeadToShotPer90',
+            'LastManTacklePer90',
+            'OffsidesProvokedPer90',
+            'TacklesWonPercentage',
+            'DuelsLostPer90',
+            'AerialsLostPer90',
+            'AerialsWonPercentage',
+            'BallRecoveryPer90',
+            'LongBallsWonPercentage'
+        ];
+        
+        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 0.3);
+    }
+
+    function scorePassingAdvanced(per90Data, detailedPosition) {
+        const weights = passingWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No passing weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const passingStats = [
+            'BigChancesCreatedPer90',
+            'KeyPassesPer90',
+            'AccuratePassesPercentage',
+            'PassesPer90',
+            'AssistsPer90',
+            'AccurateCrossesPer90',
+            'ThroughBallsPer90',
+            'ChancesCreatedPer90',
+            'LongBallsPer90',
+            'BackwardPassesPer90',
+            'PassesInFinalThirdPer90',
+            'AccuratePassesPer90',
+            'SuccessfulCrossesPercentage'
+        ];
+        
+        const scaleFactor = detailedPosition === 'Goalkeeper' ? 4 : 1;
+        return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor);
+    }
+
+    function scorePossessionAdvanced(per90Data, detailedPosition) {
+        const weights = possessionWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No possession weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const possessionStats = [
+            'AccuratePassesPer90',
+            'AccuratePassesPercentage',
+            'PassesPer90',
+            'SuccessfulDribblesPer90',
+            'DispossessedPer90',
+            'FoulsPer90',
+            'FoulsDrawnPer90',
+            'LongBallsWonPer90',
+            'ShotsOffTargetPer90',
+            'KeyPassesPer90',
+            'BigChancesCreatedPer90',
+            'ThroughBallsWonPer90',
+            'OffsidesPer90',
+            'DuelsWonPer90',
+            'TouchesPer90',
+            'PossessionLostPer90',
+            'BallRecoveryPer90',
+            'BackwardPassesPer90',
+            'TurnOverPer90',
+            'LongBallsPer90',
+            'LongBallsWonPercentage',
+            'AerialsLostPer90',
+            'AerialsWonPercentage',
+            'ThroughBallsPer90'
+        ];
+        
+        // Calculate base score
+        let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`);
+        
+        // Apply special possession scoring logic
+        const passAccuracy = per90Data.AccuratePassesPercentage || 0;
+        score = (score / 60) * passAccuracy;
+        
+        console.log(`Possession Special Calculation:`);
+        console.log(`  Pass Accuracy: ${passAccuracy}`);
+        console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
+        
+        if (score <= 100) {
+            score = passAccuracy;
+            console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
+        }
+        
+        return score;
+    }
+
+    function scoreAttackingAdvanced(per90Data, detailedPosition) {
+        const weights = attackingWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No attacking weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const attackingStats = [
+            'AssistsPer90',
+            'BigChancesCreatedPer90',
+            'GoalsPer90',
+            'ShotsOnTargetPer90',
+            'SuccessfulDribblesPer90',
+            'KeyPassesPer90',
+            'AccurateCrossesPer90',
+            'BigChancesMissedPer90',
+            'HitWoodworkPer90',
+            'LongBallsWonPer90',
+            'OffsidesPer90',
+            'OwnGoalsPer90',
+            'ShotsBlockedPer90',
+            'ShotsOffTargetPer90',
+            'ChancesCreatedPer90',
+            'PenaltiesWonPer90',
+            'PassesInFinalThirdPer90',
+            'SuccessfulCrossesPercentage',
+            'DribbleAttemptsPer90',
+            'ThroughBallsWonPer90'
+        ];
+        
+        return calculateScore(per90Data, weights, attackingStats, `Attacking (${detailedPosition})`);
+    }
+
+    function scoreFinishingAdvanced(per90Data, detailedPosition) {
+        const weights = finishingWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No finishing weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const finishingStats = [
+            'BigChancesMissedPer90',
+            'GoalsPer90',
+            'HitWoodworkPer90',
+            'BlockedShotsPer90',
+            'ShotsOffTargetPer90',
+            'ShotsOnTargetPer90',
+            'OffsidessPer90',  // Note: double 's' in original
+            'PenaltiesMissedPer90',
+            'PenaltiesScoredPer90',
+            'ShotsTotalPer90'
+        ];
+        
+        return calculateScore(per90Data, weights, finishingStats, `Finishing (${detailedPosition})`);
+    }
+
+    function scoreKeeperAdvanced(per90Data, detailedPosition) {
+        const weights = keepingWeightMap[detailedPosition];
+        if (!weights) {
+            console.log(`No keeping weights for position: ${detailedPosition}`);
+            return 0;
+        }
+        
+        const keeperStats = [
+            'AerialsWonPer90',
+            'Cleansheets',
+            'ClearancesPer90',
+            'GoalsConcededPer90',
+            'ErrorLeadToGoal',
+            'SavesPer90',
+            'SavesInsideBoxPer90',  // Note: different capitalization from original
+            'DuelsWonPercentage',
+            'FoulsDrawnPer90',
+            'FoulsPer90',
+            'LongBallsWonPer90',
+            'GoalkeeperGoalsConcededPer90',
+            'PunchesPer90',
+            'GoodHighClaimPer90',
+            'PenaltiesSavedPer90'
+        ];
+        
+        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1/14);
+    }
+
+    async function scorePlayer(player_id) {
+        console.log(`\n🎯 Starting scoring process for Player ID: ${player_id}`);
+        
         const { data, error } = await supabase
             .from('current_week_stats')
             .select('*')
             .eq('player_id', player_id)
-            .single()
+            .single();
 
-            if(error){
-                console.error(error)
-                return;
-            }
+        if (error) {
+            console.error('Database error:', error);
+            return;
+        }
 
-            if(data){
-                const minutes = data['minutes_played']
-
-                let adjustedMinutes = minutes > 20 ? minutes : 20
-                
-            let per90Data = {}
-
+        if (data) {
+            const minutes = data['minutes_played'];
+            const adjustedMinutes = minutes > 20 ? minutes : 20;
+            
+            console.log(`Minutes played: ${minutes}, Adjusted minutes: ${adjustedMinutes}`);
+            
+            // Convert to per90 data
+            let per90Data = {};
             for (const [key, value] of Object.entries(data)) {
                 if (key === 'player_id' || key === 'minutes_played' || value === null) {
                     continue;
@@ -56,8 +298,11 @@
                 per90Data[formattedKey] = (value / adjustedMinutes);
             }
             
-            const detailedPosition = data.detailed_position; 
-
+            console.log(`\nPer90 Data Generated:`, per90Data);
+            
+            const detailedPosition = data.detailed_position;
+            console.log(`\nPlayer Position: ${detailedPosition}`);
+            
             const scores = {
                 player_id: player_id,
                 attacking_score: null,
@@ -68,20 +313,26 @@
                 keeper_score: null
             };
 
-            if(detailedPosition && detailedPosition !== 'Goalkeeper'){
+            if (detailedPosition && detailedPosition !== 'Goalkeeper') {
                 scores.defensive_score = Math.round(scoreDefensiveAdvanced(per90Data, detailedPosition));
                 scores.attacking_score = Math.round(scoreAttackingAdvanced(per90Data, detailedPosition));
                 scores.possession_score = Math.round(scorePossessionAdvanced(per90Data, detailedPosition));
                 scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition));
-                scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition));    
+                scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition));
                 
-                console.log(scores.defensive_score, scores.attacking_score, scores.possession_score, scores.passing_score, scores.finishing_score)
-
+                console.log('\n📊 FINAL SCORES (Outfield Player):');
+                console.log(`  Defensive: ${scores.defensive_score}`);
+                console.log(`  Attacking: ${scores.attacking_score}`);
+                console.log(`  Possession: ${scores.possession_score}`);
+                console.log(`  Passing: ${scores.passing_score}`);
+                console.log(`  Finishing: ${scores.finishing_score}`);
             } else {
                 scores.keeper_score = Math.round(scoreKeeperAdvanced(per90Data, detailedPosition));
                 scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition));
-
-                console.log(scores.keeper_score, scores.passing_score)
+                
+                console.log('\n📊 FINAL SCORES (Goalkeeper):');
+                console.log(`  Keeper: ${scores.keeper_score}`);
+                console.log(`  Passing: ${scores.passing_score}`);
             }
 
             const { data: insertedData, error: insertError } = await supabase
@@ -96,8 +347,8 @@
                 return;
             }
 
-            console.log('Scores saved:', insertedData);
-            }
+            console.log('\n✅ Scores saved to database:', insertedData);
+        }
     }
 
     let playerId = '';
@@ -107,184 +358,6 @@
             scorePlayer(parseInt(playerId));
         }
     }
-
-function scoreDefensiveAdvanced(per90Data, detailedPosition) {
-    const weights = defenseWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.TacklesPer90 || 0) * (weights.TacklesPer90 || 0);
-    score += (per90Data.FoulsPer90 || 0) * (weights.FoulsPer90 || 0);
-    score += (per90Data.InterceptionsPer90 || 0) * (weights.InterceptionsPer90 || 0);
-    score += (per90Data.ClearancesPer90 || 0) * (weights.ClearancesPer90 || 0);
-    score += (per90Data.AerialsWonPer90 || 0) * (weights.AerialsWonPer90 || 0);
-    score += (per90Data.DuelsWonPercentage || 0) * (weights.DuelsWonPercentage || 0);
-    score += (per90Data.Cleansheets || 0) * (weights.Cleansheets || 0);
-    score += (per90Data.ErrorLeadToGoal || 0) * (weights.ErrorLeadToGoal || 0);
-    score += (per90Data.DribbledPastPer90 || 0) * (weights.DribbledPastPer90 || 0);
-    
-    score += (per90Data.BlockedShotsPer90 || 0) * (weights.BlockedShotsPer90 || 0);
-    score += (per90Data.GoalsConcededPer90 || 0) * (weights.GoalsConcededPer90 || 0);
-    score += (per90Data.CrossesBlockedPer90 || 0) * (weights.CrossesBlockedPer90 || 0);
-    score += (per90Data.LongBallsWonPer90 || 0) * (weights.LongBallsWonPer90 || 0);
-    score += (per90Data.ClearanceOfflinePer90 || 0) * (weights.ClearanceOfflinePer90 || 0);
-    score += (per90Data.ErrorLeadToShotPer90 || 0) * (weights.ErrorLeadToShotPer90 || 0);
-    score += (per90Data.LastManTacklePer90 || 0) * (weights.LastManTacklePer90 || 0);
-    score += (per90Data.OffsidesProvokedPer90 || 0) * (weights.OffsidesProvokedPer90 || 0);
-    score += (per90Data.TacklesWonPercentage || 0) * (weights.TacklesWonPercentage || 0);
-    score += (per90Data.DuelsLostPer90 || 0) * (weights.DuelsLostPer90 || 0);
-    score += (per90Data.AerialsLostPer90 || 0) * (weights.AerialsLostPer90 || 0);
-    score += (per90Data.AerialsWonPercentage || 0) * (weights.AerialsWonPercentage || 0);
-    score += (per90Data.BallRecoveryPer90 || 0) * (weights.BallRecoveryPer90 || 0);
-    score += (per90Data.LongBallsWonPercentage || 0) * (weights.LongBallsWonPercentage || 0);
-    
-    score = (score * 0.3);
-    return score
-}
-
-function scorePassingAdvanced(per90Data, detailedPosition) {
-    const weights = passingWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.BigChancesCreatedPer90 || 0) * (weights.BigChancesCreatedPer90 || 0);
-    score += (per90Data.KeyPassesPer90 || 0) * (weights.KeyPassesPer90 || 0);
-    score += (per90Data.AccuratePassesPercentage || 0) * (weights.AccuratePassesPercentage || 0);
-    score += (per90Data.PassesPer90 || 0) * (weights.PassesPer90 || 0);
-    score += (per90Data.AssistsPer90 || 0) * (weights.AssistsPer90 || 0);
-    score += (per90Data.AccurateCrossesPer90 || 0) * (weights.AccurateCrossesPer90 || 0);
-    score += (per90Data.ThroughBallsPer90 || 0) * (weights.ThroughBallsPer90 || 0);
-    
-    score += (per90Data.ChancesCreatedPer90 || 0) * (weights.ChancesCreatedPer90 || 0);
-    score += (per90Data.LongBallsPer90 || 0) * (weights.LongBallsPer90 || 0);
-    score += (per90Data.BackwardPassesPer90 || 0) * (weights.BackwardPassesPer90 || 0);
-    score += (per90Data.PassesInFinalThirdPer90 || 0) * (weights.PassesInFinalThirdPer90 || 0);
-    score += (per90Data.AccuratePassesPer90 || 0) * (weights.AccuratePassesPer90 || 0);
-    score += (per90Data.SuccessfulCrossesPercentage || 0) * (weights.SuccessfulCrossesPercentage || 0);
-    
-    if (detailedPosition === 'Goalkeeper') {
-        score *= 4;
-    }
-    
-    return score
-}
-
-function scorePossessionAdvanced(per90Data, detailedPosition) {
-    const weights = possessionWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.AccuratePassesPer90 || 0) * (weights.AccuratePassesPer90 || 0);
-    score += (per90Data.AccuratePassesPercentage || 0) * (weights.AccuratePassesPercentage || 0);
-    score += (per90Data.PassesPer90 || 0) * (weights.PassesPer90 || 0);
-    score += (per90Data.SuccessfulDribblesPer90 || 0) * (weights.SuccessfulDribblesPer90 || 0);
-    score += (per90Data.DispossessedPer90 || 0) * (weights.DispossessedPer90 || 0);
-    score += (per90Data.FoulsPer90 || 0) * (weights.FoulsPer90 || 0);
-    score += (per90Data.FoulsDrawnPer90 || 0) * (weights.FoulsDrawnPer90 || 0);
-    
-    score += (per90Data.LongBallsWonPer90 || 0) * (weights.LongBallsWonPer90 || 0);
-    score += (per90Data.ShotsOffTargetPer90 || 0) * (weights.ShotsOffTargetPer90 || 0);
-    score += (per90Data.KeyPassesPer90 || 0) * (weights.KeyPassesPer90 || 0);
-    score += (per90Data.BigChancesCreatedPer90 || 0) * (weights.BigChancesCreatedPer90 || 0);
-    score += (per90Data.ThroughBallsWonPer90 || 0) * (weights.ThroughBallsWonPer90 || 0);
-    score += (per90Data.OffsidesPer90 || 0) * (weights.OffsidesPer90 || 0);
-    score += (per90Data.DuelsWonPer90 || 0) * (weights.DuelsWonPer90 || 0);
-    score += (per90Data.TouchesPer90 || 0) * (weights.TouchesPer90 || 0);
-    score += (per90Data.PossessionLostPer90 || 0) * (weights.PossessionLostPer90 || 0);
-    score += (per90Data.BallRecoveryPer90 || 0) * (weights.BallRecoveryPer90 || 0);
-    score += (per90Data.BackwardPassesPer90 || 0) * (weights.BackwardPassesPer90 || 0);
-    score += (per90Data.TurnOverPer90 || 0) * (weights.TurnOverPer90 || 0);
-    score += (per90Data.LongBallsPer90 || 0) * (weights.LongBallsPer90 || 0);
-    score += (per90Data.LongBallsWonPercentage || 0) * (weights.LongBallsWonPercentage || 0);
-    score += (per90Data.AerialsLostPer90 || 0) * (weights.AerialsLostPer90 || 0);
-    score += (per90Data.AerialsWonPercentage || 0) * (weights.AerialsWonPercentage || 0);
-    score += (per90Data.ThroughBallsPer90 || 0) * (weights.ThroughBallsPer90 || 0);
-    
-    const passAccuracy = per90Data.AccuratePassesPercentage || 0;
-    score = (score / 60) * passAccuracy;
-    
-    if (score <= 100) {
-        score = passAccuracy;
-    }
-    
-    return score
-}
-
-function scoreAttackingAdvanced(per90Data, detailedPosition) {
-    const weights = attackingWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.AssistsPer90 || 0) * (weights.AssistsPer90 || 0);
-    score += (per90Data.BigChancesCreatedPer90 || 0) * (weights.BigChancesCreatedPer90 || 0);
-    score += (per90Data.GoalsPer90 || 0) * (weights.GoalsPer90 || 0);
-    score += (per90Data.ShotsOnTargetPer90 || 0) * (weights.ShotsOnTargetPer90 || 0);
-    score += (per90Data.SuccessfulDribblesPer90 || 0) * (weights.SuccessfulDribblesPer90 || 0);
-    score += (per90Data.KeyPassesPer90 || 0) * (weights.KeyPassesPer90 || 0);
-    
-    score += (per90Data.AccurateCrossesPer90 || 0) * (weights.AccurateCrossesPer90 || 0);
-    score += (per90Data.BigChancesMissedPer90 || 0) * (weights.BigChancesMissedPer90 || 0);
-    score += (per90Data.HitWoodworkPer90 || 0) * (weights.HitWoodworkPer90 || 0);
-    score += (per90Data.LongBallsWonPer90 || 0) * (weights.LongBallsWonPer90 || 0);
-    score += (per90Data.OffsidesPer90 || 0) * (weights.OffsidesPer90 || 0);
-    score += (per90Data.OwnGoalsPer90 || 0) * (weights.OwnGoalsPer90 || 0);
-    score += (per90Data.ShotsBlockedPer90 || 0) * (weights.ShotsBlockedPer90 || 0);
-    score += (per90Data.ShotsOffTargetPer90 || 0) * (weights.ShotsOffTargetPer90 || 0);
-    score += (per90Data.ChancesCreatedPer90 || 0) * (weights.ChancesCreatedPer90 || 0);
-    score += (per90Data.PenaltiesWonPer90 || 0) * (weights.PenaltiesWonPer90 || 0);
-    score += (per90Data.PassesInFinalThirdPer90 || 0) * (weights.PassesInFinalThirdPer90 || 0);
-    score += (per90Data.SuccessfulCrossesPercentage || 0) * (weights.SuccessfulCrossesPercentage || 0);
-    score += (per90Data.DribbleAttemptsPer90 || 0) * (weights.DribbleAttemptsPer90 || 0);
-    score += (per90Data.ThroughBallsWonPer90 || 0) * (weights.ThroughBallsWonPer90 || 0);
-    
-    return score
-}
-
-function scoreFinishingAdvanced(per90Data, detailedPosition) {
-    const weights = finishingWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.BigChancesMissedPer90 || 0) * (weights.BigChancesMissedPer90 || 0);
-    score += (per90Data.GoalsPer90 || 0) * (weights.GoalsPer90 || 0);
-    score += (per90Data.HitWoodworkPer90 || 0) * (weights.HitWoodworkPer90 || 0);
-    score += (per90Data.BlockedShotsPer90 || 0) * (weights.BlockedShotsPer90 || 0);
-    score += (per90Data.ShotsOffTargetPer90 || 0) * (weights.ShotsOffTargetPer90 || 0);
-    score += (per90Data.ShotsOnTargetPer90 || 0) * (weights.ShotsOnTargetPer90 || 0);
-    score += (per90Data.OffsidessPer90 || 0) * (weights.OffsidessPer90 || 0);
-    
-    score += (per90Data.PenaltiesMissedPer90 || 0) * (weights.PenaltiesMissedPer90 || 0);
-    score += (per90Data.PenaltiesScoredPer90 || 0) * (weights.PenaltiesScoredPer90 || 0);
-    score += (per90Data.ShotsTotalPer90 || 0) * (weights.ShotsTotalPer90 || 0);
-    
-    return score
-}
-
-function scoreKeeperAdvanced(per90Data, detailedPosition) {
-    const weights = keepingWeightMap[detailedPosition];
-    if (!weights) return 0;
-    
-    let score = 0;
-    score += (per90Data.AerialsWonPer90 || 0) * (weights.AerialsWonPer90 || 0);
-    score += (per90Data.Cleansheets || 0) * (weights.Cleansheets || 0);
-    score += (per90Data.ClearancesPer90 || 0) * (weights.ClearancesPer90 || 0);
-    score += (per90Data.GoalsConcededPer90 || 0) * (weights.GoalsConcededPer90 || 0);
-    score += (per90Data.ErrorLeadToGoal || 0) * (weights.ErrorLeadToGoal || 0);
-    score += (per90Data.SavesPer90 || 0) * (weights.SavesPer90 || 0);
-    score += (per90Data.SavesInsideboxPer90 || 0) * (weights.SavesInsideBoxPer90 || 0);
-    score += (per90Data.DuelsWonPercentage || 0) * (weights.DuelsWonPercentage || 0);
-    
-    score += (per90Data.FoulsDrawnPer90 || 0) * (weights.FoulsDrawnPer90 || 0);
-    score += (per90Data.FoulsPer90 || 0) * (weights.FoulsPer90 || 0);
-    score += (per90Data.LongBallsWonPer90 || 0) * (weights.LongBallsWonPer90 || 0);
-    score += (per90Data.GoalkeeperGoalsConcededPer90 || 0) * (weights.GoalkeeperGoalsConcededPer90 || 0);
-    score += (per90Data.PunchesPer90 || 0) * (weights.PunchesPer90 || 0);
-    score += (per90Data.GoodHighClaimPer90 || 0) * (weights.GoodHighClaimPer90 || 0);
-    score += (per90Data.PenaltiesSavedPer90 || 0) * (weights.PenaltiesSavedPer90 || 0);
-    
-    score = (score / 14);
-    return score
-}
 </script>
 
 <div>
