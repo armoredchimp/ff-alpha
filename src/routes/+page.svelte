@@ -12,7 +12,7 @@
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
 	  import { delay } from '../lib/utils';
-	import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
+	  import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 

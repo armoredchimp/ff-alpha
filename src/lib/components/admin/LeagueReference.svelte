@@ -155,7 +155,7 @@
 </script>
 
 <div class="admin-container">
-    <h1>League Admin Panel</h1>
+    <h1>Update Matchweeks</h1>
     
     <!-- Add Main Leagues Section -->
     <!-- <div class="section">

@@ -15,6 +15,8 @@
         'duels_won_percentage': false,
         'tackles_won_percentage': false,
         'aerials_won_percentage': false,
+        'successful_crosses_percentage': false,
+        'accurate_passes_percentage': false,
         'long_balls_won_percentage': false,
         'minutes_played': false,
     };
@@ -295,7 +297,15 @@
                 }
                 
                 const formattedKey = formatStatName(key);
-                per90Data[formattedKey] = (value / adjustedMinutes);
+                // Check if this stat should be adjusted by minutes
+                const shouldAdjustByMinutes = statTypeMap[key.toLowerCase()] !== false;
+                
+                if (shouldAdjustByMinutes) {
+                    per90Data[formattedKey] = (value / adjustedMinutes);
+                } else {
+                    // For percentage stats and others in statTypeMap, use raw value
+                    per90Data[formattedKey] = value;
+                }
             }
             
             console.log(`\nPer90 Data Generated:`, per90Data);

@@ -738,7 +738,7 @@
 </script>
 
 <div class="admin-container">
-    <h1>⚽ League Scoring Admin</h1>
+    <h1>Basic Scoring, all matches</h1>
     
     <div class="control-panel">
         <div class="matchweek-inputs">

@@ -507,7 +507,7 @@
 </style>
 
 <div class="container">
-    <h1>Football Stats Uploader</h1>
+    <h1>Raw Weekly Stats</h1>
     
     <div class="date-controls">
         <div class="date-inputs">
