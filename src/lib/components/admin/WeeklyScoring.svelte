@@ -9,6 +9,10 @@
         finishingWeightMap 
     } from "$lib/stores/generic.svelte";
     
+    // ============================================
+    // SHARED CONFIGURATION AND UTILITIES
+    // ============================================
+    
     const statTypeMap = {
         'cleansheets': false,
         'error_lead_to_goal': false,
@@ -33,10 +37,16 @@
         return shouldAddPer90 ? `${pascalCase}Per90` : pascalCase;
     }
 
+    // ============================================
+    // CORE SCORING FUNCTIONS
+    // ============================================
+
     // Generic scoring function with detailed logging
-    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor = 1) {
-        console.log(`\n======= ${categoryName} Score Calculation =======`);
-        console.log(`Position weights:`, weights);
+    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor = 1, enableLogging = true) {
+        if (enableLogging) {
+            console.log(`\n======= ${categoryName} Score Calculation =======`);
+            console.log(`Position weights:`, weights);
+        }
         
         let totalScore = 0;
         
@@ -46,8 +56,8 @@
             const contribution = statValue * weight;
             totalScore += contribution;
             
-            // Log each stat's contribution
-            if (statValue !== 0 || weight !== 0) {
+            // Log each stat's contribution only if logging is enabled
+            if (enableLogging && (statValue !== 0 || weight !== 0)) {
                 console.log(`${statKey}:`);
                 console.log(`  Value: ${statValue.toFixed(4)}`);
                 console.log(`  Weight: ${weight}`);
@@ -59,20 +69,22 @@
         // Apply scale factor if needed
         const finalScore = totalScore * scaleFactor;
         
-        console.log(`\nRaw Total: ${totalScore.toFixed(4)}`);
-        if (scaleFactor !== 1) {
-            console.log(`Scale Factor: ${scaleFactor}`);
-            console.log(`Final Score: ${finalScore.toFixed(4)}`);
+        if (enableLogging) {
+            console.log(`\nRaw Total: ${totalScore.toFixed(4)}`);
+            if (scaleFactor !== 1) {
+                console.log(`Scale Factor: ${scaleFactor}`);
+                console.log(`Final Score: ${finalScore.toFixed(4)}`);
+            }
+            console.log(`======= End ${categoryName} =======\n`);
         }
-        console.log(`======= End ${categoryName} =======\n`);
         
         return finalScore;
     }
 
-    function scoreDefensiveAdvanced(per90Data, detailedPosition) {
+    function scoreDefensiveAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = defenseWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No defensive weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No defensive weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -102,13 +114,13 @@
             'LongBallsWonPercentage'
         ];
         
-        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 0.3);
+        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 0.3, enableLogging);
     }
 
-    function scorePassingAdvanced(per90Data, detailedPosition) {
+    function scorePassingAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = passingWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No passing weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No passing weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -129,13 +141,13 @@
         ];
         
         const scaleFactor = detailedPosition === 'Goalkeeper' ? 4 : 1;
-        return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor);
+        return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor, enableLogging);
     }
 
-    function scorePossessionAdvanced(per90Data, detailedPosition) {
+    function scorePossessionAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = possessionWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No possession weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No possession weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -167,28 +179,32 @@
         ];
         
         // Calculate base score
-        let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`);
+        let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`, 1, enableLogging);
         
         // Apply special possession scoring logic
         const passAccuracy = per90Data.AccuratePassesPercentage || 0;
         score = (score / 60) * passAccuracy;
         
-        console.log(`Possession Special Calculation:`);
-        console.log(`  Pass Accuracy: ${passAccuracy}`);
-        console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
+        if (enableLogging) {
+            console.log(`Possession Special Calculation:`);
+            console.log(`  Pass Accuracy: ${passAccuracy}`);
+            console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
+        }
         
         if (score <= 100) {
             score = passAccuracy;
-            console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
+            if (enableLogging) {
+                console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
+            }
         }
         
         return score;
     }
 
-    function scoreAttackingAdvanced(per90Data, detailedPosition) {
+    function scoreAttackingAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = attackingWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No attacking weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No attacking weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -215,13 +231,13 @@
             'ThroughBallsWonPer90'
         ];
         
-        return calculateScore(per90Data, weights, attackingStats, `Attacking (${detailedPosition})`);
+        return calculateScore(per90Data, weights, attackingStats, `Attacking (${detailedPosition})`, 1, enableLogging);
     }
 
-    function scoreFinishingAdvanced(per90Data, detailedPosition) {
+    function scoreFinishingAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = finishingWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No finishing weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No finishing weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -238,13 +254,13 @@
             'ShotsTotalPer90'
         ];
         
-        return calculateScore(per90Data, weights, finishingStats, `Finishing (${detailedPosition})`);
+        return calculateScore(per90Data, weights, finishingStats, `Finishing (${detailedPosition})`, 1, enableLogging);
     }
 
-    function scoreKeeperAdvanced(per90Data, detailedPosition) {
+    function scoreKeeperAdvanced(per90Data, detailedPosition, enableLogging = true) {
         const weights = keepingWeightMap[detailedPosition];
         if (!weights) {
-            console.log(`No keeping weights for position: ${detailedPosition}`);
+            if (enableLogging) console.log(`No keeping weights for position: ${detailedPosition}`);
             return 0;
         }
         
@@ -266,10 +282,101 @@
             'PenaltiesSavedPer90'
         ];
         
-        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1/14);
+        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1/14, enableLogging);
     }
 
-    async function scorePlayer(player_id) {
+    // ============================================
+    // SHARED SCORING LOGIC
+    // ============================================
+    
+    function convertToPer90Data(data, minutes) {
+        const adjustedMinutes = minutes > 20 ? minutes : 20;
+        let per90Data = {};
+        
+        for (const [key, value] of Object.entries(data)) {
+            if (key === 'player_id' || key === 'minutes_played' || value === null) {
+                continue;
+            }
+            
+            const formattedKey = formatStatName(key);
+            // Check if this stat should be adjusted by minutes
+            const shouldAdjustByMinutes = statTypeMap[key.toLowerCase()] !== false;
+            
+            if (shouldAdjustByMinutes) {
+                per90Data[formattedKey] = (value / adjustedMinutes);
+            } else {
+                // For percentage stats and others in statTypeMap, use raw value
+                per90Data[formattedKey] = value;
+            }
+        }
+        
+        return per90Data;
+    }
+    
+    function calculatePlayerScores(data, enableLogging = true) {
+        const minutes = data['minutes_played'];
+        const adjustedMinutes = minutes > 20 ? minutes : 20;
+        
+        if (enableLogging) {
+            console.log(`Minutes played: ${minutes}, Adjusted minutes: ${adjustedMinutes}`);
+        }
+        
+        // Convert to per90 data
+        const per90Data = convertToPer90Data(data, minutes);
+        
+        if (enableLogging) {
+            console.log(`\nPer90 Data Generated:`, per90Data);
+        }
+        
+        const detailedPosition = data.detailed_position;
+        if (enableLogging) {
+            console.log(`\nPlayer Position: ${detailedPosition}`);
+        }
+        
+        const scores = {
+            player_id: data.player_id,
+            attacking_score: null,
+            defensive_score: null,
+            passing_score: null,
+            finishing_score: null,
+            possession_score: null,
+            keeper_score: null
+        };
+
+        if (detailedPosition && detailedPosition !== 'Goalkeeper') {
+            scores.defensive_score = Math.round(scoreDefensiveAdvanced(per90Data, detailedPosition, enableLogging));
+            scores.attacking_score = Math.round(scoreAttackingAdvanced(per90Data, detailedPosition, enableLogging));
+            scores.possession_score = Math.round(scorePossessionAdvanced(per90Data, detailedPosition, enableLogging));
+            scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
+            scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition, enableLogging));
+            
+            if (enableLogging) {
+                console.log('\n📊 FINAL SCORES (Outfield Player):');
+                console.log(`  Defensive: ${scores.defensive_score}`);
+                console.log(`  Attacking: ${scores.attacking_score}`);
+                console.log(`  Possession: ${scores.possession_score}`);
+                console.log(`  Passing: ${scores.passing_score}`);
+                console.log(`  Finishing: ${scores.finishing_score}`);
+            }
+        } else {
+            scores.keeper_score = Math.round(scoreKeeperAdvanced(per90Data, detailedPosition, enableLogging));
+            scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
+            
+            if (enableLogging) {
+                console.log('\n📊 FINAL SCORES (Goalkeeper):');
+                console.log(`  Keeper: ${scores.keeper_score}`);
+                console.log(`  Passing: ${scores.passing_score}`);
+            }
+        }
+        
+        return scores;
+    }
+
+    // ============================================
+    // INDIVIDUAL PLAYER SCORING
+    // ============================================
+    
+    async function scoreIndividualPlayer(player_id) {
         console.log(`\n🎯 Starting scoring process for Player ID: ${player_id}`);
         
         const { data, error } = await supabase
@@ -284,67 +391,8 @@
         }
 
         if (data) {
-            const minutes = data['minutes_played'];
-            const adjustedMinutes = minutes > 20 ? minutes : 20;
+            const scores = calculatePlayerScores(data, true); // Enable logging for individual scoring
             
-            console.log(`Minutes played: ${minutes}, Adjusted minutes: ${adjustedMinutes}`);
-            
-            // Convert to per90 data
-            let per90Data = {};
-            for (const [key, value] of Object.entries(data)) {
-                if (key === 'player_id' || key === 'minutes_played' || value === null) {
-                    continue;
-                }
-                
-                const formattedKey = formatStatName(key);
-                // Check if this stat should be adjusted by minutes
-                const shouldAdjustByMinutes = statTypeMap[key.toLowerCase()] !== false;
-                
-                if (shouldAdjustByMinutes) {
-                    per90Data[formattedKey] = (value / adjustedMinutes);
-                } else {
-                    // For percentage stats and others in statTypeMap, use raw value
-                    per90Data[formattedKey] = value;
-                }
-            }
-            
-            console.log(`\nPer90 Data Generated:`, per90Data);
-            
-            const detailedPosition = data.detailed_position;
-            console.log(`\nPlayer Position: ${detailedPosition}`);
-            
-            const scores = {
-                player_id: player_id,
-                attacking_score: null,
-                defensive_score: null,
-                passing_score: null,
-                finishing_score: null,
-                possession_score: null,
-                keeper_score: null
-            };
-
-            if (detailedPosition && detailedPosition !== 'Goalkeeper') {
-                scores.defensive_score = Math.round(scoreDefensiveAdvanced(per90Data, detailedPosition));
-                scores.attacking_score = Math.round(scoreAttackingAdvanced(per90Data, detailedPosition));
-                scores.possession_score = Math.round(scorePossessionAdvanced(per90Data, detailedPosition));
-                scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition));
-                scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition));
-                
-                console.log('\n📊 FINAL SCORES (Outfield Player):');
-                console.log(`  Defensive: ${scores.defensive_score}`);
-                console.log(`  Attacking: ${scores.attacking_score}`);
-                console.log(`  Possession: ${scores.possession_score}`);
-                console.log(`  Passing: ${scores.passing_score}`);
-                console.log(`  Finishing: ${scores.finishing_score}`);
-            } else {
-                scores.keeper_score = Math.round(scoreKeeperAdvanced(per90Data, detailedPosition));
-                scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition));
-                
-                console.log('\n📊 FINAL SCORES (Goalkeeper):');
-                console.log(`  Keeper: ${scores.keeper_score}`);
-                console.log(`  Passing: ${scores.passing_score}`);
-            }
-
             const { data: insertedData, error: insertError } = await supabase
                 .from('current_week_scores')
                 .upsert(scores, { 
@@ -361,43 +409,311 @@
         }
     }
 
-    let playerId = '';
-
-    function handleScore() {
-        if (playerId) {
-            scorePlayer(parseInt(playerId));
+    // ============================================
+    // BATCH PLAYER SCORING
+    // ============================================
+    
+    let batchScoringInProgress = false;
+    let batchProgress = {
+        total: 0,
+        processed: 0,
+        successful: 0,
+        failed: 0,
+        currentBatch: 0,
+        totalBatches: 0
+    };
+    
+    async function scoreAllPlayers() {
+        if (batchScoringInProgress) {
+            console.log('⚠️ Batch scoring already in progress');
+            return;
+        }
+        
+        batchScoringInProgress = true;
+        console.log('\n🚀 Starting batch scoring for all players...');
+        
+        // Reset progress
+        batchProgress = {
+            total: 0,
+            processed: 0,
+            successful: 0,
+            failed: 0,
+            currentBatch: 0,
+            totalBatches: 0
+        };
+        
+        try {
+            // First, get the count of all players
+            const { count, error: countError } = await supabase
+                .from('current_week_stats')
+                .select('*', { count: 'exact', head: true });
+            
+            if (countError) {
+                console.error('Error getting player count:', countError);
+                return;
+            }
+            
+            batchProgress.total = count;
+            const batchSize = 50; // Process 50 players at a time
+            batchProgress.totalBatches = Math.ceil(count / batchSize);
+            
+            console.log(`📊 Total players to process: ${count}`);
+            console.log(`📦 Batch size: ${batchSize}`);
+            console.log(`📦 Total batches: ${batchProgress.totalBatches}`);
+            
+            // Process in batches
+            for (let i = 0; i < count; i += batchSize) {
+                batchProgress.currentBatch = Math.floor(i / batchSize) + 1;
+                console.log(`\n📦 Processing batch ${batchProgress.currentBatch} of ${batchProgress.totalBatches}...`);
+                
+                const { data: batch, error: batchError } = await supabase
+                    .from('current_week_stats')
+                    .select('*')
+                    .range(i, Math.min(i + batchSize - 1, count - 1));
+                
+                if (batchError) {
+                    console.error(`Error fetching batch ${batchProgress.currentBatch}:`, batchError);
+                    continue;
+                }
+                
+                // Process this batch
+                const scoresArray = [];
+                
+                for (const playerData of batch) {
+                    try {
+                        const scores = calculatePlayerScores(playerData, false); // Disable logging for batch
+                        scoresArray.push(scores);
+                        batchProgress.processed++;
+                    } catch (error) {
+                        console.error(`Error scoring player ${playerData.player_id}:`, error);
+                        batchProgress.failed++;
+                        batchProgress.processed++;
+                    }
+                }
+                
+                // Batch insert/update scores
+                if (scoresArray.length > 0) {
+                    const { data: insertedData, error: insertError } = await supabase
+                        .from('current_week_scores')
+                        .upsert(scoresArray, { 
+                            onConflict: 'player_id'
+                        })
+                        .select();
+                    
+                    if (insertError) {
+                        console.error(`Error inserting batch ${batchProgress.currentBatch}:`, insertError);
+                        batchProgress.failed += scoresArray.length;
+                    } else {
+                        batchProgress.successful += scoresArray.length;
+                        console.log(`✅ Batch ${batchProgress.currentBatch} saved: ${scoresArray.length} players`);
+                    }
+                }
+                
+                // Update UI progress
+                updateBatchProgressUI();
+                
+                // Add a small delay between batches to avoid overwhelming the database
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            console.log('\n🎉 Batch scoring complete!');
+            console.log(`📊 Final Results:`);
+            console.log(`  - Total processed: ${batchProgress.processed}`);
+            console.log(`  - Successful: ${batchProgress.successful}`);
+            console.log(`  - Failed: ${batchProgress.failed}`);
+            
+        } catch (error) {
+            console.error('Unexpected error during batch scoring:', error);
+        } finally {
+            batchScoringInProgress = false;
+            updateBatchProgressUI();
         }
     }
+    
+    function updateBatchProgressUI() {
+        // Force Svelte to update the UI
+        batchProgress = batchProgress;
+    }
+
+    // ============================================
+    // UI STATE AND HANDLERS
+    // ============================================
+    
+    let playerId = '';
+
+    function handleScoreIndividual() {
+        if (playerId) {
+            scoreIndividualPlayer(parseInt(playerId));
+        }
+    }
+    
 </script>
 
-<div>
-    <input type="number" bind:value={playerId} placeholder="Player ID" />
-    <button on:click={handleScore}>Score Player</button>
+<!-- UI SECTION -->
+<div class="container">
+    <div class="scoring-section">
+        <h2>Individual Player Scoring</h2>
+        <div class="input-group">
+            <input 
+                type="number" 
+                bind:value={playerId} 
+                placeholder="Player ID" 
+                disabled={batchScoringInProgress}
+            />
+            <button 
+                on:click={handleScoreIndividual}
+                disabled={batchScoringInProgress || !playerId}
+            >
+                Score Player
+            </button>
+        </div>
+    </div>
+    
+    <div class="scoring-section">
+        <h2>Batch Scoring</h2>
+        <button 
+            on:click={scoreAllPlayers}
+            disabled={batchScoringInProgress}
+            class="batch-button"
+        >
+            {batchScoringInProgress ? 'Scoring in progress...' : 'Score All Players'}
+        </button>
+        
+        {#if batchScoringInProgress || batchProgress.processed > 0}
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span>Batch {batchProgress.currentBatch} of {batchProgress.totalBatches}</span>
+                    <span>{batchProgress.processed} / {batchProgress.total} players</span>
+                </div>
+                <div class="progress-bar">
+                    <div 
+                        class="progress-fill" 
+                        style="width: {(batchProgress.processed / batchProgress.total) * 100}%"
+                    ></div>
+                </div>
+                <div class="progress-stats">
+                    <span class="success">✓ {batchProgress.successful} successful</span>
+                    <span class="error">✗ {batchProgress.failed} failed</span>
+                </div>
+            </div>
+        {/if}
+    </div>
 </div>
 
 <style>
-    div {
+    .container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .scoring-section {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h2 {
+        margin: 0 0 15px 0;
+        color: #333;
+        font-size: 1.2em;
+    }
+    
+    .input-group {
         display: flex;
         gap: 10px;
-        margin: 20px;
     }
     
     input {
-        padding: 8px;
-        border: 1px solid #ccc;
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
         border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    input:disabled {
+        background-color: #f5f5f5;
+        cursor: not-allowed;
     }
     
     button {
-        padding: 8px 16px;
+        padding: 10px 20px;
         background-color: #007bff;
         color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
     }
     
-    button:hover {
+    button:hover:not(:disabled) {
         background-color: #0056b3;
+    }
+    
+    button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .batch-button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    
+    .progress-container {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .progress-bar {
+        height: 24px;
+        background-color: #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        transition: width 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .progress-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+    }
+    
+    .progress-stats .success {
+        color: #28a745;
+        font-weight: 500;
+    }
+    
+    .progress-stats .error {
+        color: #dc3545;
+        font-weight: 500;
     }
 </style>
