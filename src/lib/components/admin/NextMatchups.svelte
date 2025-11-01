@@ -120,20 +120,37 @@
               }
             }
             
-            // Batch update using Promise.all for this league
             if (updates.length > 0) {
-              const updatePromises = updates.map(update =>
+              // Prepare updates for both tables
+              const teamsUpdatePromises = updates.map(update =>
                 supabaseScaling
                   .from('teams')
                   .update({ next_matchup: update.next_matchup })
                   .eq('team_id', update.team_id)
               );
               
-              const results = await Promise.allSettled(updatePromises);
-              const failedUpdates = results.filter(r => r.status === 'rejected');
+              const teamPlayersUpdatePromises = updates.map(update =>
+                supabaseScaling
+                  .from('team_players')
+                  .update({ next_matchup: update.next_matchup })
+                  .eq('team_id', update.team_id)
+              );
               
-              if (failedUpdates.length > 0) {
-                errors.push(`League ${league.league_id}: ${failedUpdates.length} team updates failed`);
+              const results = await Promise.allSettled([
+                ...teamsUpdatePromises,
+                ...teamPlayersUpdatePromises
+              ]);
+              
+              const teamsFailures = results.slice(0, updates.length)
+                .filter(r => r.status === 'rejected').length;
+              const teamPlayersFailures = results.slice(updates.length)
+                .filter(r => r.status === 'rejected').length;
+              
+              if (teamsFailures > 0 || teamPlayersFailures > 0) {
+                const errorDetails = [];
+                if (teamsFailures > 0) errorDetails.push(`${teamsFailures} teams`);
+                if (teamPlayersFailures > 0) errorDetails.push(`${teamPlayersFailures} team_players`);
+                errors.push(`League ${league.league_id}: Updates failed for ${errorDetails.join(' and ')}`);
               } else {
                 successCount++;
               }
