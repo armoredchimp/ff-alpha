@@ -106,7 +106,6 @@
               }
             });
             
-            // Build all updates for this league
             const updates = [];
             for (const [home, away] of matchups) {
               const homeTeamId = frontendToTeamId.get(home);
@@ -114,25 +113,39 @@
               
               if (homeTeamId && awayTeamId) {
                 updates.push(
-                  { team_id: homeTeamId, next_matchup: awayTeamId },
-                  { team_id: awayTeamId, next_matchup: homeTeamId }
+                  { 
+                    team_id: homeTeamId, 
+                    next_matchup: awayTeamId,
+                    home: true  // Home team
+                  },
+                  { 
+                    team_id: awayTeamId, 
+                    next_matchup: homeTeamId,
+                    home: false  // Away team
+                  }
                 );
               }
             }
-            
+                      
             if (updates.length > 0) {
               // Prepare updates for both tables
               const teamsUpdatePromises = updates.map(update =>
                 supabaseScaling
                   .from('teams')
-                  .update({ next_matchup: update.next_matchup })
+                  .update({ 
+                    next_matchup: update.next_matchup,
+                    home: update.home 
+                  })
                   .eq('team_id', update.team_id)
               );
-              
+
               const teamPlayersUpdatePromises = updates.map(update =>
                 supabaseScaling
                   .from('team_players')
-                  .update({ next_matchup: update.next_matchup })
+                  .update({ 
+                    next_matchup: update.next_matchup,
+                    home: update.home 
+                  })
                   .eq('team_id', update.team_id)
               );
               
