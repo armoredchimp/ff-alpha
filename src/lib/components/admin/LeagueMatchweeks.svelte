@@ -2,6 +2,8 @@
     import { onMount } from 'svelte';
     import { supabase } from '$lib/client/supabase/supaClient';
     
+    // Retrieve and update matchweeks 
+    
     // League data constants
     const LEAGUES = [
         { country_code: 1, nation: 'England', league_string: 'prem', max_games: 38 },
