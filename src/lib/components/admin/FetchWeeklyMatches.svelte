@@ -86,6 +86,20 @@
         try {
             statusMessage = 'Starting data processing...';
             
+            // Clear the existing table data before processing new data
+            statusMessage = 'Clearing existing player stats...';
+            const { error: deleteError } = await supabase
+                .from('current_week_stats')
+                .delete()
+                .neq('player_id', 0);
+            
+            if (deleteError) {
+                console.error('Error clearing table:', deleteError);
+                throw new Error(`Failed to clear existing data: ${deleteError.message}`);
+            }
+            
+            console.log('Successfully cleared current_week_stats table');
+            
             while (hasMore) {
                 statusMessage = `Fetching page ${currentPage}...`;
                 
@@ -115,36 +129,34 @@
                     if (fixture.lineups && Array.isArray(fixture.lineups)) {
                         for (const lineup of fixture.lineups) {
                             // Create base record for player
-
-                       
-                            const playerRecord = {
-                                player_id: lineup.player_id,
-                                season_id: seasonId,
-                                fixture_id: fixtureId,
-                                player_name: lineup.player_name,
-                                
-                            };
+                            if(lineup.player_id){
+                                const playerRecord = {
+                                    player_id: lineup.player_id,
+                                    season_id: seasonId,
+                                    fixture_id: fixtureId,
+                                    player_name: lineup.player_name,
+                                };
                             
-                            // Process each stat detail
-                            if (lineup.details && Array.isArray(lineup.details)) {
-                                for (const detail of lineup.details) {
-                                    if (detail.type && detail.type.developer_name && detail.data) {
-                                        const columnName = detail.type.developer_name.toLowerCase();
-                                        const value = detail.data.value;
-                                        
-                                        // Handle different value types
-                                        if (typeof value === 'boolean') {
-                                            playerRecord[columnName] = value;
-                                        } else if (typeof value === 'number') {
-                                            playerRecord[columnName] = value;
-                                        } else if (value !== null && value !== undefined) {
-                                            playerRecord[columnName] = value;
+                                
+                                if (lineup.details && Array.isArray(lineup.details)) {
+                                    for (const detail of lineup.details) {
+                                        if (detail.type && detail.type.developer_name && detail.data) {
+                                            const columnName = detail.type.developer_name.toLowerCase();
+                                            const value = detail.data.value;
+                                            
+                                            // Handle different value types
+                                            if (typeof value === 'boolean') {
+                                                playerRecord[columnName] = value;
+                                            } else if (typeof value === 'number') {
+                                                playerRecord[columnName] = value;
+                                            } else if (value !== null && value !== undefined) {
+                                                playerRecord[columnName] = value;
+                                            }
                                         }
                                     }
                                 }
+                                playerRecords.push(playerRecord);
                             }
-                            
-                            playerRecords.push(playerRecord);
                         }
                     }
                 }
@@ -162,10 +174,7 @@
                         
                         const { data, error: supabaseError } = await supabase
                             .from('current_week_stats')
-                            .upsert(batch, { 
-                                onConflict: 'player_id',
-                                ignoreDuplicates: false 
-                            });
+                            .insert(batch); 
                         
                         if (supabaseError) {
                             console.error('Supabase error:', supabaseError);
@@ -184,7 +193,6 @@
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
-
             
             statusMessage = `Successfully processed ${totalPlayers} player records!`;
             progress = 100;
@@ -234,23 +242,26 @@
                 for(const fixture of fixtures){
                     if(fixture.lineups && Array.isArray(fixture.lineups)) {
                         for (const lineup of fixture.lineups) {
-                            let detailed_position = null;
-                            
-                            if(lineup.detailedposition && lineup.detailedposition.name) {
-                                detailed_position = posCheck(lineup.detailedposition.name);
-                            } else if (lineup.position_id){
-                                // if no detailed position, use position id for a default position by group
-                                detailed_position = defaultPositions[lineup.position_id];
-                            } else {
-                                console.error(`Unable to find position for player ${lineup.player_id}`);
+                            if(lineup.player_id){
+                                let detailed_position = null;
+                                
+                                if(lineup.detailedposition && lineup.detailedposition.name) {
+                                    detailed_position = posCheck(lineup.detailedposition.name);
+                                } else if (lineup.position_id){
+                                    // if no detailed position, use position id for a default position by group
+                                    detailed_position = defaultPositions[lineup.position_id];
+                                } else {
+                                    console.error(`Unable to find position for player ${lineup.player_id}`);
+                                }
+    
+                                const player = {
+                                    player_id: lineup.player_id,
+                                    detailed_position: detailed_position
+                                };
+    
+                                playerData.push(player);
+
                             }
-
-                            const player = {
-                                player_id: lineup.player_id,
-                                detailed_position: detailed_position
-                            };
-
-                            playerData.push(player);
                         }
                     }    
                 }
@@ -274,7 +285,7 @@
                             });
                         
                         if (supabaseError) {
-                            console.error('Supabase error:', supabaseError);
+                            console.error('Supabase error 2:', supabaseError);
                             throw new Error(`Failed to upload batch: ${supabaseError.message}`);
                         }
                         

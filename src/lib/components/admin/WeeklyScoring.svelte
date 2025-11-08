@@ -181,22 +181,22 @@
         // Calculate base score
         let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`, 1, enableLogging);
         
-        // Apply special possession scoring logic
-        const passAccuracy = per90Data.AccuratePassesPercentage || 0;
-        score = (score / 60) * passAccuracy;
+        // Deprecated special possession scoring logic
+        // const passAccuracy = per90Data.AccuratePassesPercentage || 0;
+        // score = (score / 60) * passAccuracy;
         
-        if (enableLogging) {
-            console.log(`Possession Special Calculation:`);
-            console.log(`  Pass Accuracy: ${passAccuracy}`);
-            console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
-        }
+        // if (enableLogging) {
+        //     console.log(`Possession Special Calculation:`);
+        //     console.log(`  Pass Accuracy: ${passAccuracy}`);
+        //     console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
+        // }
         
-        if (score <= 100) {
-            score = passAccuracy;
-            if (enableLogging) {
-                console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
-            }
-        }
+        // if (score <= 100) {
+        //     score = passAccuracy;
+        //     if (enableLogging) {
+        //         console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
+        //     }
+        // }
         
         return score;
     }
@@ -335,6 +335,7 @@
         
         const scores = {
             player_id: data.player_id,
+            player_name: data.player_name,
             attacking_score: null,
             defensive_score: null,
             passing_score: null,
@@ -379,6 +380,17 @@
     async function scoreIndividualPlayer(player_id) {
         console.log(`\n🎯 Starting scoring process for Player ID: ${player_id}`);
         
+        // Clear the existing table data before processing new data
+        const { error: deleteError } = await supabase
+            .from('current_week_scores')
+            .delete()
+            .neq('player_id', 0); 
+        
+        if (deleteError) {
+            console.error('Error clearing table:', deleteError);
+            throw new Error(`Failed to clear existing data: ${deleteError.message}`);
+        }
+
         const { data, error } = await supabase
             .from('current_week_stats')
             .select('*')
@@ -443,7 +455,19 @@
         };
         
         try {
-            // First, get the count of all players
+
+            // Clear the existing table data before processing new data
+            const { error: deleteError } = await supabase
+                .from('current_week_scores')
+                .delete()
+                .neq('player_id', 0); 
+            
+            if (deleteError) {
+                console.error('Error clearing table:', deleteError);
+                throw new Error(`Failed to clear existing data: ${deleteError.message}`);
+            }
+
+            // Get the count of all players
             const { count, error: countError } = await supabase
                 .from('current_week_stats')
                 .select('*', { count: 'exact', head: true });
@@ -492,10 +516,11 @@
                 }
                 
                 // Batch insert/update scores
+
                 if (scoresArray.length > 0) {
                     const { data: insertedData, error: insertError } = await supabase
                         .from('current_week_scores')
-                        .upsert(scoresArray, { 
+                        .insert(scoresArray, { 
                             onConflict: 'player_id'
                         })
                         .select();
