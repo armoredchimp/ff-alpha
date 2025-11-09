@@ -42,7 +42,7 @@
     // ============================================
 
     // Generic scoring function with detailed logging
-    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor = 1, enableLogging = true) {
+    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor, enableLogging = true) {
         if (enableLogging) {
             console.log(`\n======= ${categoryName} Score Calculation =======`);
             console.log(`Position weights:`, weights);
@@ -114,7 +114,7 @@
             'LongBallsWonPercentage'
         ];
         
-        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 0.3, enableLogging);
+        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 4, enableLogging);
     }
 
     function scorePassingAdvanced(per90Data, detailedPosition, enableLogging = true) {
@@ -140,7 +140,7 @@
             'SuccessfulCrossesPercentage'
         ];
         
-        const scaleFactor = detailedPosition === 'Goalkeeper' ? 4 : 1;
+        const scaleFactor = detailedPosition === 'Goalkeeper' ? 1 : 1/4;
         return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor, enableLogging);
     }
 
@@ -282,7 +282,7 @@
             'PenaltiesSavedPer90'
         ];
         
-        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1/14, enableLogging);
+        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1, enableLogging);
     }
 
     // ============================================
@@ -350,6 +350,13 @@
             scores.possession_score = Math.round(scorePossessionAdvanced(per90Data, detailedPosition, enableLogging));
             scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
             scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition, enableLogging));
+
+            scores.defensive_score = Math.round((scores.defensive_score * adjustedMinutes) / 5)
+            scores.attacking_score = Math.round((scores.attacking_score * adjustedMinutes) / 5)
+            scores.possession_score = Math.round((scores.possession_score * adjustedMinutes) / 5)
+            scores.passing_score = Math.round((scores.passing_score * adjustedMinutes) / 5)
+            scores.finishing_score = Math.round((scores.finishing_score * adjustedMinutes) / 5)
+            
             
             if (enableLogging) {
                 console.log('\n📊 FINAL SCORES (Outfield Player):');
@@ -362,6 +369,9 @@
         } else {
             scores.keeper_score = Math.round(scoreKeeperAdvanced(per90Data, detailedPosition, enableLogging));
             scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
+            
+            scores.keeper_score = Math.round((scores.keeper_score * adjustedMinutes) / 5)
+            scores.passing_score = Math.round((scores.passing_score * adjustedMinutes) / 5)
             
             if (enableLogging) {
                 console.log('\n📊 FINAL SCORES (Goalkeeper):');
@@ -380,16 +390,6 @@
     async function scoreIndividualPlayer(player_id) {
         console.log(`\n🎯 Starting scoring process for Player ID: ${player_id}`);
         
-        // Clear the existing table data before processing new data
-        const { error: deleteError } = await supabase
-            .from('current_week_scores')
-            .delete()
-            .neq('player_id', 0); 
-        
-        if (deleteError) {
-            console.error('Error clearing table:', deleteError);
-            throw new Error(`Failed to clear existing data: ${deleteError.message}`);
-        }
 
         const { data, error } = await supabase
             .from('current_week_stats')

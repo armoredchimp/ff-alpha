@@ -4,7 +4,7 @@
     
     // State variables
     let startDate = new Date().toISOString().split('T')[0];
-    let endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    let endDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     let loading = false;
     let error = null;
     let progress = 0;
@@ -63,14 +63,14 @@
     
     // Increment dates by one week
     function incrementWeek() {
-        startDate = adjustDate(startDate, 7);
-        endDate = adjustDate(endDate, 7);
+        startDate = adjustDate(startDate, 4);
+        endDate = adjustDate(endDate, 4);
     }
     
     // Decrement dates by one week
     function decrementWeek() {
-        startDate = adjustDate(startDate, -7);
-        endDate = adjustDate(endDate, -7);
+        startDate = adjustDate(startDate, -4);
+        endDate = adjustDate(endDate, -4);
     }
     
     // Process and upload data to Supabase
