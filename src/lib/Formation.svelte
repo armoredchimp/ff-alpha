@@ -6,7 +6,7 @@
     import ZoneDisplay from "./ZoneDisplay.svelte";
     import PosGroupDisplay from "./PosGroupDisplay.svelte";
     import { calculateGroupMatchup, getGroupStrengthColor } from "./utils/team";
-    import { teams } from "./stores/teams.svelte";
+    import { zoneMatchups, zoneAdjacency } from "./utils/formation";
 
     let {
       team = {} as Team,
@@ -42,51 +42,6 @@
         1: 'keepers'
     };
 
-    
-    const zoneMatchups ={
-        3: 17,   // LB vs RW
-        4: 16,   // CB vs ST
-        5: 15,   // RB vs LW
-        
-        6: 14,   
-        7: 13,   
-        8: 12,   
-        
-        9: 11,   
-        10: 10,  
-        11: 9,   
-        
-        12: 8,   
-        13: 7,   
-        14: 6,   
-        
-        15: 5,   // LW vs RB
-        16: 4,   // ST vs CB
-        17: 3,   // RW vs LB
-        
-        // Unused zones
-        0: null,
-        2: null,
-    }
-
-    const zoneAdjacency = {
-        1: [],  // Keeper not factored for matchup view
-        3: [4, 6],
-        4: [3, 5, 7],
-        5: [4, 8],
-        6: [3, 7, 9],
-        7: [4, 6, 8, 10],
-        8: [5, 7, 11],
-        9: [6, 10, 12],
-        10: [7, 9, 11, 13],
-        11: [8, 10, 14],
-        12: [9, 13, 15],
-        13: [10, 12, 14, 16],
-        14: [11, 13, 17],
-        15: [12, 16],
-        16: [13, 15, 17],
-        17: [14, 16]
-    };
 
     // zoneData = initializeZoneData()
 
