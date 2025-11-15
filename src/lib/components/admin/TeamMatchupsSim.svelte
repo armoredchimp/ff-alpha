@@ -1,5 +1,5 @@
 <script>
-   import { supabase, supabaseScaling } from "$lib/client/supabase/ 
+   import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient"
 
     let isProcessing = false;
     let statusMessage = '';
@@ -101,7 +101,6 @@ async function processAllMatchups() {
       console.log('Matchups by league:', Object.fromEntries(matchupsByLeague));
       statusMessage = `Ready to simulate ${allMatchups.length} matchups across ${matchupsByLeague.size} leagues`;
       
-      // Here you would pass both allMatchups and playerScoresMap to your simulation function
       // simulateMatchups(allMatchups, playerScoresMap);
       
       return { matchups: allMatchups, playerScores: playerScoresMap };
