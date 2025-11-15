@@ -67,8 +67,10 @@
         });
         
         // Apply scale factor if needed
-        const finalScore = totalScore * scaleFactor;
-        
+        let finalScore = totalScore * scaleFactor;
+        if(finalScore < 0){
+            finalScore = 0
+        }
         if (enableLogging) {
             console.log(`\nRaw Total: ${totalScore.toFixed(4)}`);
             if (scaleFactor !== 1) {
@@ -114,7 +116,42 @@
             'LongBallsWonPercentage'
         ];
         
-        return calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 4, enableLogging);
+        let score = calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 4, enableLogging);
+
+        const tacklesWonPercentage = per90Data.TacklesWonPercentage || 50;
+        if(enableLogging){
+            console.log('TACKLES WON PERCENTAGE:', tacklesWonPercentage);
+        }
+        switch(true) {
+            case tacklesWonPercentage > 95:
+                score *= 1.5;
+                break;
+            case tacklesWonPercentage > 90:
+                score *= 1.4;
+                break;
+            case tacklesWonPercentage > 85:
+                score *= 1.3;
+                break;
+            case tacklesWonPercentage > 80:
+                score *= 1.2;
+                break;
+            case tacklesWonPercentage > 70:
+                score *= 1.1;
+                break;
+            case tacklesWonPercentage > 60:
+                break;
+            case tacklesWonPercentage > 50:
+                score *= 0.9;
+                break;
+            case tacklesWonPercentage > 40:
+                score *= 0.7;
+                break;
+            case tacklesWonPercentage <= 40:
+                score *= 0.5;
+                break;
+        }
+
+        return score;
     }
 
     function scorePassingAdvanced(per90Data, detailedPosition, enableLogging = true) {
@@ -140,7 +177,7 @@
             'SuccessfulCrossesPercentage'
         ];
         
-        const scaleFactor = detailedPosition === 'Goalkeeper' ? 1 : 1/4;
+        const scaleFactor = detailedPosition === 'Goalkeeper' ? 1 : 0.6;
         return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor, enableLogging);
     }
 
@@ -153,7 +190,6 @@
         
         const possessionStats = [
             'AccuratePassesPer90',
-            'AccuratePassesPercentage',
             'PassesPer90',
             'SuccessfulDribblesPer90',
             'DispossessedPer90',
@@ -181,23 +217,41 @@
         // Calculate base score
         let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`, 1, enableLogging);
         
-        // Deprecated special possession scoring logic
-        // const passAccuracy = per90Data.AccuratePassesPercentage || 0;
-        // score = (score / 60) * passAccuracy;
+     
+        const passAccuracy = per90Data.AccuratePassesPercentage || 0;
+        if(enableLogging){
+            console.log('PASS ACCURACY:', passAccuracy)
+        }
+        switch(true) {
+            case passAccuracy > 95:
+                score *= 3;
+                break;
+            case passAccuracy > 90:
+                score *= 2.75;
+                break;
+            case passAccuracy > 85:
+                score *= 2.3;
+                break;
+            case passAccuracy > 80:
+                score *= 2;
+                break;
+            case passAccuracy > 70:
+                score *= 1.4;
+                break;
+            case passAccuracy > 60:
+                break;
+            case passAccuracy > 50:
+                score *= 0.8;
+                break;
+            case passAccuracy > 40: 
+                score *= 0.5;
+                break;
+            case passAccuracy <= 40:
+                score *= 0.3;
+                break;
+        }
         
-        // if (enableLogging) {
-        //     console.log(`Possession Special Calculation:`);
-        //     console.log(`  Pass Accuracy: ${passAccuracy}`);
-        //     console.log(`  Score after (score/60)*accuracy: ${score.toFixed(4)}`);
-        // }
-        
-        // if (score <= 100) {
-        //     score = passAccuracy;
-        //     if (enableLogging) {
-        //         console.log(`  Score <= 100, using pass accuracy: ${score.toFixed(4)}`);
-        //     }
-        // }
-        
+    
         return score;
     }
 
@@ -303,13 +357,13 @@
             const shouldAdjustByMinutes = statTypeMap[key.toLowerCase()] !== false;
             
             if (shouldAdjustByMinutes) {
-                per90Data[formattedKey] = (value / adjustedMinutes);
+                per90Data[formattedKey] = (value / adjustedMinutes) * 90;
             } else {
                 // For percentage stats and others in statTypeMap, use raw value
                 per90Data[formattedKey] = value;
             }
         }
-        
+
         return per90Data;
     }
     
@@ -351,14 +405,28 @@
             scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
             scores.finishing_score = Math.round(scoreFinishingAdvanced(per90Data, detailedPosition, enableLogging));
 
-            scores.defensive_score = Math.round((scores.defensive_score * adjustedMinutes) / 5)
-            scores.attacking_score = Math.round((scores.attacking_score * adjustedMinutes) / 5)
-            scores.possession_score = Math.round((scores.possession_score * adjustedMinutes) / 5)
-            scores.passing_score = Math.round((scores.passing_score * adjustedMinutes) / 5)
-            scores.finishing_score = Math.round((scores.finishing_score * adjustedMinutes) / 5)
+            if(enableLogging) {
+
+                console.log('\n📊 PRE-ADJUSTMENT SCORES (Outfield Player):');
+                console.log(`  Defensive: ${scores.defensive_score}`);
+                console.log(`  Attacking: ${scores.attacking_score}`);
+                console.log(`  Possession: ${scores.possession_score}`);
+                console.log(`  Passing: ${scores.passing_score}`);
+                console.log(`  Finishing: ${scores.finishing_score}`);
+
+                console.log(`Adjusted Minutes: ${adjustedMinutes}`)
+            }
+
+            scores.defensive_score = Math.round(((scores.defensive_score * adjustedMinutes) / 5) / 10 )
+            scores.attacking_score = Math.round(((scores.attacking_score * adjustedMinutes) / 5) / 10 )
+            scores.possession_score = Math.round(((scores.possession_score * adjustedMinutes) / 5) / 10 )
+            scores.passing_score = Math.round(((scores.passing_score * adjustedMinutes) / 5) / 10 )
+            scores.finishing_score = Math.round(((scores.finishing_score * adjustedMinutes) / 5) / 10 )
             
             
             if (enableLogging) {
+              
+
                 console.log('\n📊 FINAL SCORES (Outfield Player):');
                 console.log(`  Defensive: ${scores.defensive_score}`);
                 console.log(`  Attacking: ${scores.attacking_score}`);
@@ -370,8 +438,8 @@
             scores.keeper_score = Math.round(scoreKeeperAdvanced(per90Data, detailedPosition, enableLogging));
             scores.passing_score = Math.round(scorePassingAdvanced(per90Data, detailedPosition, enableLogging));
             
-            scores.keeper_score = Math.round((scores.keeper_score * adjustedMinutes) / 5)
-            scores.passing_score = Math.round((scores.passing_score * adjustedMinutes) / 5)
+            scores.keeper_score = Math.round(((scores.keeper_score * adjustedMinutes) / 5) / 10 )
+            scores.passing_score = Math.round(((scores.passing_score * adjustedMinutes) / 5) / 10 )
             
             if (enableLogging) {
                 console.log('\n📊 FINAL SCORES (Goalkeeper):');
