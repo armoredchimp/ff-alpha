@@ -260,11 +260,13 @@
 
 
 {#if currentLeagueId && currentLeagueMatchups.length > 0 && playerScoresMap.size > 0}
-  <Simulator 
-    scoreMap={playerScoresMap}
-    leagueMatchups={currentLeagueMatchups}
-    leagueId={currentLeagueId}
-  />
+  {#key currentLeagueId}
+    <Simulator 
+      scoreMap={playerScoresMap}
+      leagueMatchups={currentLeagueMatchups}
+      leagueId={currentLeagueId}
+    />
+  {/key}
 {/if}
 
 <style>
