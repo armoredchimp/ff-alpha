@@ -13,6 +13,8 @@
     // SHARED CONFIGURATION AND UTILITIES
     // ============================================
     
+    const BASE_SCORE = 1000;
+
     const statTypeMap = {
         'cleansheets': false,
         'error_lead_to_goal': false,
@@ -42,13 +44,16 @@
     // ============================================
 
     // Generic scoring function with detailed logging
-    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor, enableLogging = true) {
+    function calculateScore(per90Data, weights, statKeys, categoryName, scaleFactor, enableLogging = true, useBase) {
         if (enableLogging) {
             console.log(`\n======= ${categoryName} Score Calculation =======`);
             console.log(`Position weights:`, weights);
         }
         
         let totalScore = 0;
+        if(useBase){
+            totalScore += BASE_SCORE
+        }
         
         statKeys.forEach(statKey => {
             const statValue = per90Data[statKey] || 0;
@@ -116,40 +121,41 @@
             'LongBallsWonPercentage'
         ];
         
-        let score = calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 4, enableLogging);
+        let score = calculateScore(per90Data, weights, defenseStats, `Defensive (${detailedPosition})`, 4, enableLogging, true);
 
-        const tacklesWonPercentage = per90Data.TacklesWonPercentage || 50;
-        if(enableLogging){
-            console.log('TACKLES WON PERCENTAGE:', tacklesWonPercentage);
-        }
-        switch(true) {
-            case tacklesWonPercentage > 95:
-                score *= 1.5;
-                break;
-            case tacklesWonPercentage > 90:
-                score *= 1.4;
-                break;
-            case tacklesWonPercentage > 85:
-                score *= 1.3;
-                break;
-            case tacklesWonPercentage > 80:
-                score *= 1.2;
-                break;
-            case tacklesWonPercentage > 70:
-                score *= 1.1;
-                break;
-            case tacklesWonPercentage > 60:
-                break;
-            case tacklesWonPercentage > 50:
-                score *= 0.9;
-                break;
-            case tacklesWonPercentage > 40:
-                score *= 0.7;
-                break;
-            case tacklesWonPercentage <= 40:
-                score *= 0.5;
-                break;
-        }
+        // Stat not available in all leagues, will return to this later
+        // const tacklesWonPercentage = per90Data.TacklesWonPercentage || 50;
+        // if(enableLogging){
+        //     console.log('TACKLES WON PERCENTAGE:', tacklesWonPercentage);
+        // }
+        // switch(true) {
+        //     case tacklesWonPercentage > 95:
+        //         score *= 1.5;
+        //         break;
+        //     case tacklesWonPercentage > 90:
+        //         score *= 1.4;
+        //         break;
+        //     case tacklesWonPercentage > 85:
+        //         score *= 1.3;
+        //         break;
+        //     case tacklesWonPercentage > 80:
+        //         score *= 1.2;
+        //         break;
+        //     case tacklesWonPercentage > 70:
+        //         score *= 1.1;
+        //         break;
+        //     case tacklesWonPercentage > 60:
+        //         break;
+        //     case tacklesWonPercentage > 50:
+        //         score *= 0.9;
+        //         break;
+        //     case tacklesWonPercentage > 40:
+        //         score *= 0.7;
+        //         break;
+        //     case tacklesWonPercentage <= 40:
+        //         score *= 0.5;
+        //         break;
+        // }
 
         return score;
     }
@@ -178,7 +184,7 @@
         ];
         
         const scaleFactor = detailedPosition === 'Goalkeeper' ? 1 : 0.6;
-        return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor, enableLogging);
+        return calculateScore(per90Data, weights, passingStats, `Passing (${detailedPosition})`, scaleFactor, enableLogging, true);
     }
 
     function scorePossessionAdvanced(per90Data, detailedPosition, enableLogging = true) {
@@ -215,7 +221,7 @@
         ];
         
         // Calculate base score
-        let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`, 1, enableLogging);
+        let score = calculateScore(per90Data, weights, possessionStats, `Possession (${detailedPosition})`, 1, enableLogging, true);
         
      
         const passAccuracy = per90Data.AccuratePassesPercentage || 0;
@@ -285,7 +291,7 @@
             'ThroughBallsWonPer90'
         ];
         
-        return calculateScore(per90Data, weights, attackingStats, `Attacking (${detailedPosition})`, 1, enableLogging);
+        return calculateScore(per90Data, weights, attackingStats, `Attacking (${detailedPosition})`, 1, enableLogging, true);
     }
 
     function scoreFinishingAdvanced(per90Data, detailedPosition, enableLogging = true) {
@@ -308,7 +314,7 @@
             'ShotsTotalPer90'
         ];
         
-        return calculateScore(per90Data, weights, finishingStats, `Finishing (${detailedPosition})`, 1, enableLogging);
+        return calculateScore(per90Data, weights, finishingStats, `Finishing (${detailedPosition})`, 1, enableLogging, false);
     }
 
     function scoreKeeperAdvanced(per90Data, detailedPosition, enableLogging = true) {
@@ -336,7 +342,7 @@
             'PenaltiesSavedPer90'
         ];
         
-        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1, enableLogging);
+        return calculateScore(per90Data, weights, keeperStats, `Keeper (${detailedPosition})`, 1, enableLogging, true);
     }
 
     // ============================================
