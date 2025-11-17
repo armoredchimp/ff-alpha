@@ -12,6 +12,8 @@
         leagueId?: number;
     }>();
     
+    let groupScores = $state({})
+
     onMount(() => {
         if (leagueMatchups.length > 0 && scoreMap.size > 0) {
             simulateMatchups();
@@ -57,11 +59,102 @@
         console.log('\nPositional Groups Organization:',posGroupOrganization)
         console.log('\nZone Organization:', zoneOrganization);
         
+        scoreGroups(posGroupOrganization)
+
         return {
             matchupId,
             status: 'simulated',
+            posGroupOrganization,
             zoneOrganization
         };
+    }
+
+    
+// export function createFormationStructure(formationName: string): object {
+//     const config = formationConfig[formationName];
+//     const structure = {};
+//     config.forEach(([group, ...positions]) => {
+//       structure[group] = {};
+//       positions.forEach(([pos, max, zone]) => {
+//         structure[group][pos] = { players: [], max, zone };
+//       });
+//     });
+//     return structure;
+// }
+
+    function scoreGroups(groupOrg){
+        // Iterate through each group (keepers, defenders, midfielders, forwards)
+        Object.keys(groupOrg).forEach(groupName => {
+            const group = groupOrg[groupName];
+            
+            console.log(`\nProcessing ${groupName}:`);
+            console.log(`  Home players: ${group.homePlayers.length} players - IDs: ${group.homePlayers}`);
+            console.log(`  Away players: ${group.awayPlayers.length} players - IDs: ${group.awayPlayers}`);
+        
+            if(groupName !== 'keepers'){
+                groupScores[groupName] = {
+                    homeScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    },
+                    awayScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    }
+                };
+            } else {
+                groupScores['keepers'] = {
+                    homeScores: {
+                        keeper_score: 0,
+                        passing_score: 0
+                    },
+                    awayScores: {
+                        keeper_score: 0,
+                        passing_score: 0
+                    }
+                }
+            }
+            
+            let home = groupScores[groupName].homeScores;
+            let away = groupScores[groupName].awayScores;
+            
+            // Sum up home player scores
+            for(let i = 0; i < group.homePlayers.length; i++){
+                const playerId = group.homePlayers[i];
+                const scores = scoreMap.get(playerId);
+                console.log(`    Home Player ${playerId} scores:`, scores);
+                if(scores) {
+                    Object.keys(home).forEach(scoreType => {
+                        if(scores[scoreType] !== undefined && scores[scoreType] !== null){
+                            home[scoreType] += scores[scoreType];
+                        }
+                    });
+                }
+            }
+            
+            // Sum up away player scores
+            for(let i = 0; i < group.awayPlayers.length; i++){
+                const playerId = group.awayPlayers[i];
+                const scores = scoreMap.get(playerId); 
+                console.log(`    Away Player ${playerId} scores:`, scores);
+                if(scores) {
+                    Object.keys(away).forEach(scoreType => {
+                        if(scores[scoreType] !== undefined && scores[scoreType] !== null){
+                            away[scoreType] += scores[scoreType];
+                        }
+                    });
+                }
+            }
+        });
+        
+        console.log('Group Scores:');
+        console.log(JSON.stringify(groupScores, null, 2));
     }
 
     function organizePlayersByGroup(homeSelected, awaySelected){

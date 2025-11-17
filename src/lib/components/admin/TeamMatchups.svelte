@@ -14,27 +14,29 @@
   
   // Phase 1: Load all player scores into memory
   async function loadPlayerScores() {
-    const { data: scores, error } = await supabase
-      .from('current_week_scores')
-      .select('*');
-    
-    if (error) throw new Error(`Failed to load player scores: ${error.message}`);
-    
     const scoresMap = new Map();
-    scores.forEach(score => {
-      // Set player_id as key, entire score object as value
-      scoresMap.set(score.player_id, score);
-    });
+    let offset = 0;
+    const limit = 1000;
+    let hasMore = true;
     
-    // Proper ways to log a Map (JSON.stringify doesn't work with Maps!)
+    while (hasMore) {
+      const { data: scores, error } = await supabase
+        .from('current_week_scores')
+        .select('*')
+        .range(offset, offset + limit - 1);
+      
+      if (error) throw new Error(`Failed to load player scores: ${error.message}`);
+      
+      scores.forEach(score => {
+        scoresMap.set(score.player_id, score);
+      });
+      
+      hasMore = scores.length === limit;
+      offset += limit;
+    }
+    
     console.log(`Loaded ${scoresMap.size} player scores into map`);
     console.log('ScoresMap as object:', Object.fromEntries(scoresMap));
-    
-    // Test accessing a specific player
-    if (scoresMap.size > 0) {
-      const firstKey = scoresMap.keys().next().value;
-      console.log('Sample player score:', scoresMap.get(firstKey));
-    }
     
     return scoresMap;
   }
