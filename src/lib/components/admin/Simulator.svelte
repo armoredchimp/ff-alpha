@@ -52,7 +52,9 @@
         console.log('Subs:', awayTeam.subs);
         
         // Organize players by zones for matchup simulation
+        const posGroupOrganization = organizePlayersByGroup(homeTeam.selected, awayTeam.selected);
         const zoneOrganization = organizePlayersByZones(homeTeam.selected, awayTeam.selected);
+        console.log('\nPositional Groups Organization:',posGroupOrganization)
         console.log('\nZone Organization:', zoneOrganization);
         
         return {
@@ -60,6 +62,26 @@
             status: 'simulated',
             zoneOrganization
         };
+    }
+
+    function organizePlayersByGroup(homeSelected, awaySelected){
+        // Extract all players by positional group for each team
+        const homePlayersByGroup = extractPlayersByGroup(homeSelected);
+        const awayPlayersByGroup = extractPlayersByGroup(awaySelected);
+
+        console.log('Home players by group:', homePlayersByGroup);
+        console.log('Away players by group:', awayPlayersByGroup);
+
+        const groupOrg = {};
+
+        Object.keys(homePlayersByGroup).forEach(group =>{
+            groupOrg[group] = {
+                homePlayers: homePlayersByGroup[group],
+                awayPlayers: awayPlayersByGroup[group]
+            }
+        })
+
+        return groupOrg;
     }
     
     function organizePlayersByZones(homeSelected, awaySelected) {
@@ -70,7 +92,6 @@
         console.log('Home players by zone:', homePlayersByZone);
         console.log('Away players by zone:', awayPlayersByZone);
         
-        // Build the zone organization object
         const zoneOrg = {};
         
         // Iterate through zones 3-17 (GK and adjacent zones ignored)
@@ -112,7 +133,23 @@
         
         return zoneOrg;
     }
-    
+
+    function extractPlayersByGroup(selected) {
+        const playersByGroup = {}
+
+        Object.keys(selected).forEach(positionGroup => {
+            playersByGroup[positionGroup] = []
+            const group = selected[positionGroup]
+            Object.keys(group).forEach(position =>{
+                const positionData = group[position];
+                const players = positionData.players || [];
+                playersByGroup[positionGroup].push(...players)
+            })
+       
+        })
+        return playersByGroup;
+    }
+
     function extractPlayersByZone(selected) {
         const playersByZone = {};
         
