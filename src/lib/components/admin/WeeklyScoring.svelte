@@ -427,7 +427,8 @@
             scores.attacking_score = Math.round(((scores.attacking_score * adjustedMinutes) / 5) / 10 )
             scores.possession_score = Math.round(((scores.possession_score * adjustedMinutes) / 5) / 10 )
             scores.passing_score = Math.round(((scores.passing_score * adjustedMinutes) / 5) / 10 )
-            scores.finishing_score = Math.round(scores.finishing_score / 2)
+            scores.finishing_score = Math.round(scores.finishing_score / 2) 
+            // Finishing score weighted differently and ignores minutes. Goals are goals. WIP 
             
             
             if (enableLogging) {
