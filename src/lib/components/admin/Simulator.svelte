@@ -12,7 +12,10 @@
         leagueId?: number;
     }>();
     
+    const ZONE_ADJ_SCORE = .5
+
     let groupScores = $state({})
+    let zoneScores = $state({})
 
     onMount(() => {
         if (leagueMatchups.length > 0 && scoreMap.size > 0) {
@@ -59,7 +62,8 @@
         console.log('\nPositional Groups Organization:',posGroupOrganization)
         console.log('\nZone Organization:', zoneOrganization);
         
-        scoreGroups(posGroupOrganization)
+        scoreGroups(posGroupOrganization);
+        scoreZones(zoneOrganization)
 
         return {
             matchupId,
@@ -69,18 +73,63 @@
         };
     }
 
-    
-// export function createFormationStructure(formationName: string): object {
-//     const config = formationConfig[formationName];
-//     const structure = {};
-//     config.forEach(([group, ...positions]) => {
-//       structure[group] = {};
-//       positions.forEach(([pos, max, zone]) => {
-//         structure[group][pos] = { players: [], max, zone };
-//       });
-//     });
-//     return structure;
-// }
+    function scoreZones(zoneOrg){
+        // Score each zone based on current players in zone = 100% of score, adjacent players equal zone adjacency score (50% to start)
+        Object.keys(zoneOrg).forEach(zoneNum => {
+            const zone = zoneOrg[zoneNum];
+            console.log(`Processing zone ${zoneNum}`);
+            
+            // Create scoring template for zone if not initialized
+            if(!zoneScores[zoneNum]){
+                zoneScores[zoneNum] = {
+                    homeScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    },
+                    awayScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    }
+                }
+            }
+            
+            const home = zoneScores[zoneNum].homeScores;
+            const away = zoneScores[zoneNum].awayScores;
+            
+            // Groups in zoneOrg object, with appropriate multipliers and destinations
+            const groupConfigs = [
+                { groupName: 'homePlayers', target: home, multiplier: 1 },
+                { groupName: 'homeAdjacentPlayers', target: home, multiplier: ZONE_ADJ_SCORE },
+                { groupName: 'awayPlayers', target: away, multiplier: 1 },
+                { groupName: 'awayAdjacentPlayers', target: away, multiplier: ZONE_ADJ_SCORE }
+            ];
+            
+            groupConfigs.forEach(config => {
+                const players = zone[config.groupName];
+                if(players && Array.isArray(players)) {
+                    for(let i = 0; i < players.length; i++){
+                        const playerId = players[i];
+                        const scores = scoreMap.get(playerId);
+                        if(scores) {
+                            Object.keys(config.target).forEach(scoreType => {
+                                if(scores[scoreType] !== undefined && scores[scoreType] !== null){
+                                    config.target[scoreType] += scores[scoreType] * config.multiplier;
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+        console.log(`Scored zones: ${JSON.stringify(zoneScores, null, 2)}`)
+    }
 
     function scoreGroups(groupOrg){
         // Iterate through each group (keepers, defenders, midfielders, forwards)
