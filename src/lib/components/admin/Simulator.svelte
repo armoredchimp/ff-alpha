@@ -12,7 +12,7 @@
         leagueId?: number;
     }>();
     
-    const ZONE_ADJ_SCORE = .5
+    const ZONE_ADJ_SCORE = .35
 
     let groupScores = $state({})
     let zoneScores = $state({})
@@ -78,6 +78,10 @@
         Object.keys(zoneOrg).forEach(zoneNum => {
             const zone = zoneOrg[zoneNum];
             console.log(`Processing zone ${zoneNum}`);
+            if(Number(zoneNum) === 1 || Number[zoneNum] > 17){
+                // Keeper zone
+                return;
+            }
             
             // Create scoring template for zone if not initialized
             if(!zoneScores[zoneNum]){
@@ -119,7 +123,8 @@
                         if(scores) {
                             Object.keys(config.target).forEach(scoreType => {
                                 if(scores[scoreType] !== undefined && scores[scoreType] !== null){
-                                    config.target[scoreType] += scores[scoreType] * config.multiplier;
+                                    config.target[scoreType] += scores[scoreType] * config.multiplier * .1;
+                                    config.target[scoreType] = Math.round(config.target[scoreType]);
                                 }
                             });
                         }
