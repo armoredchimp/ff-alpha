@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { zoneMatchups, zoneAdjacency } from "$lib/utils/formation";
-    
+    import { applyVariance } from "$lib/utils/sim"
+
     let {
         scoreMap = new Map(),
         leagueMatchups = [],
@@ -12,8 +13,9 @@
         leagueId?: number;
     }>();
     
-    const ZONE_ADJ_SCORE = .35;
     const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+  
+    // Positional Group weights and values for chance point calculation
     const CHANCE_THRESHOLDS = [
         { min: 8000, bonus: 4 },
         { min: 4500, bonus: 3 },
@@ -31,13 +33,21 @@
         midfielders: 'midfielders',
         attackers: 'defenders'
     };
-    const VARIANCE_CONFIG = {
-        weights: [1, 2, 5, 10, 20, 30, 20, 10, 5, 2, 1],  
-        modifiers: [-3, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 3],  
-        minPoints: 0  
-    };
+    // Zonal weights and values for chance point calculation
+    const ZONE_ADJ_SCORE = .35;
+    const ZONE_CHANCE_THRESHOLDS = [
+        { min: 2000, bonus: 3 },
+        { min: 1000, bonus: 2 },
+        { min: 500, bonus: 1 }
+    ];
+    const ZONE_POS_THRESHOLDS = [
+        { min: 10000, bonus: 2 },
+        { min: 6000, bonus: 1 }
+    ];
+    // Objects for stateful group and zone scores. Changes upon a player swap 
     let groupScores = $state({});
     let zoneScores = $state({});
+    
     let matchResults = $state({});
 
     onMount(() => {
@@ -45,27 +55,6 @@
             simulateMatchups();
         }
     });
-    
-
-    // RNG util
-    function applyVariance(basePoints) {
-        const { weights, modifiers, minPoints } = VARIANCE_CONFIG;
-        
-        const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-        let roll = Math.random() * totalWeight;
-        
-        let selectedModifier = 0;
-        for (let i = 0; i < weights.length; i++) {
-            roll -= weights[i];
-            if (roll <= 0) {
-                selectedModifier = modifiers[i];
-                break;
-            }
-        }
-        
-        const finalPoints = Math.max(minPoints, Math.round(basePoints + selectedModifier));
-        return { finalPoints, modifier: selectedModifier };
-    }
 
     // Simulate whole league
     function simulateMatchups() {
@@ -127,26 +116,42 @@
             home: {
                 total: 0,
                 byGroup: { defenders: 0, midfielders: 0, attackers: 0 },
+                byZone: {},
                 byInterval: []
             },
             away: {
                 total: 0,
                 byGroup: { defenders: 0, midfielders: 0, attackers: 0 },
+                byZone: {},
                 byInterval: []
             }
         };
 
         MATCH_INTERVALS.forEach(minute => {
             const intervalResult = processInterval(scores, minute);
+            const zoneIntervalResult = processZoneInterval(zoneScores, minute);
             
-            matchChancePoints.home.byInterval.push({ minute, ...intervalResult.home });
-            matchChancePoints.away.byInterval.push({ minute, ...intervalResult.away });
+            matchChancePoints.home.byInterval.push({ minute, groups: intervalResult.home, zones: zoneIntervalResult.home });
+            matchChancePoints.away.byInterval.push({ minute, groups: intervalResult.away, zones: zoneIntervalResult.away });
             
+            // Tally group points
             Object.keys(GROUP_MATCHUPS).forEach(group => {
                 matchChancePoints.home.byGroup[group] += intervalResult.home[group];
                 matchChancePoints.away.byGroup[group] += intervalResult.away[group];
                 matchChancePoints.home.total += intervalResult.home[group];
                 matchChancePoints.away.total += intervalResult.away[group];
+            });
+            
+            // Tally zone points
+            Object.keys(zoneIntervalResult.home).forEach(zoneNum => {
+                if (!matchChancePoints.home.byZone[zoneNum]) matchChancePoints.home.byZone[zoneNum] = 0;
+                matchChancePoints.home.byZone[zoneNum] += zoneIntervalResult.home[zoneNum];
+                matchChancePoints.home.total += zoneIntervalResult.home[zoneNum];
+            });
+            Object.keys(zoneIntervalResult.away).forEach(zoneNum => {
+                if (!matchChancePoints.away.byZone[zoneNum]) matchChancePoints.away.byZone[zoneNum] = 0;
+                matchChancePoints.away.byZone[zoneNum] += zoneIntervalResult.away[zoneNum];
+                matchChancePoints.away.total += zoneIntervalResult.away[zoneNum];
             });
         });
 
@@ -246,6 +251,105 @@
 
         return finalPoints;
     }
+
+
+    function processZoneInterval(zoneScores, minute) {
+        const result = { home: {}, away: {} };
+        
+        console.log(`\n=== Zone Interval ${minute}-${minute + 10} ===`);
+        
+        Object.keys(zoneScores).forEach(zoneNum => {
+            const zone = zoneScores[zoneNum];
+            if (!zone) return;
+            
+            result.home[zoneNum] = 0;
+            result.away[zoneNum] = 0;
+            
+            // Home attacking this zone
+            const homeChecks = calculateZonePossessionChecks(
+                zone.homeScores,
+                zone.awayScores
+            );
+            
+            for (let i = 0; i < homeChecks; i++) {
+                result.home[zoneNum] += calculateZoneChancePoints(
+                    zone.homeScores,
+                    zone.awayScores,
+                    'Home',
+                    zoneNum,
+                    i + 1,
+                    homeChecks
+                );
+            }
+            
+            // Away attacking this zone
+            const awayChecks = calculateZonePossessionChecks(
+                zone.awayScores,
+                zone.homeScores
+            );
+            
+            for (let i = 0; i < awayChecks; i++) {
+                result.away[zoneNum] += calculateZoneChancePoints(
+                    zone.awayScores,
+                    zone.homeScores,
+                    'Away',
+                    zoneNum,
+                    i + 1,
+                    awayChecks
+                );
+            }
+        });
+        
+        return result;
+    }
+
+    function calculateZonePossessionChecks(attackingScores, defendingScores) {
+        const atkPossession = attackingScores?.possession_score || 0;
+        const defPossession = defendingScores?.possession_score || 0;
+        const differential = atkPossession - defPossession;
+        
+        let extraChecks = 0;
+        for (const threshold of ZONE_POS_THRESHOLDS) {
+            if (differential >= threshold.min) {
+                extraChecks = threshold.bonus;
+                break;
+            }
+        }
+        
+        // Minimum default one check per zone
+        return extraChecks + 1;
+    }
+
+    function calculateZoneChancePoints(attackingScores, defendingScores, team, zoneNum, checkNum, totalChecks) {
+        const baseOffense = attackingScores 
+            ? ((attackingScores.attacking_score || 0) *0.9) + 
+            ((attackingScores.passing_score || 0) *0.9) + 
+            ((attackingScores.possession_score || 0) / 4) 
+            : 0;
+        
+        const offense = baseOffense * 0.9;
+        const defense = defendingScores?.defensive_score || 0;
+        const differential = offense - defense;
+        
+        let bonus = 0;
+        for (const threshold of ZONE_CHANCE_THRESHOLDS) {
+            if (differential >= threshold.min) {
+                bonus = threshold.bonus;
+                break;
+            }
+        }
+        
+        // No base point for zones - only bonus if threshold met
+        if (bonus === 0) return 0;
+        
+        const { finalPoints, modifier } = applyVariance(bonus);
+        
+        const modStr = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+        console.log(`  ${team} Zone ${zoneNum} [${checkNum}/${totalChecks}]: base=${bonus} (${modStr}) → ${finalPoints} pts`);
+        
+        return finalPoints;
+    }
+
 
     function scoreZones(zoneOrg) {
         Object.keys(zoneOrg).forEach(zoneNum => {
