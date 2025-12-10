@@ -13,7 +13,7 @@
         leagueId?: number;
     }>();
     
-    const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+    const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80];
   
     // Positional Group weights and values for chance point calculation
     const CHANCE_THRESHOLDS = [

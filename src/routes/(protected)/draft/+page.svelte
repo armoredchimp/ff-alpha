@@ -238,9 +238,8 @@ async function draftSetup() {
         const result = JSON.parse(responseText);
         console.log('Parsed result:', result);
         
-        // SvelteKit wraps successful responses in { type: 'success', data: ... }
         if (result.type === 'success' && result.data) {
-            // Parse the data if it's a string
+       
             let parsedData = typeof result.data === 'string' 
                 ? JSON.parse(result.data) 
                 : result.data;
@@ -251,7 +250,6 @@ async function draftSetup() {
             
             console.log('Extracted teamIdMap:', teamIdMap);
             
-            // Now use the teamIdMap to assign IDs
             playerTeam.dbId = teamIdMap["0"];
             console.log('Player team dbId stored:', playerTeam.dbId);
             
