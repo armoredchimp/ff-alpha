@@ -4,10 +4,12 @@
     import { applyVariance } from "$lib/utils/sim"
 
     let {
+        playersMap = {},
         scoreMap = new Map(),
         leagueMatchups = [],
         leagueId = 0,
     } = $props<{
+        playersMap?: Record<number, any>;
         scoreMap?: Map<number, any>;
         leagueMatchups?: Array<any>;
         leagueId?: number;
@@ -83,6 +85,11 @@
     let matchResults = $state({});
 
     onMount(() => {
+        console.log('playersMap contents:', playersMap);
+        console.log('playersMap size:', Object.keys(playersMap).length);
+        if (leagueMatchups.length > 0 && scoreMap.size > 0) {
+            simulateMatchups();
+        }
         if (leagueMatchups.length > 0 && scoreMap.size > 0) {
             simulateMatchups();
         }
@@ -479,14 +486,14 @@
         if (results.home.goalDetails.length > 0) {
             console.log('\nHome Goals:');
             results.home.goalDetails.forEach(g => {
-                console.log(`  ${g.minute}' - Player ${g.scorerPlayerId} (${g.type} from ${g.finisher})`);
+                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${g.finisher})`);
             });
         }
 
         if (results.away.goalDetails.length > 0) {
             console.log('\nAway Goals:');
             results.away.goalDetails.forEach(g => {
-                console.log(`  ${g.minute}' - Player ${g.scorerPlayerId} (${g.type} from ${g.finisher})`);
+                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${g.finisher})`);
             });
         }
 
@@ -536,8 +543,9 @@
                 opponentDefense.midfieldDefense,
                 goalsAlreadyScored + goals
             );
-            
-            const status = result.scored ? `⚽ GOAL! (Player ${scorerPlayerId})` : 'saved';
+
+            const playerName = playersMap[scorerPlayerId]?.name || `Unknown (${scorerPlayerId})`;
+            const status = result.scored ? `⚽ GOAL! (${playerName})` : 'saved';
             const assistInfo = finisherInfo.type === 'assisted' 
                 ? ` (${finisherInfo.creator} → ${finisherInfo.finisher})`
                 : ` (${finisherInfo.type})`;
@@ -549,6 +557,7 @@
                 goalDetails.push({
                     minute,
                     scorerPlayerId,
+                    scorerName: playersMap[scorerPlayerId]?.name || 'Unknown',
                     creator: finisherInfo.creator || finisherInfo.source,
                     finisher: finisherInfo.finisher || finisherInfo.source,
                     type: finisherInfo.type,

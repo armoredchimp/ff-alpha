@@ -10,10 +10,10 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     if (!isAuthenticated(cookies)) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     try {
         let countriesCode = 0;
-        
+
         // First, try to get countries code from query parameter
         let paramsCode = url.searchParams.get('countriesCode');
         if (paramsCode) {
@@ -22,31 +22,31 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             console.warn(`Invalid countries code ${countriesCode}`);
             return;
         }
-        
+
         // Validate countries code
         if (!TABLE_PREFIXES[countriesCode]) {
             console.warn(`Invalid countries code ${countriesCode}`);
             return;
         }
-        
+
         // Build the table name
-        const season = '2425'; 
+        const season = '2425';
         const tableName = `${TABLE_PREFIXES[countriesCode]}_mini_${season}`;
-        
+
         console.log(`Loading players from table: ${tableName} for countries code: ${countriesCode}`);
-        
+
         // Load players from the appropriate mini table
         const { data: players, error } = await supabase
             .from(tableName)
             .select('*')
             .order('transfer_value', { ascending: false });
-            
+
         if (error) {
             console.error(`Error loading players from ${tableName}:`, error);
             return json({ error: 'Failed to load players' }, { status: 500 });
         }
-        
-        return json({ 
+
+        return json({
             players: players || [],
             tableName: tableName,
             countriesCode: countriesCode

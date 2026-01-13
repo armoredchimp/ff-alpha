@@ -1,18 +1,69 @@
 <script>
   import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
+  import axios from "axios";
   import Simulator from "./Simulator.svelte";
-  
+
   let isProcessing = false;
   let statusMessage = '';
   let errorMessage = '';
   let matchupStats = null;
+
+  let loadedCountryCodes = new Set();
+  let leagueCountries = new Map();
   
   // Store for passing to Simulate component
+  let playerIds = {};
   let currentLeagueMatchups = [];
   let currentLeagueId = null;
   let playerScoresMap = new Map();
   
-  // Phase 1: Load all player scores into memory
+  async function loadPlayers(countriesCode) {
+    try {
+        const { data: players, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('countries_code', countriesCode);
+        
+        if (error) throw error;
+        
+        if (players && players.length > 0) {
+            for (const player of players) {
+                playerIds[player.id] = player;
+            }
+            
+
+            console.log(`Loaded ${players.length} players from countries code ${countriesCode}`);
+            console.log('playerIds count:', Object.keys(playerIds).length);
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Error loading players:', error);
+        return false;
+    }
+  }
+
+
+  // Create lookup of league country codes
+  async function loadCountryCodes() {
+    const codesMap = new Map();
+    
+    const { data: leagues, error } = await supabaseScaling
+        .from('leagues')
+        .select('league_id, countries_code');
+
+    if (error) throw new Error(`Failed to load leagues: ${error.message}`);
+
+    leagues.forEach(league => {
+        codesMap.set(league.league_id, league.countries_code);
+    });
+
+    console.log(`Loaded ${codesMap.size} league country codes into map`);
+    return codesMap;
+  }
+
+  // Load all player scores into memory
   async function loadPlayerScores() {
     const scoresMap = new Map();
     let offset = 0;
@@ -103,10 +154,12 @@
     isProcessing = true;
     errorMessage = '';
     matchupStats = null;
-    statusMessage = 'Loading player scores...';
+    statusMessage = 'Loading league codes and player scores...';
     
     try {
+      leagueCountries = await loadCountryCodes();
       playerScoresMap = await loadPlayerScores();
+      console.log(`Loaded ${leagueCountries.size} league country codes`)
       statusMessage = `Loaded ${playerScoresMap.size} player scores`;
       
       await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UI update
@@ -139,10 +192,33 @@
       
       // Process each league's matchups
       let leagueCount = 0;
+
+      for (const [leagueId, leagueMatchups] of matchupsByLeague) {
+          const countryCode = leagueCountries.get(leagueId);
+          if (countryCode && !loadedCountryCodes.has(countryCode)) {
+              statusMessage = `Loading players for country code ${countryCode}...`;
+              await loadPlayers(countryCode);
+              loadedCountryCodes.add(countryCode);
+              console.log(`Loaded players for country code ${countryCode}`);
+          }
+      }
+
+      console.log('All players loaded. Total:', Object.keys(playerIds).length);
+
       for (const [leagueId, leagueMatchups] of matchupsByLeague) {
         leagueCount++;
         statusMessage = `Processing League ${leagueId} (${leagueCount}/${matchupsByLeague.size}) - ${leagueMatchups.length} matchups...`;
         
+        // Get country code for this league and load players if needed
+        const countryCode = leagueCountries.get(leagueId);
+        if (countryCode && !loadedCountryCodes.has(countryCode)) {
+            await loadPlayers(countryCode);
+            loadedCountryCodes.add(countryCode);
+            console.log(`Loaded players for country code ${countryCode}`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Set data for Simulate component
         currentLeagueId = leagueId;
         currentLeagueMatchups = leagueMatchups;
@@ -264,6 +340,7 @@
 {#if currentLeagueId && currentLeagueMatchups.length > 0 && playerScoresMap.size > 0}
   {#key currentLeagueId}
     <Simulator 
+      playersMap={playerIds}
       scoreMap={playerScoresMap}
       leagueMatchups={currentLeagueMatchups}
       leagueId={currentLeagueId}
