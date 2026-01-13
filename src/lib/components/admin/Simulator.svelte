@@ -529,12 +529,20 @@
         console.log(`\n--- ${side.toUpperCase()} Minute ${minute}: ${totalPoints} chance pts → ${totalChecks} checks ---`);
         
         checks.forEach((check, idx) => {
-            const finisherInfo = determineFinisher(check.source, side, groupScores, zoneScores);
+            const finisherInfo = determineFinisher(check.source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
             
-            // Get the actual player who finished
             const finisherSource = finisherInfo.finisher || finisherInfo.source;
-            const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
-            const scorerPlayerId = selectRandomPlayer(finisherPlayers);
+            let scorerPlayerId = 0
+
+            if(finisherInfo.type === 'solo'){
+                scorerPlayerId = finisherInfo.finisher
+            } else {
+                const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+                scorerPlayerId = selectRandomPlayer(finisherPlayers);
+            }
+
+           
+
             
             const result = runScoringCheck(
                 finisherInfo.finishingScore,
@@ -599,14 +607,16 @@
         return checks;
     }
 
-    function determineFinisher(source, side, groupScores, zoneScores) {
+    function determineFinisher(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
         const scoreKey = side === 'home' ? 'homeScores' : 'awayScores';
         
         if (Math.random() < ASSIST_CONFIG.soloChance) {
+            const scorerInfo = getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
             return {
                 type: 'solo',
                 source: source,
-                finishingScore: getSourceFinishing(source, scoreKey, groupScores, zoneScores)
+                finisher: scorerInfo.player_id,
+                finishingScore: scorerInfo.score
             };
         }
         
@@ -623,15 +633,17 @@
         }
         
         linkedSources = linkedSources.filter(ls => {
-            const score = getSourceFinishing(ls, scoreKey, groupScores, zoneScores);
+            const score = getSourceFinishing(side, ls, scoreKey, groupScores, zoneScores);
             return score !== null && score !== undefined;
         });
         
         if (linkedSources.length === 0) {
+            const scorerInfo = getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
             return {
                 type: 'solo_fallback',
                 source: source,
-                finishingScore: getSourceFinishing(source, scoreKey, groupScores, zoneScores)
+                finisher: scorerInfo.player_id,
+                finishingScore: scorerInfo.score
             };
         }
         
@@ -641,12 +653,30 @@
             type: 'assisted',
             creator: source,
             finisher: finisher,
-            finishingScore: getSourceFinishing(finisher, scoreKey, groupScores, zoneScores)
+            finishingScore: getSourceFinishing(side, finisher, scoreKey, groupScores, zoneScores)
         };
     }
 
-    function getSourceFinishing(source, scoreKey, groupScores, zoneScores) {
-        if (source.startsWith('group_')) {
+    function getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization){
+        if (source.startsWith('group_')){
+            const finisherPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
+            const player = selectRandomPlayer(finisherPlayers)
+            return {
+                score: playersMap[player]?.finishing_score || 0,
+                player_id: player
+            } 
+        } else if (source.startsWith('zone_')) {
+            const finisherPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
+            const player = selectRandomPlayer(finisherPlayers)
+            return {
+                score: playersMap[player]?.finishing_score || 0,
+                player_id: player
+            } 
+        }
+    }
+
+    function getSourceFinishing(side, source, scoreKey, groupScores, zoneScores) {
+        if (source.startsWith('group_')) {  
             const groupName = source.replace('group_', '');
             return groupScores[groupName]?.[scoreKey]?.finishing_score || 0;
         } else if (source.startsWith('zone_')) {
