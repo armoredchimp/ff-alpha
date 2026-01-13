@@ -44,6 +44,38 @@
         { min: 10000, bonus: 2 },
         { min: 6000, bonus: 1 }
     ];
+
+    const SCORING_CONFIG = {
+        baseChance: 4,
+        
+        finishingScale: 1400,
+        finishingMaxBonus: 5,
+        
+        keeperScale: 2000,
+        keeperMaxPenalty: 4,
+        
+        defenseMultiplier: 0.6,
+        defenseScale: 7500,
+        defenseMaxPenalty: 2,
+        
+        midfieldMultiplier: 0.3,
+        midfieldScale: 5000,
+        midfieldMaxPenalty: 1,
+        
+        minimumChance: 0.3,
+        
+        goalPenalties: [0, 0, 0, 0, 1, 2.5, 4.5, 7, 11]
+    };
+
+    const ASSIST_CONFIG = {
+        soloChance: 0.20,
+        
+        groupLinks: {
+            defenders: ['midfielders'],
+            midfielders: ['attackers', 'defenders'],
+            attackers: ['midfielders']
+        }
+    };
     // Objects for stateful group and zone scores. Changes upon a player swap 
     let groupScores = $state({});
     let zoneScores = $state({});
@@ -82,36 +114,36 @@
     // Simulate individual game
     function simulateMatchup(matchup) {
         const { homeTeam, awayTeam, matchupId } = matchup;
-        
+
         console.log('\nHome Team Roster:');
         console.log('Selected players:', homeTeam.selected);
         console.log('Subs:', homeTeam.subs);
-        
+
         console.log('\nAway Team Roster:');
         console.log('Selected players:', awayTeam.selected);
         console.log('Subs:', awayTeam.subs);
-        
+
         const posGroupOrganization = organizePlayersByGroup(homeTeam.selected, awayTeam.selected);
         const zoneOrganization = organizePlayersByZones(homeTeam.selected, awayTeam.selected);
         console.log('\nPositional Groups Organization:', posGroupOrganization);
         console.log('\nZone Organization:', zoneOrganization);
-        
+
         scoreGroups(posGroupOrganization);
         scoreZones(zoneOrganization);
 
-        const chancePoints = simulateMatch(groupScores);
-        matchResults[matchupId] = chancePoints;
+        const matchResult = simulateMatch(groupScores, posGroupOrganization, zoneOrganization);
+        matchResults[matchupId] = matchResult;
 
         return {
             matchupId,
             status: 'simulated',
             posGroupOrganization,
             zoneOrganization,
-            chancePoints
+            ...matchResult
         };
     }
 
-    function simulateMatch(scores) {
+    function simulateMatch(scores, posGroupOrganization, zoneOrganization) {
         const matchChancePoints = {
             home: {
                 total: 0,
@@ -134,7 +166,6 @@
             matchChancePoints.home.byInterval.push({ minute, groups: intervalResult.home, zones: zoneIntervalResult.home });
             matchChancePoints.away.byInterval.push({ minute, groups: intervalResult.away, zones: zoneIntervalResult.away });
             
-            // Tally group points
             Object.keys(GROUP_MATCHUPS).forEach(group => {
                 matchChancePoints.home.byGroup[group] += intervalResult.home[group];
                 matchChancePoints.away.byGroup[group] += intervalResult.away[group];
@@ -142,7 +173,6 @@
                 matchChancePoints.away.total += intervalResult.away[group];
             });
             
-            // Tally zone points
             Object.keys(zoneIntervalResult.home).forEach(zoneNum => {
                 if (!matchChancePoints.home.byZone[zoneNum]) matchChancePoints.home.byZone[zoneNum] = 0;
                 matchChancePoints.home.byZone[zoneNum] += zoneIntervalResult.home[zoneNum];
@@ -156,7 +186,20 @@
         });
 
         console.log('\nMatch Chance Points:', JSON.stringify(matchChancePoints, null, 2));
-        return matchChancePoints;
+        
+        const scoringResults = runScoringChecks(matchChancePoints, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+        
+        return {
+            chancePoints: matchChancePoints,
+            score: {
+                home: scoringResults.home.goals,
+                away: scoringResults.away.goals
+            },
+            goalDetails: {
+                home: scoringResults.home.goalDetails,
+                away: scoringResults.away.goalDetails
+            }
+        };
     }
 
     function processInterval(scores, minute) {
@@ -207,6 +250,27 @@
         return result;
     }
 
+    function getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
+        const sideKey = side === 'home' ? 'homePlayers' : 'awayPlayers';
+        const adjacentKey = side === 'home' ? 'homeAdjacentPlayers' : 'awayAdjacentPlayers';
+
+        if (source.startsWith('group_')) {
+            const groupName = source.replace('group_', '');
+            return posGroupOrganization[groupName]?.[sideKey] || [];
+        } else if (source.startsWith('zone_')) {
+            const zoneNum = source.replace('zone_', '');
+            const directPlayers = zoneOrganization[zoneNum]?.[sideKey] || [];
+            if (directPlayers.length > 0) return directPlayers;
+            // Fallback to adjacent players if no direct players
+            return zoneOrganization[zoneNum]?.[adjacentKey] || [];
+        }
+        return [];
+    }
+
+    function selectRandomPlayer(players) {
+        if (!players || players.length === 0) return null;
+        return players[Math.floor(Math.random() * players.length)];
+    }
 
     function calculatePossessionChecks(attackingScores, defendingScores) {
         const atkPossession = attackingScores?.possession_score || 0;
@@ -349,6 +413,272 @@
         
         return finalPoints;
     }
+
+    // ============================================
+    // SCORING CHECK FUNCTIONS
+    // ============================================
+
+    function runScoringChecks(matchChancePoints, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
+        const results = {
+            home: { goals: 0, goalDetails: [] },
+            away: { goals: 0, goalDetails: [] }
+        };
+
+        const homeDefense = {
+            keeper:groupScores.keepers?.homeScores?.keeper_score || 0,
+            defenseTotal: groupScores.defenders?.homeScores?.defensive_score || 0,
+            midfieldDefense: groupScores.midfielders?.homeScores?.defensive_score || 0
+        };
+
+        const awayDefense = {
+            keeper: groupScores.keepers?.awayScores?.keeper_score || 0,
+            defenseTotal: groupScores.defenders?.awayScores?.defensive_score || 0,
+            midfieldDefense: groupScores.midfielders?.awayScores?.defensive_score || 0
+        };
+
+        console.log('\n========== SCORING CHECKS ==========');
+        console.log('Home defensive stats:', homeDefense);
+        console.log('Away defensive stats:', awayDefense);
+
+        matchChancePoints.home.byInterval.forEach((interval) => {
+            const homeGoals = processIntervalScoringChecks(
+                interval,
+                'home',
+                groupScores,
+                zoneScores,
+                awayDefense,
+                results.home.goals,
+                posGroupOrganization,
+                zoneOrganization
+            );
+            
+            results.home.goals += homeGoals.goals;
+            results.home.goalDetails.push(...homeGoals.goalDetails);
+        });
+
+        matchChancePoints.away.byInterval.forEach((interval) => {
+            const awayGoals = processIntervalScoringChecks(
+                interval,
+                'away',
+                groupScores,
+                zoneScores,
+                homeDefense,
+                results.away.goals,
+                posGroupOrganization,
+                zoneOrganization
+            );
+            
+            results.away.goals += awayGoals.goals;
+            results.away.goalDetails.push(...awayGoals.goalDetails);
+        });
+
+        // Enhanced final summary
+        console.log(`\n========== FINAL SCORE ==========`);
+        console.log(`Home ${results.home.goals} - ${results.away.goals} Away`);
+
+        if (results.home.goalDetails.length > 0) {
+            console.log('\nHome Goals:');
+            results.home.goalDetails.forEach(g => {
+                console.log(`  ${g.minute}' - Player ${g.scorerPlayerId} (${g.type} from ${g.finisher})`);
+            });
+        }
+
+        if (results.away.goalDetails.length > 0) {
+            console.log('\nAway Goals:');
+            results.away.goalDetails.forEach(g => {
+                console.log(`  ${g.minute}' - Player ${g.scorerPlayerId} (${g.type} from ${g.finisher})`);
+            });
+        }
+
+        return results;
+    }
+
+    function processIntervalScoringChecks(intervalData, side, groupScores, zoneScores, opponentDefense, goalsAlreadyScored, posGroupOrganization, zoneOrganization) {
+        const { minute, groups, zones } = intervalData;
+        
+        const sources = {};
+        
+        Object.entries(groups).forEach(([group, points]) => {
+            if (points > 0) {
+                sources[`group_${group}`] = { points };
+            }
+        });
+        
+        Object.entries(zones).forEach(([zone, points]) => {
+            if (points > 0) {
+                sources[`zone_${zone}`] = { points };
+            }
+        });
+        
+        const totalPoints = Object.values(sources).reduce((sum, s) => sum + s.points, 0);
+        if (totalPoints === 0) return { goals: 0, goalDetails: [] };
+        
+        const totalChecks = 1 + Math.floor((totalPoints - 1) / 3);
+        const checks = distributeChecksToSources(sources, totalChecks);
+        
+        let goals = 0;
+        const goalDetails = [];
+        
+        console.log(`\n--- ${side.toUpperCase()} Minute ${minute}: ${totalPoints} chance pts → ${totalChecks} checks ---`);
+        
+        checks.forEach((check, idx) => {
+            const finisherInfo = determineFinisher(check.source, side, groupScores, zoneScores);
+            
+            // Get the actual player who finished
+            const finisherSource = finisherInfo.finisher || finisherInfo.source;
+            const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+            const scorerPlayerId = selectRandomPlayer(finisherPlayers);
+            
+            const result = runScoringCheck(
+                finisherInfo.finishingScore,
+                opponentDefense.keeper,
+                opponentDefense.defenseTotal,
+                opponentDefense.midfieldDefense,
+                goalsAlreadyScored + goals
+            );
+            
+            const status = result.scored ? `⚽ GOAL! (Player ${scorerPlayerId})` : 'saved';
+            const assistInfo = finisherInfo.type === 'assisted' 
+                ? ` (${finisherInfo.creator} → ${finisherInfo.finisher})`
+                : ` (${finisherInfo.type})`;
+            
+            console.log(`  Check ${idx + 1} [${check.source}]${assistInfo}: ${result.roll} vs ${result.target}% → ${status}`);
+            
+            if (result.scored) {
+                goals++;
+                goalDetails.push({
+                    minute,
+                    scorerPlayerId,
+                    creator: finisherInfo.creator || finisherInfo.source,
+                    finisher: finisherInfo.finisher || finisherInfo.source,
+                    type: finisherInfo.type,
+                    finishingScore: finisherInfo.finishingScore,
+                    roll: result.roll,
+                    chance: result.target
+                });
+            }
+        });
+        
+        return { goals, goalDetails };
+    }
+
+    function distributeChecksToSources(sources, totalChecks) {
+        const checks = [];
+        const sourceList = Object.entries(sources);
+        const totalPoints = sourceList.reduce((sum, [_, s]) => sum + s.points, 0);
+        
+        let checksAssigned = 0;
+        
+        sourceList.forEach(([sourceName, sourceData], index) => {
+            let checksForSource;
+            
+            if (index === sourceList.length - 1) {
+                checksForSource = totalChecks - checksAssigned;
+            } else {
+                checksForSource = Math.round((sourceData.points / totalPoints) * totalChecks);
+            }
+            
+            checksForSource = Math.max(0, checksForSource);
+            
+            for (let i = 0; i < checksForSource; i++) {
+                checks.push({ source: sourceName });
+            }
+            
+            checksAssigned += checksForSource;
+        });
+        
+        return checks;
+    }
+
+    function determineFinisher(source, side, groupScores, zoneScores) {
+        const scoreKey = side === 'home' ? 'homeScores' : 'awayScores';
+        
+        if (Math.random() < ASSIST_CONFIG.soloChance) {
+            return {
+                type: 'solo',
+                source: source,
+                finishingScore: getSourceFinishing(source, scoreKey, groupScores, zoneScores)
+            };
+        }
+        
+        let linkedSources = [];
+        
+        if (source.startsWith('group_')) {
+            const groupName = source.replace('group_', '');
+            const links = ASSIST_CONFIG.groupLinks[groupName] || [];
+            linkedSources = links.map(g => `group_${g}`);
+        } else if (source.startsWith('zone_')) {
+            const zoneNum = parseInt(source.replace('zone_', ''));
+            const adjacentZones = zoneAdjacency[zoneNum] || [];
+            linkedSources = adjacentZones.map(z => `zone_${z}`);
+        }
+        
+        linkedSources = linkedSources.filter(ls => {
+            const score = getSourceFinishing(ls, scoreKey, groupScores, zoneScores);
+            return score !== null && score !== undefined;
+        });
+        
+        if (linkedSources.length === 0) {
+            return {
+                type: 'solo_fallback',
+                source: source,
+                finishingScore: getSourceFinishing(source, scoreKey, groupScores, zoneScores)
+            };
+        }
+        
+        const finisher = linkedSources[Math.floor(Math.random() * linkedSources.length)];
+        
+        return {
+            type: 'assisted',
+            creator: source,
+            finisher: finisher,
+            finishingScore: getSourceFinishing(finisher, scoreKey, groupScores, zoneScores)
+        };
+    }
+
+    function getSourceFinishing(source, scoreKey, groupScores, zoneScores) {
+        if (source.startsWith('group_')) {
+            const groupName = source.replace('group_', '');
+            return groupScores[groupName]?.[scoreKey]?.finishing_score || 0;
+        } else if (source.startsWith('zone_')) {
+            const zoneNum = source.replace('zone_', '');
+            return zoneScores[zoneNum]?.[scoreKey]?.finishing_score || 0;
+        }
+        return 0;
+    }
+
+    function runScoringCheck(finishingScore, keeperScore, defenseTotal, midfieldDefense, goalsAlreadyScored) {
+        const { 
+            baseChance, 
+            finishingScale, finishingMaxBonus,
+            keeperScale, keeperMaxPenalty,
+            defenseMultiplier, defenseScale, defenseMaxPenalty,
+            midfieldMultiplier, midfieldScale, midfieldMaxPenalty,
+            minimumChance,
+            goalPenalties
+        } = SCORING_CONFIG;
+        
+        const finishingBonus = Math.min(finishingMaxBonus, finishingScore / finishingScale);
+        const keeperPenalty = Math.min(keeperMaxPenalty, keeperScore / keeperScale);
+        const adjustedDefense = defenseTotal * defenseMultiplier;
+        const defensePenalty = Math.min(defenseMaxPenalty, adjustedDefense / defenseScale);
+        const adjustedMidfield = midfieldDefense * midfieldMultiplier;
+        const midfieldPenalty = Math.min(midfieldMaxPenalty, adjustedMidfield / midfieldScale);
+        const goalPenalty = goalPenalties[Math.min(goalsAlreadyScored, goalPenalties.length - 1)];
+        
+        let chance = baseChance + finishingBonus - keeperPenalty - defensePenalty - midfieldPenalty - goalPenalty;
+        chance = Math.max(minimumChance, chance);
+        
+        const roll = Math.random() * 100;
+        const scored = roll < chance;
+        
+        return {
+            roll: roll.toFixed(2),
+            target: chance.toFixed(2),
+            scored
+        };
+    }
+
 
 
     function scoreZones(zoneOrg) {
