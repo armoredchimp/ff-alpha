@@ -1,6 +1,6 @@
 <script>
   import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
-  import axios from "axios";
+  import { TABLE_PREFIXES } from "$lib/stores/league.svelte";
   import Simulator from "./Simulator.svelte";
 
   let isProcessing = false;
@@ -18,30 +18,43 @@
   let playerScoresMap = new Map();
   
   async function loadPlayers(countriesCode) {
-    try {
-        const { data: players, error } = await supabase
-            .from('players')
-            .select('*')
-            .eq('countries_code', countriesCode);
-        
-        if (error) throw error;
-        
-        if (players && players.length > 0) {
-            for (const player of players) {
-                playerIds[player.id] = player;
-            }
-            
+      try {
+          if (!TABLE_PREFIXES[countriesCode]) {
+              console.warn(`Invalid countries code ${countriesCode}`);
+              return false;
+          }
 
-            console.log(`Loaded ${players.length} players from countries code ${countriesCode}`);
-            console.log('playerIds count:', Object.keys(playerIds).length);
-            return true;
-        }
-        
-        return false;
-    } catch (error) {
-        console.error('Error loading players:', error);
-        return false;
-    }
+          const season = '2526';
+          const tableName = `${TABLE_PREFIXES[countriesCode]}_mini_${season}`;
+          console.log(`Loading players from table: ${tableName} for countries code: ${countriesCode}`);
+
+          const { data: players, error } = await supabase
+              .from(tableName)
+              .select('*')
+              .order('transfer_value', { ascending: false });
+
+          if (error) {
+              console.error(`Error loading players from ${tableName}:`, error);
+              return false;
+          }
+
+          if (players && players.length > 0) {
+              for (const player of players) {
+                  playerIds[player.id] = player;
+              }
+              
+              playerIds = {...playerIds};
+
+              console.log(`Loaded ${players.length} players from ${tableName}`);
+              console.log('playerIds count:', Object.keys(playerIds).length);
+              return true;
+          }
+
+          return false;
+      } catch (error) {
+          console.error('Error loading players:', error);
+          return false;
+      }
   }
 
 

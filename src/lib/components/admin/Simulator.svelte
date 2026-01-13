@@ -544,7 +544,7 @@
                 goalsAlreadyScored + goals
             );
 
-            const playerName = playersMap[scorerPlayerId]?.name || `Unknown (${scorerPlayerId})`;
+            const playerName = playersMap[scorerPlayerId]?.player_name || `Unknown (${scorerPlayerId})`;
             const status = result.scored ? `⚽ GOAL! (${playerName})` : 'saved';
             const assistInfo = finisherInfo.type === 'assisted' 
                 ? ` (${finisherInfo.creator} → ${finisherInfo.finisher})`
@@ -557,7 +557,7 @@
                 goalDetails.push({
                     minute,
                     scorerPlayerId,
-                    scorerName: playersMap[scorerPlayerId]?.name || 'Unknown',
+                    scorerName: playersMap[scorerPlayerId]?.player_name || 'Unknown',
                     creator: finisherInfo.creator || finisherInfo.source,
                     finisher: finisherInfo.finisher || finisherInfo.source,
                     type: finisherInfo.type,
