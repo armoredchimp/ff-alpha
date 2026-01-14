@@ -44,3 +44,12 @@
         if (!players || players.length === 0) return null;
         return players[Math.floor(Math.random() * players.length)];
     }
+
+    export function getUniqueMinute(baseMinute, existingGoals) {
+        const takenMinutes = existingGoals.map(g => g.minute);
+        let exactMinute;
+        do {
+            exactMinute = baseMinute + Math.floor(Math.random() * 10);
+        } while (takenMinutes.includes(exactMinute));
+        return exactMinute;
+    }

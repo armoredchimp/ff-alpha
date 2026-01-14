@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { zoneMatchups, zoneAdjacency } from "$lib/utils/formation";
-    import { applyVariance, getPlayersFromSource,  selectRandomPlayer } from "$lib/utils/sim"
+    import { applyVariance, getPlayersFromSource,  selectRandomPlayer, getUniqueMinute } from "$lib/utils/sim"
 
     // ============================================
     // PROPS AND STATE
@@ -699,6 +699,10 @@
             results.away.goalDetails.push(...awayGoals.goalDetails);
         });
 
+        // Sort goals chronologically
+        results.home.goalDetails.sort((a, b) => a.minute - b.minute);
+        results.away.goalDetails.sort((a, b) => a.minute - b.minute);
+
         console.log(`\n========== FINAL SCORE ==========`);
         console.log(`Home ${results.home.goals} - ${results.away.goals} Away`);
 
@@ -781,8 +785,9 @@
             
             if (result.scored) {
                 goals++;
+                const exactMinute = getUniqueMinute(minute, goalDetails)
                 goalDetails.push({
-                    minute,
+                    minute: exactMinute,
                     scorerPlayerId,
                     scorerName: playersMap[scorerPlayerId]?.player_name || 'Unknown',
                     creator: finisherInfo.creator || finisherInfo.source,
