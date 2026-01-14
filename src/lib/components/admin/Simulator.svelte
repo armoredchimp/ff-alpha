@@ -1,7 +1,11 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { zoneMatchups, zoneAdjacency } from "$lib/utils/formation";
-    import { applyVariance } from "$lib/utils/sim"
+    import { applyVariance, getPlayersFromSource,  selectRandomPlayer } from "$lib/utils/sim"
+
+    // ============================================
+    // PROPS AND STATE
+    // ============================================
 
     let {
         playersMap = {},
@@ -17,7 +21,6 @@
     
     const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80];
   
-    // Positional Group weights and values for chance point calculation
     const CHANCE_THRESHOLDS = [
         { min: 8000, bonus: 4 },
         { min: 4500, bonus: 3 },
@@ -35,7 +38,6 @@
         midfielders: 'midfielders',
         attackers: 'defenders'
     };
-    // Zonal weights and values for chance point calculation
     const ZONE_ADJ_SCORE = .35;
     const ZONE_CHANCE_THRESHOLDS = [
         { min: 2000, bonus: 3 },
@@ -78,11 +80,15 @@
             attackers: ['midfielders']
         }
     };
-    // Objects for stateful group and zone scores. Changes upon a player swap 
+
     let groupScores = $state({});
     let zoneScores = $state({});
     
     let matchResults = $state({});
+
+    // ============================================
+    // LIFECYCLE
+    // ============================================
 
     onMount(() => {
         console.log('playersMap contents:', playersMap);
@@ -95,7 +101,10 @@
         }
     });
 
-    // Simulate whole league
+    // ============================================
+    // LEAGUE SIMULATION
+    // ============================================
+
     function simulateMatchups() {
         console.log(`\n========================================`);
         console.log(`SIMULATING LEAGUE ${leagueId}`);
@@ -118,7 +127,6 @@
         console.log(`\n✅ Completed simulation for League ${leagueId}\n`);
     }
     
-    // Simulate individual game
     function simulateMatchup(matchup) {
         const { homeTeam, awayTeam, matchupId } = matchup;
 
@@ -149,6 +157,245 @@
             ...matchResult
         };
     }
+
+    // ============================================
+    // PLAYER ORGANIZATION
+    // ============================================
+
+    function organizePlayersByGroup(homeSelected, awaySelected) {
+        const homePlayersByGroup = extractPlayersByGroup(homeSelected);
+        const awayPlayersByGroup = extractPlayersByGroup(awaySelected);
+
+        console.log('Home players by group:', homePlayersByGroup);
+        console.log('Away players by group:', awayPlayersByGroup);
+
+        const groupOrg = {};
+
+        Object.keys(homePlayersByGroup).forEach(group => {
+            groupOrg[group] = {
+                homePlayers: homePlayersByGroup[group],
+                awayPlayers: awayPlayersByGroup[group]
+            };
+        });
+
+        return groupOrg;
+    }
+    
+    function organizePlayersByZones(homeSelected, awaySelected) {
+        const homePlayersByZone = extractPlayersByZone(homeSelected);
+        const awayPlayersByZone = extractPlayersByZone(awaySelected);
+        
+        console.log('Home players by zone:', homePlayersByZone);
+        console.log('Away players by zone:', awayPlayersByZone);
+        
+        const zoneOrg = {};
+        
+        for (let zone = 3; zone <= 17; zone++) {
+            const homePlayersInZone = homePlayersByZone[zone] || [];
+            const awayPlayersInZone = awayPlayersByZone[zone] || [];
+            
+            const opposingZone = zoneMatchups[zone];
+            const opposingPlayers = opposingZone ? (awayPlayersByZone[opposingZone] || []) : [];
+            
+            const adjacentZones = zoneAdjacency[zone] || [];
+            const homeAdjacentPlayers = [];
+            const awayAdjacentPlayers = [];
+            
+            adjacentZones.forEach(adjZone => {
+                if (homePlayersByZone[adjZone]) {
+                    homeAdjacentPlayers.push(...homePlayersByZone[adjZone]);
+                }
+                
+                const opposingAdjZone = zoneMatchups[adjZone];
+                if (opposingAdjZone && awayPlayersByZone[opposingAdjZone]) {
+                    awayAdjacentPlayers.push(...awayPlayersByZone[opposingAdjZone]);
+                }
+            });
+            
+            if (homePlayersInZone.length > 0 || homeAdjacentPlayers.length > 0 || 
+                opposingPlayers.length > 0 || awayAdjacentPlayers.length > 0) {
+                zoneOrg[zone] = {
+                    homePlayers: homePlayersInZone,
+                    homeAdjacentPlayers: homeAdjacentPlayers,
+                    awayPlayers: opposingPlayers,
+                    awayAdjacentPlayers: awayAdjacentPlayers
+                };
+            }
+        }
+        
+        return zoneOrg;
+    }
+
+    function extractPlayersByGroup(selected) {
+        const playersByGroup = {};
+
+        Object.keys(selected).forEach(positionGroup => {
+            playersByGroup[positionGroup] = [];
+            const group = selected[positionGroup];
+            Object.keys(group).forEach(position => {
+                const positionData = group[position];
+                const players = positionData.players || [];
+                playersByGroup[positionGroup].push(...players);
+            });
+        });
+        return playersByGroup;
+    }
+
+    function extractPlayersByZone(selected) {
+        const playersByZone = {};
+        
+        Object.keys(selected).forEach(positionGroup => {
+            if (positionGroup === 'keepers') return;
+            
+            const group = selected[positionGroup];
+            
+            Object.keys(group).forEach(position => {
+                const positionData = group[position];
+                const zone = positionData.zone;
+                const players = positionData.players || [];
+                
+                if (zone && zone > 2) {
+                    if (!playersByZone[zone]) {
+                        playersByZone[zone] = [];
+                    }
+                    playersByZone[zone].push(...players);
+                }
+            });
+        });
+        
+        return playersByZone;
+    }
+
+    // ============================================
+    // SCORING AGGREGATION
+    // ============================================
+
+    function scoreGroups(groupOrg) {
+        Object.keys(groupOrg).forEach(groupName => {
+            const group = groupOrg[groupName];
+            
+            console.log(`\nProcessing ${groupName}:`);
+            console.log(`  Home players: ${group.homePlayers.length} players - IDs: ${group.homePlayers}`);
+            console.log(`  Away players: ${group.awayPlayers.length} players - IDs: ${group.awayPlayers}`);
+        
+            if (groupName !== 'keepers') {
+                groupScores[groupName] = {
+                    homeScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    },
+                    awayScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    }
+                };
+            } else {
+                groupScores['keepers'] = {
+                    homeScores: { keeper_score: 0, passing_score: 0 },
+                    awayScores: { keeper_score: 0, passing_score: 0 }
+                };
+            }
+            
+            let home = groupScores[groupName].homeScores;
+            let away = groupScores[groupName].awayScores;
+            
+            for (let i = 0; i < group.homePlayers.length; i++) {
+                const playerId = group.homePlayers[i];
+                const scores = scoreMap.get(playerId);
+                console.log(`    Home Player ${playerId} scores:`, scores);
+                if (scores) {
+                    Object.keys(home).forEach(scoreType => {
+                        if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
+                            home[scoreType] += scores[scoreType];
+                        }
+                    });
+                }
+            }
+            
+            for (let i = 0; i < group.awayPlayers.length; i++) {
+                const playerId = group.awayPlayers[i];
+                const scores = scoreMap.get(playerId); 
+                console.log(`    Away Player ${playerId} scores:`, scores);
+                if (scores) {
+                    Object.keys(away).forEach(scoreType => {
+                        if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
+                            away[scoreType] += scores[scoreType];
+                        }
+                    });
+                }
+            }
+        });
+        
+        console.log('Group Scores:');
+        console.log(JSON.stringify(groupScores, null, 2));
+    }
+
+    function scoreZones(zoneOrg) {
+        Object.keys(zoneOrg).forEach(zoneNum => {
+            const zone = zoneOrg[zoneNum];
+            console.log(`Processing zone ${zoneNum}`);
+            if (Number(zoneNum) === 1 || Number(zoneNum) > 17) return;
+            
+            if (!zoneScores[zoneNum]) {
+                zoneScores[zoneNum] = {
+                    homeScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    },
+                    awayScores: {
+                        attacking_score: 0,
+                        finishing_score: 0,
+                        passing_score: 0,
+                        possession_score: 0,
+                        defensive_score: 0
+                    }
+                };
+            }
+            
+            const home = zoneScores[zoneNum].homeScores;
+            const away = zoneScores[zoneNum].awayScores;
+            
+            const groupConfigs = [
+                { groupName: 'homePlayers', target: home, multiplier: 1 },
+                { groupName: 'homeAdjacentPlayers', target: home, multiplier: ZONE_ADJ_SCORE },
+                { groupName: 'awayPlayers', target: away, multiplier: 1 },
+                { groupName: 'awayAdjacentPlayers', target: away, multiplier: ZONE_ADJ_SCORE }
+            ];
+            
+            groupConfigs.forEach(config => {
+                const players = zone[config.groupName];
+                if (players && Array.isArray(players)) {
+                    for (let i = 0; i < players.length; i++) {
+                        const playerId = players[i];
+                        const scores = scoreMap.get(playerId);
+                        if (scores) {
+                            Object.keys(config.target).forEach(scoreType => {
+                                if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
+                                    config.target[scoreType] += scores[scoreType] * config.multiplier * .1;
+                                    config.target[scoreType] = Math.round(config.target[scoreType]);
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+        console.log(`Scored zones: ${JSON.stringify(zoneScores, null, 2)}`);
+    }
+
+    // ============================================
+    // MATCH SIMULATION
+    // ============================================
 
     function simulateMatch(scores, posGroupOrganization, zoneOrganization) {
         const matchChancePoints = {
@@ -257,28 +504,6 @@
         return result;
     }
 
-    function getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
-        const sideKey = side === 'home' ? 'homePlayers' : 'awayPlayers';
-        const adjacentKey = side === 'home' ? 'homeAdjacentPlayers' : 'awayAdjacentPlayers';
-
-        if (source.startsWith('group_')) {
-            const groupName = source.replace('group_', '');
-            return posGroupOrganization[groupName]?.[sideKey] || [];
-        } else if (source.startsWith('zone_')) {
-            const zoneNum = source.replace('zone_', '');
-            const directPlayers = zoneOrganization[zoneNum]?.[sideKey] || [];
-            if (directPlayers.length > 0) return directPlayers;
-            // Fallback to adjacent players if no direct players
-            return zoneOrganization[zoneNum]?.[adjacentKey] || [];
-        }
-        return [];
-    }
-
-    function selectRandomPlayer(players) {
-        if (!players || players.length === 0) return null;
-        return players[Math.floor(Math.random() * players.length)];
-    }
-
     function calculatePossessionChecks(attackingScores, defendingScores) {
         const atkPossession = attackingScores?.possession_score || 0;
         const defPossession = defendingScores?.possession_score || 0;
@@ -323,7 +548,6 @@
         return finalPoints;
     }
 
-
     function processZoneInterval(zoneScores, minute) {
         const result = { home: {}, away: {} };
         
@@ -336,7 +560,6 @@
             result.home[zoneNum] = 0;
             result.away[zoneNum] = 0;
             
-            // Home attacking this zone
             const homeChecks = calculateZonePossessionChecks(
                 zone.homeScores,
                 zone.awayScores
@@ -353,7 +576,6 @@
                 );
             }
             
-            // Away attacking this zone
             const awayChecks = calculateZonePossessionChecks(
                 zone.awayScores,
                 zone.homeScores
@@ -387,7 +609,6 @@
             }
         }
         
-        // Minimum default one check per zone
         return extraChecks + 1;
     }
 
@@ -410,7 +631,6 @@
             }
         }
         
-        // No base point for zones - only bonus if threshold met
         if (bonus === 0) return 0;
         
         const { finalPoints, modifier } = applyVariance(bonus);
@@ -422,7 +642,7 @@
     }
 
     // ============================================
-    // SCORING CHECK FUNCTIONS
+    // SCORING CHECKS
     // ============================================
 
     function runScoringChecks(matchChancePoints, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
@@ -479,7 +699,6 @@
             results.away.goalDetails.push(...awayGoals.goalDetails);
         });
 
-        // Enhanced final summary
         console.log(`\n========== FINAL SCORE ==========`);
         console.log(`Home ${results.home.goals} - ${results.away.goals} Away`);
 
@@ -718,232 +937,4 @@
         };
     }
 
-
-
-    function scoreZones(zoneOrg) {
-        Object.keys(zoneOrg).forEach(zoneNum => {
-            const zone = zoneOrg[zoneNum];
-            console.log(`Processing zone ${zoneNum}`);
-            if (Number(zoneNum) === 1 || Number(zoneNum) > 17) return;
-            
-            if (!zoneScores[zoneNum]) {
-                zoneScores[zoneNum] = {
-                    homeScores: {
-                        attacking_score: 0,
-                        finishing_score: 0,
-                        passing_score: 0,
-                        possession_score: 0,
-                        defensive_score: 0
-                    },
-                    awayScores: {
-                        attacking_score: 0,
-                        finishing_score: 0,
-                        passing_score: 0,
-                        possession_score: 0,
-                        defensive_score: 0
-                    }
-                };
-            }
-            
-            const home = zoneScores[zoneNum].homeScores;
-            const away = zoneScores[zoneNum].awayScores;
-            
-            const groupConfigs = [
-                { groupName: 'homePlayers', target: home, multiplier: 1 },
-                { groupName: 'homeAdjacentPlayers', target: home, multiplier: ZONE_ADJ_SCORE },
-                { groupName: 'awayPlayers', target: away, multiplier: 1 },
-                { groupName: 'awayAdjacentPlayers', target: away, multiplier: ZONE_ADJ_SCORE }
-            ];
-            
-            groupConfigs.forEach(config => {
-                const players = zone[config.groupName];
-                if (players && Array.isArray(players)) {
-                    for (let i = 0; i < players.length; i++) {
-                        const playerId = players[i];
-                        const scores = scoreMap.get(playerId);
-                        if (scores) {
-                            Object.keys(config.target).forEach(scoreType => {
-                                if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
-                                    config.target[scoreType] += scores[scoreType] * config.multiplier * .1;
-                                    config.target[scoreType] = Math.round(config.target[scoreType]);
-                                }
-                            });
-                        }
-                    }
-                }
-            });
-        });
-
-        console.log(`Scored zones: ${JSON.stringify(zoneScores, null, 2)}`);
-    }
-
-    function scoreGroups(groupOrg) {
-        Object.keys(groupOrg).forEach(groupName => {
-            const group = groupOrg[groupName];
-            
-            console.log(`\nProcessing ${groupName}:`);
-            console.log(`  Home players: ${group.homePlayers.length} players - IDs: ${group.homePlayers}`);
-            console.log(`  Away players: ${group.awayPlayers.length} players - IDs: ${group.awayPlayers}`);
-        
-            if (groupName !== 'keepers') {
-                groupScores[groupName] = {
-                    homeScores: {
-                        attacking_score: 0,
-                        finishing_score: 0,
-                        passing_score: 0,
-                        possession_score: 0,
-                        defensive_score: 0
-                    },
-                    awayScores: {
-                        attacking_score: 0,
-                        finishing_score: 0,
-                        passing_score: 0,
-                        possession_score: 0,
-                        defensive_score: 0
-                    }
-                };
-            } else {
-                groupScores['keepers'] = {
-                    homeScores: { keeper_score: 0, passing_score: 0 },
-                    awayScores: { keeper_score: 0, passing_score: 0 }
-                };
-            }
-            
-            let home = groupScores[groupName].homeScores;
-            let away = groupScores[groupName].awayScores;
-            
-            for (let i = 0; i < group.homePlayers.length; i++) {
-                const playerId = group.homePlayers[i];
-                const scores = scoreMap.get(playerId);
-                console.log(`    Home Player ${playerId} scores:`, scores);
-                if (scores) {
-                    Object.keys(home).forEach(scoreType => {
-                        if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
-                            home[scoreType] += scores[scoreType];
-                        }
-                    });
-                }
-            }
-            
-            for (let i = 0; i < group.awayPlayers.length; i++) {
-                const playerId = group.awayPlayers[i];
-                const scores = scoreMap.get(playerId); 
-                console.log(`    Away Player ${playerId} scores:`, scores);
-                if (scores) {
-                    Object.keys(away).forEach(scoreType => {
-                        if (scores[scoreType] !== undefined && scores[scoreType] !== null) {
-                            away[scoreType] += scores[scoreType];
-                        }
-                    });
-                }
-            }
-        });
-        
-        console.log('Group Scores:');
-        console.log(JSON.stringify(groupScores, null, 2));
-    }
-
-    function organizePlayersByGroup(homeSelected, awaySelected) {
-        const homePlayersByGroup = extractPlayersByGroup(homeSelected);
-        const awayPlayersByGroup = extractPlayersByGroup(awaySelected);
-
-        console.log('Home players by group:', homePlayersByGroup);
-        console.log('Away players by group:', awayPlayersByGroup);
-
-        const groupOrg = {};
-
-        Object.keys(homePlayersByGroup).forEach(group => {
-            groupOrg[group] = {
-                homePlayers: homePlayersByGroup[group],
-                awayPlayers: awayPlayersByGroup[group]
-            };
-        });
-
-        return groupOrg;
-    }
-    
-    function organizePlayersByZones(homeSelected, awaySelected) {
-        const homePlayersByZone = extractPlayersByZone(homeSelected);
-        const awayPlayersByZone = extractPlayersByZone(awaySelected);
-        
-        console.log('Home players by zone:', homePlayersByZone);
-        console.log('Away players by zone:', awayPlayersByZone);
-        
-        const zoneOrg = {};
-        
-        for (let zone = 3; zone <= 17; zone++) {
-            const homePlayersInZone = homePlayersByZone[zone] || [];
-            const awayPlayersInZone = awayPlayersByZone[zone] || [];
-            
-            const opposingZone = zoneMatchups[zone];
-            const opposingPlayers = opposingZone ? (awayPlayersByZone[opposingZone] || []) : [];
-            
-            const adjacentZones = zoneAdjacency[zone] || [];
-            const homeAdjacentPlayers = [];
-            const awayAdjacentPlayers = [];
-            
-            adjacentZones.forEach(adjZone => {
-                if (homePlayersByZone[adjZone]) {
-                    homeAdjacentPlayers.push(...homePlayersByZone[adjZone]);
-                }
-                
-                const opposingAdjZone = zoneMatchups[adjZone];
-                if (opposingAdjZone && awayPlayersByZone[opposingAdjZone]) {
-                    awayAdjacentPlayers.push(...awayPlayersByZone[opposingAdjZone]);
-                }
-            });
-            
-            if (homePlayersInZone.length > 0 || homeAdjacentPlayers.length > 0 || 
-                opposingPlayers.length > 0 || awayAdjacentPlayers.length > 0) {
-                zoneOrg[zone] = {
-                    homePlayers: homePlayersInZone,
-                    homeAdjacentPlayers: homeAdjacentPlayers,
-                    awayPlayers: opposingPlayers,
-                    awayAdjacentPlayers: awayAdjacentPlayers
-                };
-            }
-        }
-        
-        return zoneOrg;
-    }
-
-    function extractPlayersByGroup(selected) {
-        const playersByGroup = {};
-
-        Object.keys(selected).forEach(positionGroup => {
-            playersByGroup[positionGroup] = [];
-            const group = selected[positionGroup];
-            Object.keys(group).forEach(position => {
-                const positionData = group[position];
-                const players = positionData.players || [];
-                playersByGroup[positionGroup].push(...players);
-            });
-        });
-        return playersByGroup;
-    }
-
-    function extractPlayersByZone(selected) {
-        const playersByZone = {};
-        
-        Object.keys(selected).forEach(positionGroup => {
-            if (positionGroup === 'keepers') return;
-            
-            const group = selected[positionGroup];
-            
-            Object.keys(group).forEach(position => {
-                const positionData = group[position];
-                const zone = positionData.zone;
-                const players = positionData.players || [];
-                
-                if (zone && zone > 2) {
-                    if (!playersByZone[zone]) {
-                        playersByZone[zone] = [];
-                    }
-                    playersByZone[zone].push(...players);
-                }
-            });
-        });
-        
-        return playersByZone;
-    }
 </script>

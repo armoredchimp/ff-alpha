@@ -23,3 +23,24 @@
         const finalPoints = Math.max(minPoints, Math.round(basePoints + selectedModifier));
         return { finalPoints, modifier: selectedModifier };
     }
+
+    export function getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
+        const sideKey = side === 'home' ? 'homePlayers' : 'awayPlayers';
+        const adjacentKey = side === 'home' ? 'homeAdjacentPlayers' : 'awayAdjacentPlayers';
+
+        if (source.startsWith('group_')) {
+            const groupName = source.replace('group_', '');
+            return posGroupOrganization[groupName]?.[sideKey] || [];
+        } else if (source.startsWith('zone_')) {
+            const zoneNum = source.replace('zone_', '');
+            const directPlayers = zoneOrganization[zoneNum]?.[sideKey] || [];
+            if (directPlayers.length > 0) return directPlayers;
+            return zoneOrganization[zoneNum]?.[adjacentKey] || [];
+        }
+        return [];
+    }
+
+    export function selectRandomPlayer(players) {
+        if (!players || players.length === 0) return null;
+        return players[Math.floor(Math.random() * players.length)];
+    }
