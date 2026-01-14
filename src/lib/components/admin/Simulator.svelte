@@ -881,22 +881,13 @@
         };
     }
 
-    function getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization){
-        if (source.startsWith('group_')){
+    function getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization){    
             const finisherPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
             const player = selectRandomPlayer(finisherPlayers)
             return {
                 score: playersMap[player]?.finishing_score || 0,
                 player_id: player
             } 
-        } else if (source.startsWith('zone_')) {
-            const finisherPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
-            const player = selectRandomPlayer(finisherPlayers)
-            return {
-                score: playersMap[player]?.finishing_score || 0,
-                player_id: player
-            } 
-        }
     }
 
     function getSourceFinishing(side, source, scoreKey, groupScores, zoneScores) {
