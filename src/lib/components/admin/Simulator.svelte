@@ -83,7 +83,38 @@
 
     let groupScores = $state({});
     let zoneScores = $state({});
-    
+
+    let bestPassers = $derived.by(() => {
+        if (!leagueMatchups.length || !scoreMap.size) return { home: null, away: null };
+        
+        const matchup = leagueMatchups[0]; // Current matchup context
+        if (!matchup) return { home: null, away: null };
+        
+        const findBestPasser = (selected) => {
+            let bestId = null;
+            let bestScore = -1;
+            
+            Object.values(selected).forEach(group => {
+                Object.values(group).forEach(position => {
+                    (position.players || []).forEach(playerId => {
+                        const score = scoreMap.get(playerId)?.passing_score || 0;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestId = playerId;
+                        }
+                    });
+                });
+            });
+            
+            return bestId;
+        };
+        
+        return {
+            home: findBestPasser(matchup.homeTeam.selected),
+            away: findBestPasser(matchup.awayTeam.selected)
+        };
+    });
+
     let matchResults = $state({});
 
     // ============================================
@@ -757,7 +788,7 @@
             const finisherSource = finisherInfo.finisher || finisherInfo.source;
             let scorerPlayerId = 0
 
-            if(finisherInfo.type === 'solo'){
+            if(finisherInfo.type === 'solo' || finisherInfo.type === 'corner'){
                 scorerPlayerId = finisherInfo.finisher
             } else {
                 const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
@@ -831,10 +862,37 @@
         return checks;
     }
 
+    function getCornerInfo(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
+        const taker = side === 'home' ? bestPassers.home : bestPassers.away;
+        
+        const finisherPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+        const finisher = selectRandomPlayer(finisherPlayers);
+        const finishingScore = scoreMap.get(finisher)?.finishing_score || 0;
+        
+        return {
+            taker,
+            finisher,
+            finishingScore
+        };
+    }
+
     function determineFinisher(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
         const scoreKey = side === 'home' ? 'homeScores' : 'awayScores';
         
+        
         if (Math.random() < ASSIST_CONFIG.soloChance) {
+            const isDefenderSource = source === 'group_defenders' || source === 'zone_4';
+            
+            if (isDefenderSource) {
+                const cornerInfo = getCornerInfo(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+                return {
+                    type: 'corner',
+                    creator: cornerInfo.taker,
+                    finisher: cornerInfo.finisher,
+                    finishingScore: cornerInfo.finishingScore
+                };
+            }
+                
             const scorerInfo = getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
             return {
                 type: 'solo',
