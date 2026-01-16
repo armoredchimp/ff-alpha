@@ -737,17 +737,28 @@
         console.log(`\n========== FINAL SCORE ==========`);
         console.log(`Home ${results.home.goals} - ${results.away.goals} Away`);
 
+
         if (results.home.goalDetails.length > 0) {
             console.log('\nHome Goals:');
             results.home.goalDetails.forEach(g => {
-                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${g.finisher})`);
+                const fromInfo = g.type === 'assisted' 
+                ? playersMap[g.assister]?.player_name || `Unknown (${g.assister})`
+                : g.type === 'corner'
+                ? playersMap[g.creator]?.player_name || `Unknown (${g.creator})`
+                : 'solo run';
+                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${fromInfo})`);
             });
         }
 
         if (results.away.goalDetails.length > 0) {
             console.log('\nAway Goals:');
             results.away.goalDetails.forEach(g => {
-                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${g.finisher})`);
+                const fromInfo = g.type === 'assisted' 
+                ? playersMap[g.assister]?.player_name || `Unknown (${g.assister})`
+                : g.type === 'corner'
+                ? playersMap[g.creator]?.player_name || `Unknown (${g.creator})`
+                : 'solo run';
+                console.log(`  ${g.minute}' - ${g.scorerName} (${g.type} from ${fromInfo})`);
             });
         }
 
@@ -788,11 +799,12 @@
             const finisherSource = finisherInfo.finisher || finisherInfo.source;
             let scorerPlayerId = 0
 
-            if(finisherInfo.type === 'solo' || finisherInfo.type === 'corner'){
+            if(finisherInfo.type === 'solo' || finisherInfo.type === 'corner' || finisherInfo.type === 'assisted' || finisherInfo.type === 'solo_fallback'){
                 scorerPlayerId = finisherInfo.finisher
             } else {
-                const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
-                scorerPlayerId = selectRandomPlayer(finisherPlayers);
+                // Unknown type - shouldn't happen
+                console.warn('Unknown finisher type:', finisherInfo.type);
+                scorerPlayerId = finisherInfo.finisher;
             }
 
            
@@ -808,10 +820,13 @@
 
             const playerName = playersMap[scorerPlayerId]?.player_name || `Unknown (${scorerPlayerId})`;
             const status = result.scored ? `⚽ GOAL! (${playerName})` : 'saved';
+            const assisterName = finisherInfo.assister ? playersMap[finisherInfo.assister]?.player_name : null;
+            const cornerTakerName = finisherInfo.type === 'corner' ? playersMap[finisherInfo.creator]?.player_name : null;
             const assistInfo = finisherInfo.type === 'assisted' 
-                ? ` (${finisherInfo.creator} → ${finisherInfo.finisher})`
+                ? ` (assist: ${assisterName})`
+                : finisherInfo.type === 'corner'
+                ? ` (corner: ${cornerTakerName})`
                 : ` (${finisherInfo.type})`;
-            
             console.log(`  Check ${idx + 1} [${check.source}]${assistInfo}: ${result.roll} vs ${result.target}% → ${status}`);
             
             if (result.scored) {
@@ -822,6 +837,7 @@
                     scorerPlayerId,
                     scorerName: playersMap[scorerPlayerId]?.player_name || 'Unknown',
                     creator: finisherInfo.creator || finisherInfo.source,
+                    assister: finisherInfo.assister || null,
                     finisher: finisherInfo.finisher || finisherInfo.source,
                     type: finisherInfo.type,
                     finishingScore: finisherInfo.finishingScore,
@@ -920,6 +936,19 @@
         });
         
         if (linkedSources.length === 0) {
+            const isDefenderSource = source === 'group_defenders' || 
+            (source.startsWith('zone_') && parseInt(source.replace('zone_', '')) <= 8);
+            
+            if (isDefenderSource) {
+                const cornerInfo = getCornerInfo(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+                return {
+                    type: 'corner',
+                    creator: cornerInfo.taker,
+                    finisher: cornerInfo.finisher,
+                    finishingScore: cornerInfo.finishingScore
+                };
+            }
+            
             const scorerInfo = getSoloScorer(side, source, groupScores, zoneScores, posGroupOrganization, zoneOrganization)
             return {
                 type: 'solo_fallback',
@@ -929,13 +958,32 @@
             };
         }
         
-        const finisher = linkedSources[Math.floor(Math.random() * linkedSources.length)];
+        const finisherSource = linkedSources[Math.floor(Math.random() * linkedSources.length)];
+        const finisherPlayers = getPlayersFromSource(finisherSource, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+        const finisherId = selectRandomPlayer(finisherPlayers);
         
+        const assisterPlayers = getPlayersFromSource(source, side, groupScores, zoneScores, posGroupOrganization, zoneOrganization);
+        const assisterCandidates = assisterPlayers.filter(p => p !== finisherId);
+        const assisterId = assisterCandidates.length > 0 
+            ? selectRandomPlayer(assisterCandidates) 
+            : null; // No valid assister, will fall through
+
+        // If we couldn't find a different assister, treat as solo
+        if (!assisterId) {
+            return {
+                type: 'solo_fallback',
+                source: source,
+                finisher: finisherId,
+                finishingScore: scoreMap.get(finisherId)?.finishing_score || 0
+            };
+        }
+
         return {
             type: 'assisted',
             creator: source,
-            finisher: finisher,
-            finishingScore: getSourceFinishing(side, finisher, scoreKey, groupScores, zoneScores)
+            assister: assisterId,
+            finisher: finisherId,
+            finishingScore: scoreMap.get(finisherId)?.finishing_score || 0
         };
     }
 
