@@ -970,9 +970,11 @@
 
         // If we couldn't find a different assister, treat as solo
         if (!assisterId) {
+            const assister = side === 'home' ? bestPassers.home : bestPassers.away;
             return {
-                type: 'solo_fallback',
-                source: source,
+                type: 'assisted',
+                creator: source,
+                assister: assister,
                 finisher: finisherId,
                 finishingScore: scoreMap.get(finisherId)?.finishing_score || 0
             };
