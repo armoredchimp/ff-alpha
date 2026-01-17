@@ -52,17 +52,17 @@
     const SCORING_CONFIG = {
         baseChance: 4,
         
-        finishingScale: 1400,
-        finishingMaxBonus: 5,
+        finishingScale: 2000,
+        finishingMaxBonus: 7,
         
-        keeperScale: 2000,
-        keeperMaxPenalty: 4,
+        keeperScale: 2200,
+        keeperMaxPenalty: 5,
         
-        defenseMultiplier: 0.6,
+        defenseMultiplier: 0.65,
         defenseScale: 7500,
         defenseMaxPenalty: 2,
         
-        midfieldMultiplier: 0.3,
+        midfieldMultiplier: 0.35,
         midfieldScale: 5000,
         midfieldMaxPenalty: 1,
         
