@@ -12,11 +12,13 @@
         scoreMap = new Map(),
         leagueMatchups = [],
         leagueId = 0,
+        onSimulationComplete = (results: any) => {}
     } = $props<{
         playersMap?: Record<number, any>;
         scoreMap?: Map<number, any>;
         leagueMatchups?: Array<any>;
         leagueId?: number;
+        onSimulationComplete?: (results: any) => void;
     }>();
     
     const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80];
@@ -125,10 +127,9 @@
         console.log('playersMap contents:', playersMap);
         console.log('playersMap size:', Object.keys(playersMap).length);
         if (leagueMatchups.length > 0 && scoreMap.size > 0) {
-            simulateMatchups();
-        }
-        if (leagueMatchups.length > 0 && scoreMap.size > 0) {
-            simulateMatchups();
+            for(let i = 0; i < 5; i++){
+                simulateMatchups();
+            }
         }
     });
 
@@ -156,6 +157,11 @@
         });
         
         console.log(`\n✅ Completed simulation for League ${leagueId}\n`);
+
+        onSimulationComplete({
+            leagueId,
+            matchResults: {...matchResults}
+        })
     }
     
     function simulateMatchup(matchup) {

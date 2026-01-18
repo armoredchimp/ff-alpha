@@ -3,20 +3,25 @@
   import { TABLE_PREFIXES } from "$lib/stores/league.svelte";
   import Simulator from "./Simulator.svelte";
 
-  let isProcessing = false;
-  let statusMessage = '';
-  let errorMessage = '';
-  let matchupStats = null;
+  let isProcessing = $state(false);
+  let statusMessage = $state('');
+  let errorMessage = $state('');
+  let matchupStats = $state(null);
+  let loadedCountryCodes = $state(new Set());
+  let leagueCountries = $state(new Map());
 
-  let loadedCountryCodes = new Set();
-  let leagueCountries = new Map();
-  
   // Store for passing to Simulate component
-  let playerIds = {};
-  let currentLeagueMatchups = [];
-  let currentLeagueId = null;
-  let playerScoresMap = new Map();
-  
+  let playerIds = $state({});
+  let currentLeagueMatchups = $state([]);
+  let currentLeagueId = $state(null);
+  let playerScoresMap = $state(new Map());
+  let allSimulationResults = $state([]);
+
+  function handleSimulationComplete(results) {
+    allSimulationResults = [...allSimulationResults, results];
+    console.log('League completed:', results.leagueId, 'Total results:', allSimulationResults.length);
+  }
+
   async function loadPlayers(countriesCode) {
       try {
           if (!TABLE_PREFIXES[countriesCode]) {
@@ -261,6 +266,7 @@
     statusMessage = '';
     errorMessage = '';
     matchupStats = null;
+    allSimulationResults = [];
   }
 </script>
 
@@ -349,6 +355,53 @@
   </div>
 </div>
 
+{#if allSimulationResults.length > 0}
+  <div class="results-container">
+    <h3>Match Results</h3>
+    {#each allSimulationResults as leagueResult}
+      <div class="league-results">
+        <h4>League {leagueResult.leagueId}</h4>
+        {#each Object.entries(leagueResult.matchResults) as [matchupId, result]}
+          <div class="match-result">
+            <div class="score-line">
+              <span>Home {result.score.home} - {result.score.away} Away</span>
+            </div>
+            {#if result.goalDetails.home.length > 0 || result.goalDetails.away.length > 0}
+              <div class="goals">
+               {#each result.goalDetails.home as goal}
+                  <div class="goal home">
+                    <span class="minute">{goal.minute}'</span>
+                    <span class="scorer">{goal.scorerName}</span>
+                    {#if goal.type === 'assisted' && goal.assister}
+                      <span class="assist">(assist: {playerIds[goal.assister]?.player_name || 'Unknown'})</span>
+                    {:else if goal.type === 'corner' && goal.creator}
+                      <span class="assist">(corner: {playerIds[goal.creator]?.player_name || 'Unknown'})</span>
+                    {:else if goal.type === 'solo' || goal.type === 'solo_fallback'}
+                      <span class="assist">(solo)</span>
+                    {/if}
+                  </div>
+                {/each}
+                {#each result.goalDetails.away as goal}
+                  <div class="goal away">
+                    <span class="minute">{goal.minute}'</span>
+                    <span class="scorer">{goal.scorerName}</span>
+                    {#if goal.type === 'assisted' && goal.assister}
+                      <span class="assist">(assist: {playerIds[goal.assister]?.player_name || 'Unknown'})</span>
+                    {:else if goal.type === 'corner' && goal.creator}
+                      <span class="assist">(corner: {playerIds[goal.creator]?.player_name || 'Unknown'})</span>
+                    {:else if goal.type === 'solo' || goal.type === 'solo_fallback'}
+                      <span class="assist">(solo)</span>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+{/if}
 
 {#if currentLeagueId && currentLeagueMatchups.length > 0 && playerScoresMap.size > 0}
   {#key currentLeagueId}
@@ -357,6 +410,7 @@
       scoreMap={playerScoresMap}
       leagueMatchups={currentLeagueMatchups}
       leagueId={currentLeagueId}
+      onSimulationComplete={handleSimulationComplete}
     />
   {/key}
 {/if}
@@ -602,4 +656,65 @@
   .league-list::-webkit-scrollbar-thumb:hover {
     background: #a0aec0;
   }
+
+  .results-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  .league-results {
+    margin-bottom: 1.5rem;
+  }
+
+  .league-results h4 {
+    color: #667eea;
+    border-bottom: 2px solid #667eea30;
+    padding-bottom: 0.5rem;
+  }
+
+  .match-result {
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: #f7fafc;
+    border-radius: 0.5rem;
+  }
+
+  .score-line {
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .goals {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .goal {
+    padding: 0.25rem 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .minute {
+    font-weight: 600;
+    min-width: 2.5rem;
+  }
+
+  .scorer {
+    font-weight: 500;
+  }
+
+  .assist {
+    color: #718096;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .goal.home { color: #2563eb; }
+  .goal.away { color: #dc2626; }
 </style>
