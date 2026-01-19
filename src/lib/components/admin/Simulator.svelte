@@ -12,13 +12,15 @@
         scoreMap = new Map(),
         leagueMatchups = [],
         leagueId = 0,
-        onSimulationComplete = (results: any) => {}
+        onSimulationComplete = (results: any) => {},
+        testMode = false
     } = $props<{
         playersMap?: Record<number, any>;
         scoreMap?: Map<number, any>;
         leagueMatchups?: Array<any>;
         leagueId?: number;
         onSimulationComplete?: (results: any) => void;
+        testMode?: boolean;
     }>();
     
     const MATCH_INTERVALS = [0, 10, 20, 30, 40, 50, 60, 70, 80];
@@ -127,7 +129,8 @@
         console.log('playersMap contents:', playersMap);
         console.log('playersMap size:', Object.keys(playersMap).length);
         if (leagueMatchups.length > 0 && scoreMap.size > 0) {
-            for(let i = 0; i < 5; i++){
+            const runs = testMode ? 5 : 1;
+            for(let i = 0; i < runs; i++){
                 simulateMatchups();
             }
         }
@@ -160,12 +163,18 @@
 
         onSimulationComplete({
             leagueId,
-            matchResults: {...matchResults}
+            matchResults: {...matchResults},
+            testMode,
+            homeTeamId: leagueMatchups[0]?.homeTeam?.teamId,
+            awayTeamId: leagueMatchups[0]?.awayTeam?.teamId
         })
     }
     
     function simulateMatchup(matchup) {
         const { homeTeam, awayTeam, matchupId } = matchup;
+
+        let homePossessionWins = 0;
+        let awayPossessionWins = 0;
 
         console.log('\nHome Team Roster:');
         console.log('Selected players:', homeTeam.selected);
@@ -435,6 +444,10 @@
     // ============================================
 
     function simulateMatch(scores, posGroupOrganization, zoneOrganization) {
+        const possessionBreakdown = {
+            home: { total: 0, byGroup: { defenders: 0, midfielders: 0, attackers: 0 } },
+            away: { total: 0, byGroup: { defenders: 0, midfielders: 0, attackers: 0 } }
+        };
         const matchChancePoints = {
             home: {
                 total: 0,
@@ -454,6 +467,17 @@
             const intervalResult = processInterval(scores, minute);
             const zoneIntervalResult = processZoneInterval(zoneScores, minute);
             
+            // Aggregate possession wins
+            Object.keys(GROUP_MATCHUPS).forEach(group => {
+                if (intervalResult.possessionWins.home[group]) {
+                    possessionBreakdown.home.byGroup[group]++;
+                    possessionBreakdown.home.total++;
+                }
+                if (intervalResult.possessionWins.away[group]) {
+                    possessionBreakdown.away.byGroup[group]++;
+                    possessionBreakdown.away.total++;
+                }
+            });
             matchChancePoints.home.byInterval.push({ minute, groups: intervalResult.home, zones: zoneIntervalResult.home });
             matchChancePoints.away.byInterval.push({ minute, groups: intervalResult.away, zones: zoneIntervalResult.away });
             
@@ -489,14 +513,19 @@
             goalDetails: {
                 home: scoringResults.home.goalDetails,
                 away: scoringResults.away.goalDetails
-            }
+            },
+            possessionBreakdown
         };
     }
 
     function processInterval(scores, minute) {
         const result = {
             home: { defenders: 0, midfielders: 0, attackers: 0 },
-            away: { defenders: 0, midfielders: 0, attackers: 0 }
+            away: { defenders: 0, midfielders: 0, attackers: 0 },
+            possessionWins: {
+                home: { defenders: 0, midfielders: 0, attackers: 0 },
+                away: { defenders: 0, midfielders: 0, attackers: 0 }
+            }
         };
 
         console.log(`\n=== Interval ${minute}-${minute + 10} ===`);
@@ -512,6 +541,13 @@
                 scores[attackingGroup]?.awayScores,
                 scores[defendingGroup]?.homeScores
             );
+
+            // Track who won possession
+            if (homeChecks > awayChecks) {
+                result.possessionWins.home[attackingGroup]++;
+            } else if (awayChecks > homeChecks) {
+                result.possessionWins.away[attackingGroup]++;
+            }
 
             for (let i = 0; i < homeChecks; i++) {
                 result.home[attackingGroup] += calculateGroupChancePoints(
@@ -685,7 +721,11 @@
     function runScoringChecks(matchChancePoints, groupScores, zoneScores, posGroupOrganization, zoneOrganization) {
         const results = {
             home: { goals: 0, goalDetails: [] },
-            away: { goals: 0, goalDetails: [] }
+            away: { goals: 0, goalDetails: [] },
+            possessionBreakdown: {
+                home: { total: 0, byGroup: { defenders: 0, midfielders: 0, attackers: 0 } },
+                away: { total: 0, byGroup: { defenders: 0, midfielders: 0, attackers: 0 } }
+            }
         };
 
         const homeDefense = {

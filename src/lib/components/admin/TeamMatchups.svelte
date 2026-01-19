@@ -16,10 +16,34 @@
   let currentLeagueId = $state(null);
   let playerScoresMap = $state(new Map());
   let allSimulationResults = $state([]);
+  let testMode = $state(false)
 
-  function handleSimulationComplete(results) {
+  let matchweeksByCountry = new Map()
+
+  async function handleSimulationComplete(results) {
     allSimulationResults = [...allSimulationResults, results];
     console.log('League completed:', results.leagueId, 'Total results:', allSimulationResults.length);
+    
+    if (!results.testMode) {
+        await saveMatchResults(results);
+    }
+  }
+
+  async function loadMatchweeks() {
+    const { data, error } = await supabase
+        .from('league_info_reference')
+        .select('country_code, current_matchweek')
+    
+    if (error) {
+        console.error('Error fetching matchweeks:', error);
+        return;
+    }
+    
+    data.forEach(row => {
+        matchweeksByCountry.set(row.country_code, row.current_matchweek);
+    });
+    
+    console.log('Loaded matchweeks:', matchweeksByCountry);
   }
 
   async function loadPlayers(countriesCode) {
@@ -177,6 +201,7 @@
     try {
       leagueCountries = await loadCountryCodes();
       playerScoresMap = await loadPlayerScores();
+      await loadMatchweeks()
       console.log(`Loaded ${leagueCountries.size} league country codes`)
       statusMessage = `Loaded ${playerScoresMap.size} player scores`;
       
@@ -261,7 +286,103 @@
   function handleProcessMatchups() {
     processAllMatchups();
   }
-  
+
+  async function saveMatchResults(leagueResult) {
+    const { leagueId, matchResults } = leagueResult;
+    const season = '2526'; 
+    
+    const countryCode = leagueCountries.get(leagueId)
+    if(!countryCode){
+      throw new Error('Failed to retrieve country code')
+    }
+    const gameweek = matchweeksByCountry.get(countryCode) 
+    if(!gameweek){
+      throw new Error('Failed to retrieve game week')
+    }
+    
+    // Delete existing results for this league/gameweek/season
+    const { error: deleteError } = await supabaseScaling
+        .from('match_results')
+        .delete()
+        .eq('league_id', leagueId)
+        .eq('season', season)
+        .eq('gameweek', gameweek);
+    
+    if (deleteError) {
+        console.error('Error deleting existing match results:', deleteError);
+        throw new Error('Failed to clear existing results');
+    }
+
+    console.log(`Cleared existing results for league ${leagueId}, gameweek ${gameweek}`);
+    for (const [matchupId, result] of Object.entries(matchResults)) {
+        const [homeTeamId, awayTeamId] = matchupId.split('_');
+        
+        // Insert match_results
+        const { data: matchData, error: matchError } = await supabaseScaling
+            .from('match_results')
+            .insert({
+                league_id: leagueId,
+                season,
+                gameweek,
+                home_team_id: homeTeamId,
+                away_team_id: awayTeamId,
+                home_score: result.score.home,
+                away_score: result.score.away,
+                home_chance_pts: result.chancePoints.home.total,
+                away_chance_pts: result.chancePoints.away.total,
+                home_possession_wins: result.possessionBreakdown?.home?.total || 0,
+                away_possession_wins: result.possessionBreakdown?.away?.total || 0
+            })
+            .select('id')
+            .single();
+        
+        if (matchError) {
+            console.error('Error saving match result:', matchError);
+            continue;
+        }
+        
+        // Insert match_details
+        const { error: detailsError } = await supabaseScaling
+            .from('match_details')
+            .insert({
+                match_id: matchData.id,
+                goal_details: {
+                    home: result.goalDetails.home,
+                    away: result.goalDetails.away
+                },
+                chance_breakdown: {
+                    home: {
+                        total: result.chancePoints.home.total,
+                        byGroup: result.chancePoints.home.byGroup,
+                        byZone: result.chancePoints.home.byZone
+                    },
+                    away: {
+                        total: result.chancePoints.away.total,
+                        byGroup: result.chancePoints.away.byGroup,
+                        byZone: result.chancePoints.away.byZone
+                    }
+                },
+                possession_breakdown: result.possessionBreakdown,
+                scoring_checks_summary: {
+                    home: {
+                        totalChecks: result.goalDetails.home.length + (result.chancePoints.home.total > 0 ? Math.floor(result.chancePoints.home.total / 3) : 0),
+                        goals: result.score.home
+                    },
+                    away: {
+                        totalChecks: result.goalDetails.away.length + (result.chancePoints.away.total > 0 ? Math.floor(result.chancePoints.away.total / 3) : 0),
+                        goals: result.score.away
+                    }
+                }
+            });
+        
+        if (detailsError) {
+            console.error('Error saving match details:', detailsError);
+        }
+    }
+    
+    console.log(`Saved ${Object.keys(matchResults).length} matches for league ${leagueId}`);
+  }
+
   function resetSimulation() {
     statusMessage = '';
     errorMessage = '';
@@ -329,6 +450,16 @@
       {/if}
     {/if}
     
+    <div class="mode-toggle">
+      <label class="toggle-label">
+          <input 
+              type="checkbox" 
+              bind:checked={testMode}
+              disabled={isProcessing}
+          />
+          <span class="toggle-text">Test Mode {testMode ? '(5 runs, no save)' : '(1 run, saves to DB)'}</span>
+      </label>
+    </div>
     <div class="button-group">
       <button 
         class="btn btn-primary"
@@ -411,6 +542,7 @@
       leagueMatchups={currentLeagueMatchups}
       leagueId={currentLeagueId}
       onSimulationComplete={handleSimulationComplete}
+      {testMode}
     />
   {/key}
 {/if}
@@ -717,4 +849,35 @@
 
   .goal.home { color: #2563eb; }
   .goal.away { color: #dc2626; }
+
+  .mode-toggle {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f7fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+  }
+
+  .toggle-label input {
+      width: 1.25rem;
+      height: 1.25rem;
+      cursor: pointer;
+  }
+
+  .toggle-label input:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+  }
+
+  .toggle-text {
+      font-weight: 500;
+      color: #4a5568;
+  }
 </style>
