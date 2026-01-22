@@ -195,13 +195,22 @@
         const matchResult = simulateMatch(groupScores, posGroupOrganization, zoneOrganization);
         matchResults[matchupId] = matchResult;
 
-        return {
-            matchupId,
-            status: 'simulated',
-            posGroupOrganization,
-            zoneOrganization,
-            ...matchResult
+        const homePlayers = [];
+        const awayPlayers = [];
+
+        (Object.values(posGroupOrganization) as Array<{homePlayers: number[], awayPlayers: number[]}>).forEach(group => {
+            homePlayers.push(...group.homePlayers);
+            awayPlayers.push(...group.awayPlayers);
+        });
+
+        matchResults[matchupId] = {
+            ...matchResult,
+            homePlayers,
+            awayPlayers,
+            homeTeamId: homeTeam.teamId,
+            awayTeamId: awayTeam.teamId
         };
+
     }
 
     // ============================================

@@ -26,6 +26,7 @@
     
     if (!results.testMode) {
         await saveMatchResults(results);
+        await savePlayerStats(results, '2526')
     }
   }
 
@@ -381,6 +382,88 @@
     }
     
     console.log(`Saved ${Object.keys(matchResults).length} matches for league ${leagueId}`);
+  }
+
+  async function savePlayerStats(results, season) {
+    const statsUpdates = new Map(); // keyed by `${leagueId}_${playerId}`
+    
+    for (const [matchupId, match] of Object.entries(results.matchResults)) {
+        const leagueId = results.leagueId;
+        
+        // Track appearances
+        match.homePlayers.forEach(playerId => {
+            const key = `${leagueId}_${playerId}`;
+            if (!statsUpdates.has(key)) {
+                statsUpdates.set(key, { league_id: leagueId, player_id: playerId, season, goals: 0, assists: 0, clean_sheets: 0, appearances: 0 });
+            }
+            statsUpdates.get(key).appearances++;
+        });
+        
+        match.awayPlayers.forEach(playerId => {
+            const key = `${leagueId}_${playerId}`;
+            if (!statsUpdates.has(key)) {
+                statsUpdates.set(key, { league_id: leagueId, player_id: playerId, season, goals: 0, assists: 0, clean_sheets: 0, appearances: 0 });
+            }
+            statsUpdates.get(key).appearances++;
+        });
+        
+        // Track goals and assists
+        [...match.goalDetails.home, ...match.goalDetails.away].forEach(goal => {
+            const key = `${leagueId}_${goal.scorerPlayerId}`;
+            if (statsUpdates.has(key)) {
+                statsUpdates.get(key).goals++;
+            }
+            
+            if (goal.assister) {
+                const assistKey = `${leagueId}_${goal.assister}`;
+                if (statsUpdates.has(assistKey)) {
+                    statsUpdates.get(assistKey).assists++;
+                }
+            }
+        });
+        
+        // Track clean sheets (keepers + defenders)
+        const homeCleanSheet = match.score.away === 0;
+        const awayCleanSheet = match.score.home === 0;
+        
+        if (homeCleanSheet) {
+            const keepers = match.homePlayers.filter(id => playerIds[id]?.position === 'GK');
+            const defenders = match.homePlayers.filter(id => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(playerIds[id]?.position));
+            [...keepers, ...defenders].forEach(playerId => {
+                const key = `${leagueId}_${playerId}`;
+                if (statsUpdates.has(key)) {
+                    statsUpdates.get(key).clean_sheets++;
+                }
+            });
+        }
+        
+        if (awayCleanSheet) {
+            const keepers = match.awayPlayers.filter(id => playerIds[id]?.position === 'GK');
+            const defenders = match.awayPlayers.filter(id => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(playerIds[id]?.position));
+            [...keepers, ...defenders].forEach(playerId => {
+                const key = `${leagueId}_${playerId}`;
+                if (statsUpdates.has(key)) {
+                    statsUpdates.get(key).clean_sheets++;
+                }
+            });
+        }
+    }
+    
+    // Upsert all stats
+    const updates = Array.from(statsUpdates.values());
+    
+    const { error } = await supabaseScaling
+        .from('fantasy_stats')
+        .upsert(updates, { 
+            onConflict: 'league_id,player_id,season',
+            ignoreDuplicates: false 
+        });
+    
+    if (error) {
+        console.error('Failed to save player stats:', error);
+    } else {
+        console.log(`Saved stats for ${updates.length} players`);
+    }
   }
 
   function resetSimulation() {
