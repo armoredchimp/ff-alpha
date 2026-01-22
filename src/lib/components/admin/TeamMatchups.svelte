@@ -422,32 +422,27 @@
             }
         });
         
-        // Track clean sheets (keepers + defenders)
         const homeCleanSheet = match.score.away === 0;
         const awayCleanSheet = match.score.home === 0;
-        
+
         if (homeCleanSheet) {
-            const keepers = match.homePlayers.filter(id => playerIds[id]?.position === 'GK');
-            const defenders = match.homePlayers.filter(id => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(playerIds[id]?.position));
-            [...keepers, ...defenders].forEach(playerId => {
+            [...(match.homeKeepers || []), ...(match.homeDefenders || [])].forEach(playerId => {
                 const key = `${leagueId}_${playerId}`;
                 if (statsUpdates.has(key)) {
                     statsUpdates.get(key).clean_sheets++;
                 }
             });
         }
-        
+
         if (awayCleanSheet) {
-            const keepers = match.awayPlayers.filter(id => playerIds[id]?.position === 'GK');
-            const defenders = match.awayPlayers.filter(id => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(playerIds[id]?.position));
-            [...keepers, ...defenders].forEach(playerId => {
+            [...(match.awayKeepers || []), ...(match.awayDefenders || [])].forEach(playerId => {
                 const key = `${leagueId}_${playerId}`;
                 if (statsUpdates.has(key)) {
                     statsUpdates.get(key).clean_sheets++;
                 }
             });
         }
-    }
+      }
     
     // Upsert all stats
     const updates = Array.from(statsUpdates.values());

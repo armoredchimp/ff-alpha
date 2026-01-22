@@ -197,16 +197,33 @@
 
         const homePlayers = [];
         const awayPlayers = [];
+        const homeDefenders = [];
+        const awayDefenders = [];
+        const homeKeepers = [];
+        const awayKeepers = [];
 
-        (Object.values(posGroupOrganization) as Array<{homePlayers: number[], awayPlayers: number[]}>).forEach(group => {
+        (Object.entries(posGroupOrganization) as Array<[string, {homePlayers: number[], awayPlayers: number[]}]>).forEach(([groupName, group]) => {
             homePlayers.push(...group.homePlayers);
             awayPlayers.push(...group.awayPlayers);
+            
+            if (groupName === 'defenders') {
+                homeDefenders.push(...group.homePlayers);
+                awayDefenders.push(...group.awayPlayers);
+            }
+            if (groupName === 'keepers') {
+                homeKeepers.push(...group.homePlayers);
+                awayKeepers.push(...group.awayPlayers);
+            }
         });
 
         matchResults[matchupId] = {
             ...matchResult,
             homePlayers,
             awayPlayers,
+            homeDefenders,
+            awayDefenders,
+            homeKeepers,
+            awayKeepers,
             homeTeamId: homeTeam.teamId,
             awayTeamId: awayTeam.teamId
         };
