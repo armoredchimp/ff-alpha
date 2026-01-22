@@ -27,6 +27,7 @@
     if (!results.testMode) {
         await saveMatchResults(results);
         await savePlayerStats(results, '2526')
+        await updateTeamStandings(results)
     }
   }
 
@@ -382,6 +383,83 @@
     }
     
     console.log(`Saved ${Object.keys(matchResults).length} matches for league ${leagueId}`);
+  }
+
+
+  async function updateTeamStandings(leagueResult) {
+    const { leagueId, matchResults } = leagueResult;
+    
+    for (const [matchupId, result] of Object.entries(matchResults)) {
+        const homeTeamId = result.homeTeamId;
+        const awayTeamId = result.awayTeamId;
+        const homeScore = result.score.home;
+        const awayScore = result.score.away;
+        
+        // Fetch current home team stats
+        const { data: homeTeam } = await supabaseScaling
+            .from('teams')
+            .select('wins, draws, losses, points, goals_for, goals_against')
+            .eq('team_id', homeTeamId)
+            .single();
+        
+        // Fetch current away team stats
+        const { data: awayTeam } = await supabaseScaling
+            .from('teams')
+            .select('wins, draws, losses, points, goals_for, goals_against')
+            .eq('team_id', awayTeamId)
+            .single();
+        
+        let homeUpdate = {
+            wins: homeTeam?.wins || 0,
+            draws: homeTeam?.draws || 0,
+            losses: homeTeam?.losses || 0,
+            points: homeTeam?.points || 0,
+            goals_for: (homeTeam?.goals_for || 0) + homeScore,
+            goals_against: (homeTeam?.goals_against || 0) + awayScore
+        };
+        
+        let awayUpdate = {
+            wins: awayTeam?.wins || 0,
+            draws: awayTeam?.draws || 0,
+            losses: awayTeam?.losses || 0,
+            points: awayTeam?.points || 0,
+            goals_for: (awayTeam?.goals_for || 0) + awayScore,
+            goals_against: (awayTeam?.goals_against || 0) + homeScore
+        };
+        
+        if (homeScore > awayScore) {
+            homeUpdate.wins++;
+            homeUpdate.points += 3;
+            awayUpdate.losses++;
+        } else if (homeScore < awayScore) {
+            homeUpdate.losses++;
+            awayUpdate.wins++;
+            awayUpdate.points += 3;
+        } else {
+            homeUpdate.draws++;
+            awayUpdate.draws++;
+            homeUpdate.points++;
+            awayUpdate.points++;
+        }
+        
+        // Update home team
+        const { error: homeError } = await supabaseScaling
+            .from('teams')
+            .update(homeUpdate)
+            .eq('team_id', homeTeamId);
+        
+        if (homeError) console.error('Error updating home team:', homeError);
+        
+        // Update away team
+        const { error: awayError } = await supabaseScaling
+            .from('teams')
+            .update(awayUpdate)
+            .eq('team_id', awayTeamId);
+        
+        if (awayError) console.error('Error updating away team:', awayError);
+    }
+    
+    console.log(`Updated standings for ${Object.keys(matchResults).length * 2} teams`);
   }
 
   async function savePlayerStats(results, season) {
