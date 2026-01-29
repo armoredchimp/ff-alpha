@@ -37,6 +37,23 @@
     let hoveredRival = $state<Rival | null>(null);
     let popupPosition = $state<PopupPosition>({ x: 0, y: 0 });
 
+    // Check if there's a valid last result
+    function hasLastResult(): boolean {
+        return team.lastResult && team.lastResult.result !== '';
+    }
+
+    function getResultClass(result: string): string {
+        if (result === 'W') return 'result-win';
+        if (result === 'L') return 'result-loss';
+        return 'result-draw';
+    }
+
+    function getResultText(result: string): string {
+        if (result === 'W') return 'WIN';
+        if (result === 'L') return 'LOSS';
+        return 'DRAW';
+    }
+
     // Type guard to check if manager is a Manager object
     function isManager(manager: any): manager is Manager {
         return manager && typeof manager === 'object' && 'image_path' in manager;
@@ -70,6 +87,18 @@
 
 <div class="header-container">
     <div class="header-content">
+        {#if hasLastResult()}
+            <div class="last-result-banner {getResultClass(team.lastResult.result)}">
+                <div class="result-main">
+                    <span class="result-label">{getResultText(team.lastResult.result)}</span>
+                    <span class="result-score">{team.lastResult.goalsFor} - {team.lastResult.goalsAgainst}</span>
+                </div>
+                <div class="result-details">
+                    <span class="detail-item">Chances: {team.lastResult.chancePoints} - {team.lastResult.chancePointsOpp}</span>
+                    <span class="detail-item">Poss Wins: {team.lastResult.possWins} - {team.lastResult.possWinsOpp}</span>
+                </div>
+            </div>
+        {/if}
         <div class="flex flex-col space-y-4">
             <div class="flex justify-between items-start">
                 <div>
@@ -237,6 +266,63 @@
         width: 1.25rem;
         height: 1.25rem;
         margin-right: 0.375rem;
+    }
+
+    .last-result-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .last-result-banner.result-win {
+        background-color: #dcfce7;
+        border: 1px solid #86efac;
+    }
+
+    .last-result-banner.result-loss {
+        background-color: #fee2e2;
+        border: 1px solid #fca5a5;
+    }
+
+    .last-result-banner.result-draw {
+        background-color: #fef9c3;
+        border: 1px solid #fde047;
+    }
+
+    .result-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .result-label {
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .result-win .result-label { color: #166534; }
+    .result-loss .result-label { color: #991b1b; }
+    .result-draw .result-label { color: #854d0e; }
+
+    .result-score {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .result-details {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .detail-item {
+        font-size: 0.75rem;
+        color: #6b7280;
     }
 
     .manager-container {

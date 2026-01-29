@@ -77,10 +77,12 @@ export function getCountry(): number {
     return leagueState.countryCode;
 }
 
-export function setMatchweek(currentMatchweek: number){
+export function setMatchweek(currentMatchweek: number) {
     leagueState.currentMatchweek = currentMatchweek
 }
-
+export function getMatchweek(): number {
+    return leagueState.currentMatchweek;
+}
 export function setLeagueSchedule(schedule: Schedule): void {
     leagueState.schedule = schedule
 }

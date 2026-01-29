@@ -3,7 +3,7 @@
     import { signUp, confirmSignUp, signIn, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
-    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount, setLeagueSchedule, setMatchweek } from '$lib/stores/league.svelte';
+    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
@@ -13,6 +13,7 @@
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
 	  import { delay } from '../lib/utils';
 	  import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
+	  import { loadMatchResults } from '$lib/loading/results/hydrateResults';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -163,6 +164,7 @@ async function fetchLeagueInfo() {
         }
         
         if(response.data.currentMatchweek){
+          
           setMatchweek(response.data.currentMatchweek)
         }
 
@@ -194,7 +196,15 @@ async function handlePostLeagueLoad(leagueData) {
                 }
                 delay(100);
                 hydrateManagers();
-
+                delay(100);
+                try {
+                  if(leagueData.currentMatchweek){
+                    loadMatchResults(leagueData.currentMatchweek);
+                  }
+                } catch(err){
+                  console.error('error hydrating results')
+                }
+                delay(100);
                 if (leagueData.schedule && leagueData.currentMatchweek){
                   hydrateNextOpponents(leagueData.schedule, leagueData.currentMatchweek)
                 }
