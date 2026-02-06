@@ -15,6 +15,8 @@ export function setPlayerInit(data: boolean){
     playerPageInit = data
 }
 
+export let teamIdsToName = $state({})
+
 export let managers = $state<Manager[]>([])
 export let managersByID = $state<Record<number, Manager>>({});
 

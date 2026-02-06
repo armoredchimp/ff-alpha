@@ -30,6 +30,7 @@ function hydrateMatchResults(results) {
 
         if (homeTeam) {
             homeTeam.lastResult = {
+                oppId: result.away_team_id,
                 result: result.home_score > result.away_score ? 'W' : result.home_score < result.away_score ? 'L' : 'D',
                 goalsFor: result.home_score,
                 goalsAgainst: result.away_score,
@@ -42,6 +43,7 @@ function hydrateMatchResults(results) {
 
         if (awayTeam) {
             awayTeam.lastResult = {
+                oppId: result.home_team_id,
                 result: result.away_score > result.home_score ? 'W' : result.away_score < result.home_score ? 'L' : 'D',
                 goalsFor: result.away_score,
                 goalsAgainst: result.home_score,

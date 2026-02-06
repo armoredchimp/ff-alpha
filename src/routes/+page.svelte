@@ -3,6 +3,7 @@
     import { signUp, confirmSignUp, signIn, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
+    import { populateTeamIdsToName } from '$lib/utils/team';
     import { setLeagueStatus, getLeagueState, setCountry, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
@@ -11,9 +12,9 @@
     import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
     import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
-	  import { delay } from '../lib/utils';
-	  import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
-	  import { loadMatchResults } from '$lib/loading/results/hydrateResults';
+    import { delay } from '../lib/utils';
+    import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
+    import { loadMatchResults } from '$lib/loading/results/hydrateResults';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -185,6 +186,12 @@ async function handlePostLeagueLoad(leagueData) {
             // Load teams and wait for it to complete
             const teamsLoaded = await loadTeamsData();
             
+            try {
+                populateTeamIdsToName()
+            } catch(err) {
+                console.error('error populating team Ids to names')
+            }
+
             if (teamsLoaded && leagueData.redirect) {
                 delay(100);
                 hydratePlayers();

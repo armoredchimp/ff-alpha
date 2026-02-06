@@ -1,4 +1,5 @@
 import { teams, playerTeam } from "$lib/stores/teams.svelte";
+import { teamIdsToName } from "$lib/stores/generic.svelte";
 import { type Team, type Player } from "$lib/types/types";
 
 
@@ -10,6 +11,12 @@ export function playerName(): string {
         return name;
     }
     return '';
+}
+
+export function populateTeamIdsToName() {
+    for (const team of Object.values(teams)){
+        teamIdsToName[team.dbId] = team.name
+    }
 }
 
 export function parseTeamIdMap(parsedData: any): Record<string, any> {

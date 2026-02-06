@@ -1,5 +1,6 @@
 <script lang="ts">
     import ManagerMini from "./ManagerMini.svelte";
+    import { teamIdsToName } from "./stores/generic.svelte";
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     import type { Team, Manager } from "$lib/types/types";
 
@@ -26,7 +27,17 @@
             traits: [],
             transferBudget: 0,
             manager: null,
-            rivals: []
+            rivals: [],
+            lastResult: {
+                oppId: 0,
+                result: '',
+                goalsFor: 0,
+                goalsAgainst: 0,
+                chancePoints: 0,
+                chancePointsOpp: 0,
+                possWins: 0,
+                possWinsOpp: 0
+            }
         } as Team,
         computer = false
     }: {
@@ -37,7 +48,6 @@
     let hoveredRival = $state<Rival | null>(null);
     let popupPosition = $state<PopupPosition>({ x: 0, y: 0 });
 
-    // Check if there's a valid last result
     function hasLastResult(): boolean {
         return team.lastResult && team.lastResult.result !== '';
     }
@@ -54,7 +64,6 @@
         return 'DRAW';
     }
 
-    // Type guard to check if manager is a Manager object
     function isManager(manager: any): manager is Manager {
         return manager && typeof manager === 'object' && 'image_path' in manager;
     }
@@ -90,7 +99,7 @@
         {#if hasLastResult()}
             <div class="last-result-banner {getResultClass(team.lastResult.result)}">
                 <div class="result-main">
-                    <span class="result-label">{getResultText(team.lastResult.result)}</span>
+                    <span class="result-label">{getResultText(team.lastResult.result)} vs {teamIdsToName[team.lastResult.oppId]}</span>
                     <span class="result-score">{team.lastResult.goalsFor} - {team.lastResult.goalsAgainst}</span>
                 </div>
                 <div class="result-details">
