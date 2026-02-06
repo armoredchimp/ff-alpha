@@ -5,7 +5,7 @@
     let isResetting = $state(false);
     let message = $state('');
     
-    async function resetTeamStandings() {
+    async function resetLeague() {
         if (!leagueId.trim()) {
             message = '⚠️ Please enter a league ID';
             return;
@@ -31,15 +31,26 @@
             message = `❌ Error: ${error.message}`;
         } else {
             message = `✅ Standings reset for league ${leagueId}`;
+        }
+
+        const { resError } = await supabaseScaling
+            .from('match_results')
+            .delete()
+            .eq('league_id', leagueId.trim());
+        isResetting = false;
+
+        if(resError) {
+            console.error('Error clearing league match results', resError);
+            message = `❌ Error: ${resError.message}`;
+        } else {
+            message = `✅ Results cleared for league ${leagueId}`
             leagueId = '';
         }
-        
-        isResetting = false;
     }
 </script>
 
 <div class="reset-container">
-    <h3>Reset Team Standings</h3>
+    <h3>Reset League</h3>
     <div class="input-group">
         <input
             type="text"
@@ -48,7 +59,7 @@
             disabled={isResetting}
         />
         <button
-            onclick={resetTeamStandings}
+            onclick={resetLeague}
             disabled={isResetting}
         >
             {isResetting ? 'Resetting...' : 'Reset'}
