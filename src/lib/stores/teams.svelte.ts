@@ -26,7 +26,9 @@ let team1 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -98,7 +100,9 @@ let team2 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -170,7 +174,9 @@ let team3 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -242,7 +248,9 @@ let team4 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -314,7 +322,9 @@ let team5 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -386,7 +396,9 @@ let team6 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -458,7 +470,9 @@ let team7 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -530,7 +544,9 @@ let team8 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -602,7 +618,9 @@ let team9 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -674,7 +692,9 @@ let team10 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -746,7 +766,9 @@ let team11 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -818,7 +840,9 @@ let team12 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -890,7 +914,9 @@ let team13 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -962,7 +988,9 @@ let team14 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1034,7 +1062,9 @@ let team15 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1106,7 +1136,9 @@ let team16 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1178,7 +1210,9 @@ let team17 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1250,7 +1284,9 @@ let team18 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1322,7 +1358,9 @@ let team19 = $state<Team>({
     manager: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,
@@ -1400,7 +1438,9 @@ export let playerTeam = $state<Team>({
     rivals: [],
     nextOpponentID: 0,
     lastResult: {
+        matchId: 0,
         oppId: 0,
+        home: false,
         result: '',
         goalsFor: 0,
         goalsAgainst: 0,

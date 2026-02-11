@@ -47,7 +47,9 @@ export type Team = {
   nextOpponentID: number;
   player?: boolean;
   lastResult: {
+    matchId: string | number;
     oppId: number;
+    home: boolean;
     result: string;
     goalsFor: number;
     goalsAgainst: number;
