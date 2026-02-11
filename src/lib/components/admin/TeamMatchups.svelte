@@ -317,7 +317,7 @@
 
     console.log(`Cleared existing results for league ${leagueId}, gameweek ${gameweek}`);
     for (const [matchupId, result] of Object.entries(matchResults)) {
-        const [homeTeamId, awayTeamId] = matchupId.split('_');
+        
         
         // Insert match_results
         const { data: matchData, error: matchError } = await supabaseScaling
@@ -326,8 +326,8 @@
                 league_id: leagueId,
                 season,
                 gameweek,
-                home_team_id: homeTeamId,
-                away_team_id: awayTeamId,
+                home_team_id: result.homeTeamId,
+                away_team_id: result.awayTeamId,
                 home_score: result.score.home,
                 away_score: result.score.away,
                 home_chance_pts: result.chancePoints.home.total,

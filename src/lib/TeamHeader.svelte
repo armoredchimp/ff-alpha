@@ -64,6 +64,46 @@
         return 'DRAW';
     }
 
+    function getPossessionPercentage(ours: number, theirs: number): number {
+        const total = ours + theirs;
+        if (total === 0) return 50;
+
+        // Raw ratio: 0.0 to 1.0 where 0.5 = even
+        const rawRatio = ours / total;
+
+        const centered = rawRatio - 0.5; 
+        const compressed = Math.tanh(centered * 2.5) * 0.5; 
+        let percentage = 50 + (compressed * 44); // scale to 28-72 range
+
+        // Additional dampening when total possWins is very low
+        // e.g. 3-0 shouldn't look like 20-0
+        const totalCap = 25;
+        if (total < totalCap) {
+            const dampening = total / totalCap;
+            percentage = 50 + (percentage - 50) * dampening;
+        }
+
+        return Math.max(28, Math.min(72, Math.round(percentage)));
+    }
+
+
+    function getPossessionColor(percentage: number): string {
+        const t = Math.max(0, Math.min(1, (percentage - 28) / (72 - 28)));
+        let r: number, g: number, b: number;
+        if (t < 0.5) {
+            const s = t / 0.5;
+            r = Math.round(153 + (202 - 153) * s);
+            g = Math.round(27 + (138 - 27) * s);
+            b = Math.round(27 + (4 - 27) * s);
+        } else {
+            const s = (t - 0.5) / 0.5;
+            r = Math.round(202 + (22 - 202) * s);
+            g = Math.round(138 + (163 - 138) * s);
+            b = Math.round(4 + (74 - 4) * s);
+        }
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
     function isManager(manager: any): manager is Manager {
         return manager && typeof manager === 'object' && 'image_path' in manager;
     }
@@ -97,6 +137,8 @@
 <div class="header-container">
     <div class="header-content">
         {#if hasLastResult()}
+            {@const possPct = getPossessionPercentage(team.lastResult.possWins, team.lastResult.possWinsOpp)}
+            {@const possColor = getPossessionColor(possPct)}
             <div class="last-result-banner {getResultClass(team.lastResult.result)}">
                 <div class="result-main">
                     <span class="result-label">{getResultText(team.lastResult.result)} vs {teamIdsToName[team.lastResult.oppId]}</span>
@@ -104,7 +146,10 @@
                 </div>
                 <div class="result-details">
                     <span class="detail-item">Chances: {team.lastResult.chancePoints} - {team.lastResult.chancePointsOpp}</span>
-                    <span class="detail-item">Poss Wins: {team.lastResult.possWins} - {team.lastResult.possWinsOpp}</span>
+                    <span class="detail-item poss-detail">
+                        Possession: 
+                        <span class="poss-percentage" style="color: {possColor};">{possPct}%</span>
+                    </span>
                 </div>
             </div>
         {/if}
@@ -469,6 +514,16 @@
         margin-bottom: 0.75rem;
     }
 
+    .poss-detail {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .poss-percentage {
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
     .stat-row {
         display: flex;
         justify-content: space-between;

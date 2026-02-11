@@ -8,6 +8,7 @@
   import type { Team } from '$lib/types/types';
   import type { PageData } from './$types';
 	import { calculateTotalScores, recalculateSectionScores } from "$lib/utils/team";
+	import { teamIdsToName } from "$lib/stores/generic.svelte";
 
   let { data }: { data: PageData & { team: Team } } = $props();
     
@@ -26,6 +27,7 @@
     <TeamHeader team={data.team} computer={true} />
   </div>
   <h1>Next Opponent: {getOpponentName(data.team.nextOpponentID)}</h1>
+  <h1>Team ID: {data.team.dbId}</h1>
   <div>
     <TeamScores 
       scores={data.team.scores.total} 
