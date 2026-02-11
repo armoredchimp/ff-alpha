@@ -64,12 +64,12 @@
         return 'DRAW';
     }
 
-    function getPossessionPercentage(ours: number, theirs: number): number {
-        const total = ours + theirs;
+    function getPossessionPercentage(currTeam: number, opp: number): number {
+        const total = currTeam + opp;
         if (total === 0) return 50;
 
         // Raw ratio: 0.0 to 1.0 where 0.5 = even
-        const rawRatio = ours / total;
+        const rawRatio = currTeam / total;
 
         const centered = rawRatio - 0.5; 
         const compressed = Math.tanh(centered * 2.5) * 0.5; 
