@@ -18,7 +18,6 @@ import {
     extractPlayerIds
 } from '$lib/utils';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
-import { getPlayerPicture } from '$lib/api/sportsmonk/utils/apiUtils.svelte';
 import { draft } from '$lib/stores/draft.svelte';
 import { loadPlayersData } from '$lib/loading/players/loadPlayers';
 import { formationConfig } from '$lib/data/formationConfig';
@@ -55,7 +54,6 @@ const traitEffectsCache = new Map();
 onMount(async () => {
     if(!draft.loaded){
         console.log('data: ', data)
-        
         leagueState = getLeagueState();
         await loadClubNames(leagueState.countryCode);
         // Check if players are loaded in the store
@@ -917,7 +915,7 @@ function getPlayerValue(index, player, traits) {
             {#if !draft.complete}
                 <div class="page-container">
                     <div class="players-section">
-                        <h3>Prem Players: {draft.availablePlayers.length}</h3>
+                        <h3>Total Players: {draft.availablePlayers.length}</h3>
                         <div class="player-list">
                             {#each draft.availablePlayers as player (player.id)}
                             <DraftPlayer player={player}

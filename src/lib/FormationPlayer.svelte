@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { delay, positionAbbrev, formatPlayerName, recalculateSectionScores } from "./utils";
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
@@ -519,7 +520,10 @@
 
 <div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
   {#if player}
-    <div class="player-name">{formatPlayerName(player.player_name)}</div>
+    <a 
+      class="player-name player-link" 
+      href="/player/{player.id}"
+    >{formatPlayerName(player.player_name)}</a>
     <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={nationImage} alt={player.player_name} />
   {:else}
     <div class="player-name">Empty</div>
@@ -958,6 +962,15 @@
 
   .replacement-option:hover {
     background-color: #f3f4f6;
+  }
+
+  .player-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .player-link:hover {
+      text-decoration: underline;
   }
 
   .player-name-option {

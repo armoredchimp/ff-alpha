@@ -4,7 +4,6 @@
     import { draft } from "./stores/draft.svelte";
     import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
     import { delay } from "./utils";
-    import { getPlayerPicture } from "./api/sportsmonk/utils/apiUtils.svelte";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";

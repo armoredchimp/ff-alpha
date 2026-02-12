@@ -619,7 +619,7 @@
     <div class="button-group">
       <button 
         class="btn btn-primary"
-        on:click={handleProcessMatchups}
+        onclick={handleProcessMatchups}
         disabled={isProcessing}
       >
         {#if isProcessing}
@@ -633,7 +633,7 @@
       {#if (statusMessage || errorMessage || matchupStats) && !isProcessing}
         <button 
           class="btn btn-secondary"
-          on:click={resetSimulation}
+          onclick={resetSimulation}
         >
           🔄 Reset
         </button>

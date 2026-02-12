@@ -4,6 +4,7 @@
     "src/**/*.ts",
     "src/**/*.svelte.ts",
     "src/**/*.server.ts",
-    "src/**/*.svelte"
+    "src/**/*.svelte",
+    ".svelte-kit/ambient.d.ts"
   ]
 }
