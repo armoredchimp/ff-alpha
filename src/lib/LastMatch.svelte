@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { supabaseScaling } from "./client/supabase/supaClient";
   import { teamIdsToName, playersByID } from "./stores/generic.svelte";
+  import { getPossessionColor, getPossessionPercentage} from "./utils/team.ts"
 	import type { Team } from "./types/types";
 
     let {
-        details = {} as JSON,
+        goalDetails = {} as JSON,
+        posBreakdown = {} as JSON,
         isHome = false as boolean,
         team = {} as Team,
     } = $props<{
-        details?: JSON;
+        goalDetails?: JSON;
+        posBreakdown?: JSON;
         isHome?: boolean;
         team?: Team | null;
     }>();
@@ -16,10 +18,73 @@
     let teamSide = $derived(isHome ? 'home' : 'away');
     let oppSide = $derived(isHome ? 'away' : 'home');
 
-    let teamGoals = $derived(details.goal_details?.[teamSide] || []);
-    let oppGoals = $derived(details.goal_details?.[oppSide] || []);
+    let teamGoals = $derived(goalDetails?.[teamSide] || []);
+    let oppGoals = $derived(goalDetails?.[oppSide] || []);
 
     let oppName = $derived(teamIdsToName[team.lastResult.oppId] || 'Opponent');
+
+    // Possession breakdown analysis
+    interface PosInsight {
+        text: string;
+        side: 'ours' | 'theirs';
+    }
+
+    let posInsights = $derived.by(() => {
+        if (!posBreakdown) return [];
+        const ours = posBreakdown[teamSide];
+        const theirs = posBreakdown[oppSide];
+        if (!ours || !theirs) return [];
+
+        const insights: PosInsight[] = [];
+
+        // Midfielders
+        const midDiff = ours.byGroup.midfielders - theirs.byGroup.midfielders;
+        if (midDiff >= 6) {
+            insights.push({ text: `${team.name}'s midfielders dominated the possession battle`, side: 'ours' });
+        } else if (midDiff >= 3) {
+            insights.push({ text: `${team.name}'s midfielders won the midfield possession battle`, side: 'ours' });
+        } else if (midDiff <= -6) {
+            insights.push({ text: `${oppName}'s midfielders dominated the possession battle`, side: 'theirs' });
+        } else if (midDiff <= -3) {
+            insights.push({ text: `${oppName}'s midfielders won the midfield possession battle`, side: 'theirs' });
+        }
+
+        // Attackers
+        const atkDiff = ours.byGroup.attackers - theirs.byGroup.attackers;
+        if (atkDiff >= 6) {
+            insights.push({ text: `${team.name}'s attackers controlled possession in the final third`, side: 'ours' });
+        } else if (atkDiff >= 3) {
+            insights.push({ text: `${team.name}'s attackers held possession well in advanced areas`, side: 'ours' });
+        } else if (atkDiff <= -6) {
+            insights.push({ text: `${oppName}'s attackers controlled possession in the final third`, side: 'theirs' });
+        } else if (atkDiff <= -3) {
+            insights.push({ text: `${oppName}'s attackers held possession well in advanced areas`, side: 'theirs' });
+        }
+
+        // Defenders — different language
+        const defDiff = ours.byGroup.defenders - theirs.byGroup.defenders;
+        if (defDiff >= 6) {
+            insights.push({ text: `${team.name}'s defenders retained possession comfortably from the back`, side: 'ours' });
+        } else if (defDiff >= 3) {
+            insights.push({ text: `${team.name}'s defenders retained possession well`, side: 'ours' });
+        } else if (defDiff <= -6) {
+            insights.push({ text: `${oppName}'s defenders retained possession comfortably from the back`, side: 'theirs' });
+        } else if (defDiff <= -3) {
+            insights.push({ text: `${oppName}'s defenders retained possession well`, side: 'theirs' });
+        }
+
+        return insights;
+    });
+
+    // Overall possession percentage
+    let overallPossPct = $derived.by(() => {
+        if (!posBreakdown) return null;
+        const ours = posBreakdown[teamSide]?.total ?? 0;
+        const theirs = posBreakdown[oppSide]?.total ?? 0;
+        return getPossessionPercentage(ours, theirs);
+    });
+
+    let overallPossColor = $derived(overallPossPct ? getPossessionColor(overallPossPct) : '');
 </script>
 
 <div class="match-container">
@@ -70,6 +135,17 @@
       <div class="goals-column theirs empty">No goals</div>
     {/if}
   </div>
+
+   {#if posInsights.length > 0}
+    <div class="pos-insights">
+      {#each posInsights as insight}
+        <div class="pos-insight {insight.side}">
+          <span class="pos-dot"></span>
+          {insight.text}
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -173,4 +249,73 @@
   .goals-column.theirs .scorer { color: #dc2626; }
   .goals-column.ours .assister { color: #93b5f5; }
   .goals-column.theirs .assister { color: #f5a3a3; }
+
+  .possession-bar-section {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .poss-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .poss-bar-track {
+    height: 8px;
+    background: #fee2e2;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .poss-bar-fill.ours {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .poss-numbers {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+  }
+
+  .poss-num {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .pos-insights {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pos-insight {
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pos-insight.ours { color: #93b5f5; }
+  .pos-insight.theirs { color: #f5a3a3; }
+
+  .pos-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pos-insight.ours .pos-dot { background: #2563eb; }
+  .pos-insight.theirs .pos-dot { background: #dc2626; }
 </style>

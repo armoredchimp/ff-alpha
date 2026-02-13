@@ -19,7 +19,8 @@
     <p>Team not found</p>
   {:else if data.matchDetails}
     <LastMatch 
-      details={data.matchDetails}
+      goalDetails={data.matchDetails.goal_details}
+      posBreakdown={data.matchDetails.possession_breakdown}
       isHome={data.team.lastResult.home}
       team={data.team}
     />

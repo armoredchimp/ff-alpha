@@ -4,19 +4,19 @@ import { isAuthenticated } from "$lib/server/auth";
 import { supabaseScaling } from "$lib/client/supabase/supaClient";
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
-      if (!isAuthenticated(cookies)) {
+    if (!isAuthenticated(cookies)) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const matchId = url.searchParams.get('match_id');
-    
+
     if (!matchId) {
         return json({ error: 'match_id is required' }, { status: 400 });
     }
 
     const { data, error } = await supabaseScaling
         .from('match_details')
-        .select('goal_details')
+        .select('*')
         .eq('match_id', matchId)
         .single();
 

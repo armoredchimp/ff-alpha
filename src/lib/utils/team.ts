@@ -14,7 +14,7 @@ export function playerName(): string {
 }
 
 export function populateTeamIdsToName() {
-    for (const team of Object.values(teams)){
+    for (const team of Object.values(teams)) {
         teamIdsToName[team.dbId] = team.name
     }
 }
@@ -24,22 +24,22 @@ export function parseTeamIdMap(parsedData: any): Record<string, any> {
         // Skip the first element (index 0) which contains a strange object likely from a serialization issue
         // Start from index 1 and create the correct mapping
         const teamIdMap: Record<string, any> = {};
-       
+
         for (let i = 1; i < parsedData.length; i++) {
             teamIdMap[(i - 1).toString()] = parsedData[i];
         }
-       
+
         return teamIdMap;
     }
-   
+
     return parsedData;
 }
 
 export function resetScores(team: Team): void {
-    team.scores.attackers    = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.midfielders  = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.defenders    = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
-    team.scores.keeper       = { passing: 0, keeping: 0 };
+    team.scores.attackers = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.midfielders = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.defenders = { finishing: 0, attacking: 0, possession: 0, passing: 0, defense: 0 };
+    team.scores.keeper = { passing: 0, keeping: 0 };
 }
 
 export function calculateTotalScores(team: Team): void {
@@ -52,11 +52,11 @@ export function calculateTotalScores(team: Team): void {
         passing: 0,
         keeping: 0
     };
-   
+
     // Iterate through each position group
     positionGroups.forEach(group => {
         const players = team[group as keyof Team] as (Player | number)[] || [];
-       
+
         // For each player in the group, add their scores to the total
         players.forEach(player => {
             // Type guard to check if player is actually a Player object
@@ -98,12 +98,12 @@ export function recalculateSectionScores(team: Team): void {
     // Iterate through selected which has variable structure depending on formation,
     // find all player objects and add their scores to appropriate section
     positionGroups.forEach(group => {
-        if(team.selected && team.selected[group]) {
+        if (team.selected && team.selected[group]) {
             Object.values(team.selected[group]).forEach((p: unknown) => {
                 // Type guard to check if p has the expected structure
                 if (p && typeof p === 'object' && 'players' in p) {
                     const posData = p as PositionData;
-                    if(posData.players && Array.isArray(posData.players)) {
+                    if (posData.players && Array.isArray(posData.players)) {
                         posData.players.forEach(player => {
                             if (player && typeof player !== 'number') {
                                 const scoreKey = group === 'keepers' ? 'keeper' : group;
@@ -133,11 +133,11 @@ export function recalculateSectionScores(team: Team): void {
 
 export function getPlayersFromGroup(team: Team, group: string): Player[] {
     const players: Player[] = [];
-    
+
     if (!team.selected || !team.selected[group]) {
         return players;
     }
-    
+
     // Iterate through all positions in the group (e.g., 'LW', 'ST', 'RW' for attackers)
     Object.values(team.selected[group]).forEach((positionData: unknown) => {
         // Type guard to check if positionData has the expected structure
@@ -153,7 +153,7 @@ export function getPlayersFromGroup(team: Team, group: string): Player[] {
             }
         }
     });
-    
+
     return players;
 }
 
@@ -164,47 +164,47 @@ export function getDilutionFactor(playerCount) {
 
 export function getGroupScoresWithDilution(team, group, playerCount) {
     if (!team.scores) return {};
-    
+
     const dilutionFactor = getDilutionFactor(playerCount);
-    
+
     const groupMap = {
         'attackers': team.scores.attackers,
         'midfielders': team.scores.midfielders,
         'defenders': team.scores.defenders,
         'keepers': team.scores.keeper
     };
-    
+
     const baseScores = groupMap[group] || {};
     const dilutedScores = {};
-    
+
     Object.keys(baseScores).forEach(key => {
         dilutedScores[key] = baseScores[key] * dilutionFactor;
     });
-    
+
     return dilutedScores;
 }
 
 export function calculateGroupMatchup(team, opponent, group, opponentMode) {
     const opponentGroup = getOpponentGroup(group, opponentMode);
     if (!opponentGroup) return null;
-    
+
     const teamPlayers = getPlayersFromGroup(team, group);
     const opponentPlayers = getPlayersFromGroup(opponent, opponentGroup);
-    
+
     const teamScores = getGroupScoresWithDilution(team, group, teamPlayers.length);
     const opponentScores = getGroupScoresWithDilution(opponent, opponentGroup, opponentPlayers.length);
-    
+
     // Calculate total difference for background color
     let totalDifference = 0;
     let scoreCount = 0;
-    
+
     Object.keys(teamScores).forEach(key => {
         const teamValue = teamScores[key] || 0;
         const opponentValue = opponentScores[key] || 0;
         totalDifference += (teamValue - opponentValue);
         scoreCount++;
     });
-    
+
     return scoreCount > 0 ? totalDifference / scoreCount : 0;
 }
 
@@ -212,7 +212,7 @@ export function getOpponentGroup(group, mode) {
     if (mode === 0) {
         return group;
     } else {
-        switch(group) {
+        switch (group) {
             case 'keepers':
                 return null;
             case 'attackers':
@@ -229,17 +229,17 @@ export function getOpponentGroup(group, mode) {
 
 export function getGroupStrengthColor(difference) {
     if (Math.abs(difference) < 5) return 'transparent';
-    
+
     // Set the base color for positive and negative differences (blue and red).
     const color = difference > 0 ? '59, 130, 246' : '239, 68, 68';
-    
+
     const opacity = Math.min(Math.abs(difference) / 100 * 0.4, 0.4);
-    
+
     return `rgba(${color}, ${opacity})`;
 }
 
 export function getOpponentTeam(opponentId: number) {
-    if (opponentId === -1) return null; 
+    if (opponentId === -1) return null;
     if (opponentId === 0) return playerTeam;
     return teams[`team${opponentId}`];
 }
@@ -247,4 +247,36 @@ export function getOpponentTeam(opponentId: number) {
 export function getOpponentName(opponentId: number): string {
     const opponent = getOpponentTeam(opponentId);
     return opponent?.name || 'No Opponent';
+}
+
+export function getPossessionPercentage(currTeam: number, opp: number): number {
+    const total = currTeam + opp;
+    if (total === 0) return 50;
+    const rawRatio = currTeam / total;
+    const centered = rawRatio - 0.5;
+    const compressed = Math.tanh(centered * 2.5) * 0.5;
+    let percentage = 50 + (compressed * 44);
+    const totalCap = 25;
+    if (total < totalCap) {
+        const dampening = total / totalCap;
+        percentage = 50 + (percentage - 50) * dampening;
+    }
+    return Math.max(28, Math.min(72, Math.round(percentage)));
+}
+
+export function getPossessionColor(percentage: number): string {
+    const t = Math.max(0, Math.min(1, (percentage - 28) / (72 - 28)));
+    let r: number, g: number, b: number;
+    if (t < 0.5) {
+        const s = t / 0.5;
+        r = Math.round(153 + (202 - 153) * s);
+        g = Math.round(27 + (138 - 27) * s);
+        b = Math.round(4 + (4 - 27) * s);
+    } else {
+        const s = (t - 0.5) / 0.5;
+        r = Math.round(202 + (22 - 202) * s);
+        g = Math.round(138 + (163 - 138) * s);
+        b = Math.round(4 + (74 - 4) * s);
+    }
+    return `rgb(${r}, ${g}, ${b})`;
 }

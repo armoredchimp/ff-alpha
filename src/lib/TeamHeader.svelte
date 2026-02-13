@@ -1,6 +1,7 @@
 <script lang="ts">
     import ManagerMini from "./ManagerMini.svelte";
     import { teamIdsToName } from "./stores/generic.svelte";
+    import { getPossessionColor, getPossessionPercentage} from "./utils/team.ts"
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     import type { Team, Manager } from "$lib/types/types";
 
@@ -62,46 +63,6 @@
         if (result === 'W') return 'WIN';
         if (result === 'L') return 'LOSS';
         return 'DRAW';
-    }
-
-    function getPossessionPercentage(currTeam: number, opp: number): number {
-        const total = currTeam + opp;
-        if (total === 0) return 50;
-
-        // Raw ratio: 0.0 to 1.0 where 0.5 = even
-        const rawRatio = currTeam / total;
-
-        const centered = rawRatio - 0.5; 
-        const compressed = Math.tanh(centered * 2.5) * 0.5; 
-        let percentage = 50 + (compressed * 44); // scale to 28-72 range
-
-        // Additional dampening when total possWins is very low
-        // e.g. 3-0 shouldn't look like 20-0
-        const totalCap = 25;
-        if (total < totalCap) {
-            const dampening = total / totalCap;
-            percentage = 50 + (percentage - 50) * dampening;
-        }
-
-        return Math.max(28, Math.min(72, Math.round(percentage)));
-    }
-
-
-    function getPossessionColor(percentage: number): string {
-        const t = Math.max(0, Math.min(1, (percentage - 28) / (72 - 28)));
-        let r: number, g: number, b: number;
-        if (t < 0.5) {
-            const s = t / 0.5;
-            r = Math.round(153 + (202 - 153) * s);
-            g = Math.round(27 + (138 - 27) * s);
-            b = Math.round(27 + (4 - 27) * s);
-        } else {
-            const s = (t - 0.5) / 0.5;
-            r = Math.round(202 + (22 - 202) * s);
-            g = Math.round(138 + (163 - 138) * s);
-            b = Math.round(4 + (74 - 4) * s);
-        }
-        return `rgb(${r}, ${g}, ${b})`;
     }
 
     function isManager(manager: any): manager is Manager {
