@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { supabaseScaling } from "./client/supabase/supaClient";
-    import { teamIdsToName } from "./stores/generic.svelte";
+  import { supabaseScaling } from "./client/supabase/supaClient";
+  import { teamIdsToName, playersByID } from "./stores/generic.svelte";
 	import type { Team } from "./types/types";
-	
 
     let {
         details = {} as JSON,
@@ -37,8 +36,14 @@
       <div class="goals-column ours">
         {#each teamGoals as goal}
           <div class="goal-entry">
-            <span class="minute">{goal.minute}'</span>
-            <span class="scorer">{goal.scorerName}</span>
+            <div class="goal-main">
+              <span class="minute">{goal.minute}'</span>
+              <span class="scorer">{goal.scorerName}</span>
+            </div>
+            {#if goal.assister}
+              {@const assister = playersByID[goal.assister]}
+              <span class="assister">Assist: {assister.player_name}</span>
+            {/if}
           </div>
         {/each}
       </div>
@@ -50,8 +55,14 @@
       <div class="goals-column theirs">
         {#each oppGoals as goal}
           <div class="goal-entry">
-            <span class="scorer">{goal.scorerName}</span>
-            <span class="minute">{goal.minute}'</span>
+            <div class="goal-main">
+              <span class="scorer">{goal.scorerName}</span>
+              <span class="minute">{goal.minute}'</span>
+            </div>
+            {#if goal.assister}
+              {@const assister = playersByID[goal.assister]}
+              <span class="assister">Assist: {assister.player_name}</span>
+            {/if}
           </div>
         {/each}
       </div>
@@ -123,12 +134,17 @@
 
   .goal-entry {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
     padding: 0.35rem 0;
   }
 
-  .goals-column.theirs .goal-entry {
+  .goal-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .goals-column.theirs .goal-main {
     justify-content: flex-end;
   }
 
@@ -143,6 +159,18 @@
     font-weight: 500;
   }
 
+  .assister {
+    font-size: 0.8rem;
+    margin-left: 2.5rem;
+  }
+
+  .goals-column.theirs .assister {
+    margin-left: 0;
+    margin-right: 2.5rem;
+  }
+
   .goals-column.ours .scorer { color: #2563eb; }
   .goals-column.theirs .scorer { color: #dc2626; }
+  .goals-column.ours .assister { color: #93b5f5; }
+  .goals-column.theirs .assister { color: #f5a3a3; }
 </style>
