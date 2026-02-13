@@ -5,11 +5,13 @@
 
     let {
         goalDetails = {} as JSON,
+        chanceBreakdown = {} as JSON,
         posBreakdown = {} as JSON,
         isHome = false as boolean,
         team = {} as Team,
     } = $props<{
         goalDetails?: JSON;
+        chanceBreakdown?: JSON;
         posBreakdown?: JSON;
         isHome?: boolean;
         team?: Team | null;
@@ -23,6 +25,14 @@
 
     let oppName = $derived(teamIdsToName[team.lastResult.oppId] || 'Opponent');
 
+    function getInsightColor(side: 'ours' | 'theirs', level: number): string {
+        // level 1 = lightest, 4 = most intense
+        const blueShades = ['#bfdbfe', '#93b5f5', '#5b8def', '#2563eb'];
+        const redShades = ['#fecaca', '#f5a3a3', '#ef7171', '#dc2626'];
+        const shades = side === 'ours' ? blueShades : redShades;
+        return shades[Math.min(level - 1, 3)];
+    }
+
     // Possession breakdown analysis
     interface PosInsight {
         text: string;
@@ -35,42 +45,39 @@
         const theirs = posBreakdown[oppSide];
         if (!ours || !theirs) return [];
 
-        const insights: PosInsight[] = [];
+        const insights: { text: string; side: 'ours' | 'theirs'; level: number }[] = [];
 
-        // Midfielders
         const midDiff = ours.byGroup.midfielders - theirs.byGroup.midfielders;
         if (midDiff >= 6) {
-            insights.push({ text: `${team.name}'s midfielders dominated the possession battle`, side: 'ours' });
+            insights.push({ text: `${team.name}'s midfielders dominated the possession battle`, side: 'ours', level: 4 });
         } else if (midDiff >= 3) {
-            insights.push({ text: `${team.name}'s midfielders won the midfield possession battle`, side: 'ours' });
+            insights.push({ text: `${team.name}'s midfielders won the midfield possession battle`, side: 'ours', level: 3 });
         } else if (midDiff <= -6) {
-            insights.push({ text: `${oppName}'s midfielders dominated the possession battle`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s midfielders dominated the possession battle`, side: 'theirs', level: 4 });
         } else if (midDiff <= -3) {
-            insights.push({ text: `${oppName}'s midfielders won the midfield possession battle`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s midfielders won the midfield possession battle`, side: 'theirs', level: 3 });
         }
 
-        // Attackers
         const atkDiff = ours.byGroup.attackers - theirs.byGroup.attackers;
         if (atkDiff >= 6) {
-            insights.push({ text: `${team.name}'s attackers controlled possession in the final third`, side: 'ours' });
+            insights.push({ text: `${team.name}'s attackers controlled possession in the final third`, side: 'ours', level: 4 });
         } else if (atkDiff >= 3) {
-            insights.push({ text: `${team.name}'s attackers held possession well in advanced areas`, side: 'ours' });
+            insights.push({ text: `${team.name}'s attackers held possession well in advanced areas`, side: 'ours', level: 3 });
         } else if (atkDiff <= -6) {
-            insights.push({ text: `${oppName}'s attackers controlled possession in the final third`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s attackers controlled possession in the final third`, side: 'theirs', level: 4 });
         } else if (atkDiff <= -3) {
-            insights.push({ text: `${oppName}'s attackers held possession well in advanced areas`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s attackers held possession well in advanced areas`, side: 'theirs', level: 3 });
         }
 
-        // Defenders — different language
         const defDiff = ours.byGroup.defenders - theirs.byGroup.defenders;
         if (defDiff >= 6) {
-            insights.push({ text: `${team.name}'s defenders retained possession comfortably from the back`, side: 'ours' });
+            insights.push({ text: `${team.name}'s defenders retained possession comfortably from the back`, side: 'ours', level: 4 });
         } else if (defDiff >= 3) {
-            insights.push({ text: `${team.name}'s defenders retained possession well`, side: 'ours' });
+            insights.push({ text: `${team.name}'s defenders retained possession well`, side: 'ours', level: 3 });
         } else if (defDiff <= -6) {
-            insights.push({ text: `${oppName}'s defenders retained possession comfortably from the back`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s defenders retained possession comfortably from the back`, side: 'theirs', level: 4 });
         } else if (defDiff <= -3) {
-            insights.push({ text: `${oppName}'s defenders retained possession well`, side: 'theirs' });
+            insights.push({ text: `${oppName}'s defenders retained possession well`, side: 'theirs', level: 3 });
         }
 
         return insights;
@@ -85,6 +92,48 @@
     });
 
     let overallPossColor = $derived(overallPossPct ? getPossessionColor(overallPossPct) : '');
+
+    // Chance creation insights
+    function getChanceInsight(teamName: string, group: string, val: number): { text: string; level: number } | null {
+        if (group === 'attackers') {
+            if (val <= 12) return { text: `${teamName}'s attackers created very little`, level: 1 };
+            if (val <= 25) return { text: `${teamName}'s attackers generated a moderate number of chances`, level: 2 };
+            if (val <= 40) return { text: `${teamName}'s attackers were a constant threat`, level: 3 };
+            return { text: `${teamName}'s attackers were relentless in chance creation`, level: 4 };
+        }
+        if (group === 'midfielders') {
+            if (val <= 12) return { text: `${teamName}'s midfielders offered little going forward`, level: 1 };
+            if (val <= 25) return { text: `${teamName}'s midfielders contributed some chances`, level: 2 };
+            if (val <= 40) return { text: `${teamName}'s midfielders drove a lot of the attacking play`, level: 3 };
+            return { text: `${teamName}'s midfielders were the engine of the attack`, level: 4 };
+        }
+        if (group === 'defenders') {
+            if (val <= 12) return null;
+            if (val <= 25) return { text: `${teamName}'s defenders chipped in with some chances`, level: 2 };
+            if (val <= 40) return { text: `${teamName}'s defenders were surprisingly productive going forward`, level: 3 };
+            return { text: `${teamName}'s defenders were a major source of chance creation`, level: 4 };
+        }
+        return null;
+    }
+
+    let chanceInsights = $derived.by(() => {
+        if (!chanceBreakdown) return [];
+        const ours = chanceBreakdown[teamSide];
+        const theirs = chanceBreakdown[oppSide];
+        if (!ours || !theirs) return [];
+
+        const insights: { text: string; side: 'ours' | 'theirs'; level: number }[] = [];
+
+        for (const group of ['attackers', 'midfielders', 'defenders'] as const) {
+            const ourResult = getChanceInsight(team.name, group, ours.byGroup[group]);
+            if (ourResult) insights.push({ ...ourResult, side: 'ours' });
+
+            const theirResult = getChanceInsight(oppName, group, theirs.byGroup[group]);
+            if (theirResult) insights.push({ ...theirResult, side: 'theirs' });
+        }
+
+        return insights;
+    });
 </script>
 
 <div class="match-container">
@@ -136,11 +185,24 @@
     {/if}
   </div>
 
-   {#if posInsights.length > 0}
+  {#if posInsights.length > 0}
     <div class="pos-insights">
+      <span class="section-label">Possession</span>
       {#each posInsights as insight}
-        <div class="pos-insight {insight.side}">
-          <span class="pos-dot"></span>
+        <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
+          <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
+          {insight.text}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if chanceInsights.length > 0}
+    <div class="pos-insights">
+      <span class="section-label">Chance Creation</span>
+      {#each chanceInsights as insight}
+        <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
+          <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
           {insight.text}
         </div>
       {/each}
@@ -306,9 +368,6 @@
     gap: 0.5rem;
   }
 
-  .pos-insight.ours { color: #93b5f5; }
-  .pos-insight.theirs { color: #f5a3a3; }
-
   .pos-dot {
     width: 6px;
     height: 6px;
@@ -316,6 +375,11 @@
     flex-shrink: 0;
   }
 
-  .pos-insight.ours .pos-dot { background: #2563eb; }
-  .pos-insight.theirs .pos-dot { background: #dc2626; }
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 </style>

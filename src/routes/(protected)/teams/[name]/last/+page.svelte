@@ -20,6 +20,7 @@
   {:else if data.matchDetails}
     <LastMatch 
       goalDetails={data.matchDetails.goal_details}
+      chanceBreakdown={data.matchDetails.chance_breakdown}
       posBreakdown={data.matchDetails.possession_breakdown}
       isHome={data.team.lastResult.home}
       team={data.team}
