@@ -7,12 +7,10 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     if (!isAuthenticated(cookies)) {
         throw redirect(302, '/');
     }
-
     try {
         const data = await sportsmonksGet(`/players/${params.id}`, {
-            include: 'statistics'
+            include: 'statistics.details.type'
         });
-
         return {
             player: data.data
         };

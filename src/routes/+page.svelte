@@ -4,7 +4,7 @@
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
     import { populateTeamIdsToName } from '$lib/utils/team';
-    import { setLeagueStatus, getLeagueState, setCountry, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
+    import { setLeagueStatus, getLeagueState, setCountry, getSeasonID, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
@@ -128,6 +128,8 @@ async function signUserIn(values) {
                             const countriesCode = leagueData.countriesCode;
                             const numOfTeams = leagueData.numOfTeams;
                             setCountry(countriesCode)
+                            const seasonID = getSeasonID();
+                            console.log(`SEASON ID`, seasonID)
                             setTeamCount(numOfTeams)
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
@@ -167,6 +169,10 @@ async function fetchLeagueInfo() {
         if(response.data.currentMatchweek){
           
           setMatchweek(response.data.currentMatchweek)
+        }
+
+        if(response.data.countriesCode){
+
         }
 
         return response.data; 

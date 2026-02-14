@@ -1959,6 +1959,7 @@ async function getNations() {
 
 
 }
+
 // 462
 async function allLeaguesLastSeason(){
     await getLeaguePlayersAndUpload(23744, 'bundes','2425')

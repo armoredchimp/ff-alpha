@@ -8,6 +8,7 @@ export const TABLE_PREFIXES: Record<number, string> = {
     5: 'seriea'    // Serie A
 };
 
+//THIS IS LAST SEASON (24/25) VALUES, STILL IN PLACE SO NOTHING BREAKS
 export const SEASON_ID_LOOKUP: Record<number, number> = {
     1: 23614,
     2: 23621,
@@ -36,7 +37,8 @@ interface LeagueState {
     tokenExpiresAt: string | null;
     loading: boolean;
     error: string | null;
-    schedule: Schedule
+    schedule: Schedule;
+    seasonID: number;
 }
 
 interface LeagueStatusData {
@@ -57,7 +59,8 @@ let leagueState = $state<LeagueState>({
     tokenExpiresAt: null,
     loading: false,
     error: null,
-    schedule: null
+    schedule: null,
+    seasonID: null
 });
 
 
@@ -71,10 +74,15 @@ export function setTeamCount(numOfTeams: number) {
 
 export function setCountry(countryCode: number) {
     leagueState.countryCode = countryCode
+    leagueState.seasonID = SEASON_ID_LOOKUP[countryCode];
 }
 
 export function getCountry(): number {
     return leagueState.countryCode;
+}
+
+export function getSeasonID(): number {
+    return leagueState.seasonID;
 }
 
 export function setMatchweek(currentMatchweek: number) {
