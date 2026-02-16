@@ -12,9 +12,13 @@
 
     let nationImage = player ? getCountryUrl(getCountry(player.nationality_id)) : null;
 
+    const fantasyStats = data.fantasyStats;
+
     const seasonID = getSeasonID();
     const seasonStats = player?.statistics?.find((s: any) => s.season_id === seasonID);
     const details = seasonStats?.details ?? [];
+
+    const isKeeper = frontend_player?.detailed_position === 'Goalkeeper';
 
     function getStat(developerName: string): any {
         return details.find((d: any) => d.type.developer_name === developerName);
@@ -47,16 +51,20 @@
         { label: 'Errors to Goal', key: 'ERROR_LEAD_TO_GOAL' },
     ];
 
-    const fantasyStatGrid = [
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-        { label: 'TBD', key: null },
-    ];
+    let fantasyStatGrid = $derived.by(() => {
+        if (!fantasyStats) return [];
+        if (isKeeper) {
+            return [
+                { label: 'Appearances', value: fantasyStats.appearances },
+                { label: 'Clean Sheets', value: fantasyStats.clean_sheets },
+            ];
+        }
+        return [
+            { label: 'Goals', value: fantasyStats.goals },
+            { label: 'Assists', value: fantasyStats.assists },
+            { label: 'Appearances', value: fantasyStats.appearances },
+        ];
+    });
 
     const MAX_SCORE = 5000;
 
@@ -71,7 +79,6 @@
 
     let scoreBars = $derived.by(() => {
         if (!frontend_player) return [];
-        const isKeeper = frontend_player.detailed_position === 'Goalkeeper';
         if (isKeeper) {
             return allScoreBars.filter(b => b.key === 'keeper_score' || b.key === 'passing_score');
         }
@@ -155,14 +162,18 @@
         <!-- Fantasy Stats -->
         <div class="statistics-section">
             <h3 class="section-title">Fantasy Stats</h3>
-            <div class="stat-grid">
-                {#each fantasyStatGrid as stat}
-                    <div class="stat-box placeholder">
-                        <span class="stat-label">{stat.label}</span>
-                        <span class="stat-value">-</span>
-                    </div>
-                {/each}
-            </div>
+            {#if fantasyStatGrid.length > 0}
+                <div class="stat-grid">
+                    {#each fantasyStatGrid as stat}
+                        <div class="stat-box">
+                            <span class="stat-label">{stat.label}</span>
+                            <span class="stat-value">{formatValue(stat.value)}</span>
+                        </div>
+                    {/each}
+                </div>
+            {:else}
+                <p class="placeholder-text">No fantasy stats available.</p>
+            {/if}
         </div>
     {:else}
         <p>Player not found</p>
