@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { teamIdsToName, playersByID } from "./stores/generic.svelte";
-  import { getPossessionColor, getPossessionPercentage} from "./utils/team.ts"
-	import type { Team } from "./types/types";
+    import { teamIdsToName, playersByID } from "./stores/generic.svelte";
+    import { getPossessionColor, getPossessionPercentage} from "./utils/team.ts"
+    import type { Team } from "./types/types";
 
     let {
         goalDetails = {} as JSON,

@@ -1,11 +1,15 @@
 <script lang="ts">
     import { getCountry } from '$lib/data/countries';
+    import { teamIdsToName, playersByID } from "$lib/stores/generic.svelte";
     import { getCountryUrl } from '$lib/data/countryImages';
     import { calculateAge } from '$lib/utils';
     import { getSeasonID } from '$lib/stores/league.svelte';
 
     let { data } = $props();
     const player = data.player;
+
+    const frontend_player = playersByID[player.id];
+
     let nationImage = player ? getCountryUrl(getCountry(player.nationality_id)) : null;
 
     const seasonID = getSeasonID();
@@ -32,7 +36,7 @@
         return formatValue(val);
     }
 
-    const statGrid = [
+    const realStatGrid = [
         { label: 'Minutes Played', key: 'MINUTES_PLAYED' },
         { label: 'Appearances', key: 'APPEARANCES' },
         { label: 'Goals', key: 'GOALS' },
@@ -42,6 +46,42 @@
         { label: 'Key Passes', key: 'KEY_PASSES' },
         { label: 'Errors to Goal', key: 'ERROR_LEAD_TO_GOAL' },
     ];
+
+    const fantasyStatGrid = [
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+        { label: 'TBD', key: null },
+    ];
+
+    const MAX_SCORE = 5000;
+
+    const allScoreBars = [
+        { label: 'Defensive', key: 'defensive_score', color: '#2563eb' },
+        { label: 'Passing', key: 'passing_score', color: '#16a34a' },
+        { label: 'Possession', key: 'possession_score', color: '#9333ea' },
+        { label: 'Attacking', key: 'attacking_score', color: '#ea580c' },
+        { label: 'Finishing', key: 'finishing_score', color: '#e11d48' },
+        { label: 'Keeper', key: 'keeper_score', color: '#0891b2' },
+    ];
+
+    let scoreBars = $derived.by(() => {
+        if (!frontend_player) return [];
+        const isKeeper = frontend_player.detailed_position === 'Goalkeeper';
+        if (isKeeper) {
+            return allScoreBars.filter(b => b.key === 'keeper_score' || b.key === 'passing_score');
+        }
+        return allScoreBars.filter(b => b.key !== 'keeper_score');
+    });
+
+    function getBarWidth(val: number | null): string {
+        if (val == null || val <= 0) return '0%';
+        return `${Math.min((val / MAX_SCORE) * 100, 100)}%`;
+    }
 </script>
 
 <div class="player-page">
@@ -57,18 +97,50 @@
                 {/if}
             </div>
             <div class="player-info">
-                <h1>{player.display_name}</h1>
+                <div class="player-info-top">
+                    <h1>{player.display_name}</h1>
+                    {#if frontend_player?.player_team}
+                        <span class="player-team">{frontend_player.player_team}</span>
+                    {/if}
+                </div>
                 <div class="player-details">
                     <span>Age: {calculateAge(player.date_of_birth)}</span>
                     <span>Height: {player.height} cm</span>
-                    <span>Weight: {player.weight} kg</span>
+                    <span>{frontend_player?.detailed_position ?? 'Unknown'}</span>
                 </div>
             </div>
         </div>
+
+        <!-- Score Bars -->
+        {#if frontend_player}
+            <div class="score-bars-section">
+                <h3 class="section-title">Player Scores</h3>
+                <div class="score-bars">
+                    {#each scoreBars as bar}
+                        {@const val = frontend_player[bar.key]}
+                        <div class="score-bar-row">
+                            <span class="bar-label">{bar.label}</span>
+                            <div class="bar-track">
+                                <div
+                                    class="bar-fill"
+                                    style="width: {getBarWidth(val)}; background: {bar.color};"
+                                ></div>
+                            </div>
+                            <span class="bar-value" style="color: {bar.color};">
+                                {val != null ? formatValue(val) : '-'}
+                            </span>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+
+        <!-- Real Stats -->
         <div class="statistics-section">
+            <h3 class="section-title">Real Stats</h3>
             {#if details.length > 0}
                 <div class="stat-grid">
-                    {#each statGrid as stat}
+                    {#each realStatGrid as stat}
                         <div class="stat-box">
                             <span class="stat-label">{stat.label}</span>
                             <span class="stat-value">{getStatValue(stat.key)}</span>
@@ -78,6 +150,19 @@
             {:else}
                 <p class="placeholder-text">No statistics found for this season.</p>
             {/if}
+        </div>
+
+        <!-- Fantasy Stats -->
+        <div class="statistics-section">
+            <h3 class="section-title">Fantasy Stats</h3>
+            <div class="stat-grid">
+                {#each fantasyStatGrid as stat}
+                    <div class="stat-box placeholder">
+                        <span class="stat-label">{stat.label}</span>
+                        <span class="stat-value">-</span>
+                    </div>
+                {/each}
+            </div>
         </div>
     {:else}
         <p>Player not found</p>
@@ -164,5 +249,83 @@
     }
     .error {
         color: #dc2626;
+    }
+
+    .player-info-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .player-team {
+        font-size: 0.8rem;
+        color: #aaa;
+        font-weight: 400;
+        white-space: nowrap;
+    }
+
+    .section-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #999;
+        margin: 0 0 0.75rem 0;
+        font-weight: 600;
+    }
+
+
+    .score-bars-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .score-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .score-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .bar-label {
+        width: 80px;
+        font-size: 0.78rem;
+        color: #666;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .bar-track {
+        flex: 1;
+        height: 10px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 0.4s ease;
+    }
+
+    .bar-value {
+        width: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    /* Fantasy placeholder */
+    .stat-box.placeholder {
+        opacity: 0.45;
+        border-style: dashed;
     }
 </style>
