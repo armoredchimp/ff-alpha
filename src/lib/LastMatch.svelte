@@ -122,17 +122,30 @@
         const theirs = chanceBreakdown[oppSide];
         if (!ours || !theirs) return [];
 
-        const insights: { text: string; side: 'ours' | 'theirs'; level: number }[] = [];
+        const results: { text: string; side: 'ours' | 'theirs'; level: number }[] = [];
 
-        for (const group of ['attackers', 'midfielders', 'defenders'] as const) {
-            const ourResult = getChanceInsight(team.name, group, ours.byGroup[group]);
-            if (ourResult) insights.push({ ...ourResult, side: 'ours' });
+        for (const [side, data, name] of [['ours', ours, team.name], ['theirs', theirs, oppName]] as const) {
+            let best: { text: string; level: number } | null = null;
 
-            const theirResult = getChanceInsight(oppName, group, theirs.byGroup[group]);
-            if (theirResult) insights.push({ ...theirResult, side: 'theirs' });
+            for (const group of ['attackers', 'midfielders', 'defenders'] as const) {
+                const result = getChanceInsight(name, group, data.byGroup[group]);
+                if (result && (!best || result.level > best.level)) {
+                    best = result;
+                }
+            }
+
+            if (best && best.level >= 2) {
+                results.push({ ...best, side });
+            } else {
+                results.push({
+                    text: `${name} struggled to create meaningful chances throughout the match`,
+                    side,
+                    level: 1,
+                });
+            }
         }
 
-        return insights;
+        return results;
     });
 </script>
 
