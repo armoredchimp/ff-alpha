@@ -1,6 +1,7 @@
 <script lang="ts">
     import { getCountryUrl } from "./data/countryImages";
     import type { Player } from "$lib/types/types";
+
     let {
         player = null as Player | null,
         showPopup = true,

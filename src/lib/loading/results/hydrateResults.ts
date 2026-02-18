@@ -1,32 +1,40 @@
-
 import axios from "axios";
 import { teams, playerTeam } from "$lib/stores/teams.svelte";
+import { results } from "$lib/stores/generic.svelte";
 
 export async function loadMatchResults(matchWeek: number) {
     try {
         const response = await axios.get('/api/supabase/results', {
             params: matchWeek ? { matchWeek } : {}
         })
-
         return hydrateMatchResults(response.data.results);
     } catch (err) {
         console.error('error loading match results', err)
     }
 }
 
-function hydrateMatchResults(results) {
-    // Build array of all teams including playerTeam
+function hydrateMatchResults(matchResults) {
     const allTeams = [...Object.values(teams), playerTeam];
-
-    // Create lookup by dbId
     const teamMap = new Map();
     for (const team of allTeams) {
         teamMap.set(team.dbId, team);
     }
 
-    for (const result of results) {
+    for (const result of matchResults) {
         const homeTeam = teamMap.get(result.home_team_id);
         const awayTeam = teamMap.get(result.away_team_id);
+
+        // Store in results store with team references
+        results[result.id] = {
+            homeTeam,
+            awayTeam,
+            homeScore: result.home_score,
+            awayScore: result.away_score,
+            homeChancePts: result.home_chance_pts,
+            awayChancePts: result.away_chance_pts,
+            homePossWins: result.home_possession_wins,
+            awayPossWins: result.away_possession_wins
+        };
 
         if (homeTeam) {
             homeTeam.lastResult = {
@@ -42,7 +50,6 @@ function hydrateMatchResults(results) {
                 possWinsOpp: result.away_possession_wins
             };
         }
-
         if (awayTeam) {
             awayTeam.lastResult = {
                 matchId: result.id,

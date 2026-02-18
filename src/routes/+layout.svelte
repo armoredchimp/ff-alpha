@@ -2046,12 +2046,10 @@ function toggleDevBar() {
 {/if}
 {#if draft.gate1}
   <button>
-    <a
-      href={'/table'
-      }
-    >
-      League Table
-    </a>
+    <a href={'/table'}>League Table</a>
+  </button>
+  <button>
+    <a href={'/results'}>Results</a>
   </button>
 {/if}
 <style>
