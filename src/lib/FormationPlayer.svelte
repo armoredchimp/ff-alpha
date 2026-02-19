@@ -39,6 +39,8 @@
     hide?: boolean;
   }>();
 
+  let hasTriggeredFetch = $state<boolean>(false);
+
   let currentSlot = $state<CurrentSlot>({})
   let eligiblePositions = $state<string[]>([])
   let eligibleReplacements = $state<Player[]>([])
@@ -85,12 +87,22 @@
 
     if(player && player.id){
       nationImage = getCountryUrl(player.nationality)
-      ensurePlayerStats(player.id);
     }
   })
 
+  function handlePlayerHover() {
+    if (!hasTriggeredFetch && player?.id) {
+        hasTriggeredFetch = true;
+        ensurePlayerStats(player.id);
+    }
+  }
+
   async function ensurePlayerStats(playerId: number) {
-    if (playerCurrentStats[playerId]) return;
+    if (playerCurrentStats[playerId]){
+      console.log('Client side player cache hit')
+      return;
+    }
+    
     try {
         const [playerRes, fantasyRes] = await Promise.all([
             fetch(`/api/sportsmonks/player?id=${playerId}&include=statistics.details.type`),
@@ -104,6 +116,8 @@
             player: playerData?.data ?? null,
             fantasyStats: fantasyData?.fantasyStats ?? null
         };
+
+        console.log('Stored in cache:', playerCurrentStats[playerId]);
     } catch (err) {
         console.error('Failed to fetch player stats:', err);
     }
@@ -542,13 +556,22 @@
 
 </script>
 
-<div class="formation-player" style="opacity: {hide ? 0.7 : 1}; transition: opacity 0.4s ease, z-index 0.2s ease; z-index: {showDropdown ? 50 : -999};">
+<div class="formation-player" style=
+    "opacity: {hide ? 0.7 : 1}; 
+    transition: opacity 0.4s ease, z-index 0.2s ease; 
+    z-index: {showDropdown ? 50 : -999};">
   {#if player}
     <a 
       class="player-name player-link" 
       href="/player/{player.id}"
+      onmouseenter={handlePlayerHover}
     >{formatPlayerName(player.player_name)}</a>
-    <img class="player-image" style="opacity: {showDropdown ? 0.4 : 1}; transition: opacity 0.4s ease" src={nationImage} alt={player.player_name} />
+    <img class="player-image" style=
+      "opacity: {showDropdown ? 0.4 : 1}; 
+      transition: opacity 0.4s ease" 
+      src={nationImage} alt={player.player_name}
+      onmouseenter={handlePlayerHover}
+       />
   {:else}
     <div class="player-name">Empty</div>
     <div class="player-placeholder">No Player Selected</div>
