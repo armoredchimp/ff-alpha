@@ -2,6 +2,7 @@ import type { Player, Manager } from "$lib/types/types"
 
 export let allPlayers = $state<Player[]>([])
 export let playersByID = $state<Record<number, Player>>({})
+export const playerCurrentStats: Record<string, { player: any; fantasyStats: any }> = $state({});
 
 
 export let playerCall = $state(false)

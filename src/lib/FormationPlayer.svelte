@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { delay, positionAbbrev, formatPlayerName, recalculateSectionScores } from "./utils";
+  import { getSeasonID } from "./stores/league.svelte";
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
+  import { playerCurrentStats } from '$lib/stores/generic.svelte';
   import { onMount } from "svelte";
   import type { Player, Team } from "$lib/types/types";
 
@@ -83,8 +85,29 @@
 
     if(player && player.id){
       nationImage = getCountryUrl(player.nationality)
+      ensurePlayerStats(player.id);
     }
   })
+
+  async function ensurePlayerStats(playerId: number) {
+    if (playerCurrentStats[playerId]) return;
+    try {
+        const [playerRes, fantasyRes] = await Promise.all([
+            fetch(`/api/sportsmonks/player?id=${playerId}&include=statistics.details.type`),
+            fetch(`/api/supabase/fantasy_stats?id=${playerId}`)
+        ]);
+
+        const playerData = playerRes.ok ? await playerRes.json() : null;
+        const fantasyData = fantasyRes.ok ? await fantasyRes.json() : null;
+
+        playerCurrentStats[playerId] = {
+            player: playerData?.data ?? null,
+            fantasyStats: fantasyData?.fantasyStats ?? null
+        };
+    } catch (err) {
+        console.error('Failed to fetch player stats:', err);
+    }
+  }
 
   function getSelectedSlot(): CurrentSlot {
     if (!player || !player.id) return {};
@@ -497,6 +520,7 @@
   function handleReplacementHover(replacement: Player): void {
     hoveredReplacement = replacement;
     showComparison = true;
+    ensurePlayerStats(replacement.id);
   }
 
   function handleReplacementLeave(): void {
@@ -660,6 +684,25 @@
        </div>
 
      </div>
+
+     {#if playerCurrentStats[player.id]}
+       {@const stats = playerCurrentStats[player.id]}
+       <div class="cache-stats">
+           {#if stats.player?.statistics?.length}
+               {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
+               {@const dets = season?.details ?? []}
+               {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
+               {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
+               <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
+               <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
+           {/if}
+           {#if stats.fantasyStats}
+               <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
+               <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
+           {/if}
+       </div>
+     {/if}
+
    </div>
    {:else if player.detailed_position === "Goalkeeper"}
    <div class="player-popup" class:comparison-mode={showComparison}>
@@ -761,6 +804,25 @@
        </div>
 
       </div>
+
+      {#if playerCurrentStats[hoveredReplacement.id]}
+        {@const stats = playerCurrentStats[hoveredReplacement.id]}
+        <div class="cache-stats">
+            {#if stats.player?.statistics?.length}
+                {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
+                {@const dets = season?.details ?? []}
+                {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
+                {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
+                <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
+                <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
+            {/if}
+            {#if stats.fantasyStats}
+                <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
+                <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
+            {/if}
+        </div>
+      {/if}
+
     </div>
     {:else if hoveredReplacement.detailed_position === "Goalkeeper"}
     <div class="player-popup replacement-popup">
@@ -797,6 +859,7 @@
   {/if}
 </div>
 
+
 <style>
   .formation-player {
     position: relative;
@@ -821,6 +884,19 @@
   .player-name {
     font-weight: bold;
     margin-bottom: 0.5rem;
+  }
+
+  .cache-stats {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid #eee;
+  }
+
+  .cache-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      padding: 0.1rem 0;
   }
 
   .player-image {
@@ -985,7 +1061,7 @@
     position: absolute;
     bottom: 100%;
     left: 100%;
-    width: 12rem;
+    width: 15rem;
     margin-bottom: 0.5rem;
     margin-left: 0.5rem;
     background: #ffffff;
@@ -1002,7 +1078,7 @@
 
   /* Shift current player popup left when comparing */
   .player-popup.comparison-mode {
-    transform: translateX(-13rem);
+    transform: translateX(-16rem);
     margin-left: 0;
   }
 

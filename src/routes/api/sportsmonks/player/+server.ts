@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
 import { sportsmonksGet } from '$lib/server/sportsmonks';
+import { playerCache } from '$lib/server/playerCache';
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
     if (!isAuthenticated(cookies)) {
@@ -20,7 +21,13 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             params.include = include;
         }
 
+        const cached = playerCache[playerId];
+            if (cached?.player) {
+                return json({ data: cached.player });
+        }
+
         const data = await sportsmonksGet(`/players/${playerId}`, params);
+        playerCache[playerId] = { ...playerCache[playerId], player: data.data, fantasyStats: playerCache[playerId]?.fantasyStats ?? null };
         return json(data);
     } catch (err) {
         console.error('SportMonks player fetch error:', err);

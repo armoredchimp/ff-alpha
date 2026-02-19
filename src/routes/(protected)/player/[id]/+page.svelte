@@ -1,11 +1,21 @@
 <script lang="ts">
     import { getCountry } from '$lib/data/countries';
-    import { teamIdsToName, playersByID } from "$lib/stores/generic.svelte";
+    import { teamIdsToName, playersByID, playerCurrentStats } from "$lib/stores/generic.svelte";
     import { getCountryUrl } from '$lib/data/countryImages';
     import { calculateAge } from '$lib/utils';
     import { getSeasonID } from '$lib/stores/league.svelte';
 
     let { data } = $props();
+
+    $effect(() => {
+    if (data.player) {
+        playerCurrentStats[player.id] = {
+            player: data.player,
+            fantasyStats: data.fantasyStats
+        };
+    }
+});
+
     const player = data.player;
 
     const frontend_player = playersByID[player.id];

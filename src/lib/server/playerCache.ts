@@ -1,0 +1,1 @@
+export const playerCache: Record<string, { player: any; fantasyStats: any }> = {};
