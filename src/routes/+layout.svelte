@@ -1094,7 +1094,7 @@ async function insertPer90s(ninetyTable, id, p90s){
         console.log(`[getLeaguePlayersAndUpload] Fetching teams from API for season ${seasonId}`);
         res = await axios.get(`/api/teams/seasons/${seasonId}`, {
             params: {
-                include: 'players.player;coaches'
+                include: 'players.player;coaches;sidelined'
             }
         })
         console.log(`[getLeaguePlayersAndUpload] API response received, status: ${res.status}`);

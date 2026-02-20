@@ -1,5 +1,6 @@
 <script>
     import FetchWeeklyMatches from "$lib/components/admin/FetchWeeklyMatches.svelte";
+    import MainPlayerUpdate from "$lib/components/admin/MainPlayerUpdate.svelte"
     import WeeklyScoring from "$lib/components/admin/WeeklyScoring.svelte";
     import LeagueMatchweeks from "$lib/components/admin/LeagueMatchweeks.svelte";
     import BasicScoring from "$lib/components/admin/BasicScoring.svelte";
@@ -9,6 +10,7 @@
 </script>
 
 <LeagueMatchweeks />
+<MainPlayerUpdate />
 <BasicScoring />
 <div style="margin-top: 5rem;"></div>
 <FetchWeeklyMatches />
