@@ -66,6 +66,7 @@ export function createFormationStructure(formationName: string): object {
 export function populateLineup(team: Team): void {
     const selected = team.selected;
     const usedIds = new Set();
+    const injuredIds = new Set();
 
     const posOrder = [
         'Goalkeeper',
@@ -83,16 +84,23 @@ export function populateLineup(team: Team): void {
     ]
 
     // Retrieve all players across all position groups
-    const allPlayers = Object.keys(selected).flatMap(group => team[group] || []);
+    const allSelected = Object.keys(selected).flatMap(group => team[group] || []);
 
-    // Helper: find an unused player matching a given detailed position
+    // Identify injured/suspended players upfront
+    for (const player of allSelected) {
+        if (player.injured) {
+            injuredIds.add(player.id);
+        }
+    }
+
+    // Helper: find an unused, non-injured player matching a given detailed position
     const getAvailablePlayer = (players, detailedPosition) =>
-        players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id));
+        players.find(p => p.detailed_position === detailedPosition && !usedIds.has(p.id) && !injuredIds.has(p.id));
 
     // Helper: attempt a fallback assignment for a specified position
     const getFallbackPlayer = pos => {
         for (const alt of (getFallbackPos(pos) || [])) {
-          const candidate = allPlayers.find(p => p.detailed_position === alt && !usedIds.has(p.id)); // Explicitly search allPlayers for fallback
+          const candidate = allSelected.find(p => p.detailed_position === alt && !usedIds.has(p.id) && !injuredIds.has(p.id));
           if (candidate) return candidate;
         }
         return null;
@@ -160,7 +168,7 @@ export function populateLineup(team: Team): void {
         }
     });
 
-    team.unused = allPlayers.filter(p => !usedIds.has(p.id));
+    team.unused = allSelected.filter(p => !usedIds.has(p.id));
 
     const substituteSlots = Object.values(selected)
       .flatMap(positions =>
@@ -172,7 +180,7 @@ export function populateLineup(team: Team): void {
     for (const slotCfg of substituteSlots) {
       if (team.subs.length >= 7) break;
       const pos = slotCfg.players[0]?.detailed_position || null;
-      const exactSub = allPlayers.find(p => p.detailed_position === pos && !usedIds.has(p.id));
+      const exactSub = allSelected.find(p => p.detailed_position === pos && !usedIds.has(p.id) && !injuredIds.has(p.id));
       const candidate = exactSub || getFallbackPlayer(pos);
 
       if (candidate) {
@@ -183,7 +191,7 @@ export function populateLineup(team: Team): void {
       }
     }
 
-    team.unused = allPlayers.filter(p => !usedIds.has(p.id));
+    team.unused = allSelected.filter(p => !usedIds.has(p.id));
 }
 
 export function extractPlayerIds(team: Team): object {
