@@ -14,15 +14,39 @@ export async function loadPlayersData(countriesCode: number): Promise<boolean> {
             params: countriesCode ? { countriesCode } : {}
         });
         
-        if (response.data.players && response.data.players.length > 0) {
+        // Load injuries from injuries endpoint
+        const injuriesResponse = await axios.get('/api/supabase/injuries');
+        if (injuriesResponse.data.injuries) {
+            console.log(`Loaded ${injuriesResponse.data.injuries.length} injuries`);
+        } else {
+            console.error('No injuries data found');
+        }
+
+        if (response.data.players && response.data.players.length > 0 && injuriesResponse.data.injuries) {
             allPlayers.length = 0;
             
+            // Match injuries to players and add injury info to player objects
+
+            const injuries = injuriesResponse.data.injuries;
+            // Create a map of injuries by injuries.player_id for quick lookup
+            const injuriesByPlayerId: Record<number, any> = {};
+            for (const injury of injuries) {
+                injuriesByPlayerId[injury.player_id] = injury;
+            }
+
             for (const player of response.data.players) {
+                if( injuriesByPlayerId[player.id]) {
+                    const injury = injuriesByPlayerId[player.id];
+                    player.injured = {
+                        category: injury.category,
+                        start_date: injury.start_date
+                    }
+                }
                 allPlayers.push(player);
             }
             
             // Create KVP object for quick lookups
-            for (const player of response.data.players) {
+            for (const player of allPlayers) {
                 playersByID[player.id] = player;
             }
             

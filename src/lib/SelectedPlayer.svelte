@@ -8,12 +8,18 @@
     } = $props();
 
     const validGroups = ['attackers', 'midfielders', 'defenders', 'keepers', 'subs'];
-    const groupClass = validGroups.includes(posGroup) ? posGroup : 'default';
+    let groupClass = $state(validGroups.includes(posGroup) ? posGroup : 'default');
+
+ 
 </script>
 
 
 <div class="wrapper">
-  <div class="tab {groupClass} {player?.player_name ? '' : 'empty'}">
+  <div class="tab 
+    {groupClass} 
+    {player?.player_name ? '' : 'empty'} 
+    {player?.injured?.category === 'injury' ? 'injured' : ''} 
+    {player?.injured?.category === 'suspended' ? 'suspended' : ''}">
     <span class="position">{positionAbbrev(position)}</span>
     {#if player?.player_name}
       <span class="name">{player.player_name}</span>
@@ -150,6 +156,9 @@
 
   .default { background: #6c757d; }
   .default.empty { background: hsl(210, 5%, 47%); }
+
+  .injured { background: #8b0000 !important; }
+  .suspended { background: #c5a800 !important; }
 
   .position {
     font-weight: 600;

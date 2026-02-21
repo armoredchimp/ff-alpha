@@ -228,47 +228,53 @@ export function extractPlayerIds(team: Team): object {
 }
 
 export function hydrateSelected(team: Team): void {
-    // Hydrate the selected formation structure with full player objects
+    const injuredPlayers: Player[] = [];
+
     Object.entries(team.selected).forEach(([group, positions]) => {
         Object.entries(positions).forEach(([pos, cfg]) => {
             cfg.players = (cfg.players as number[]).map(playerId => {
-                if (playerId === null || playerId === undefined) {
-                    return null; // Preserve null slots
-                }
+                if (playerId === null || playerId === undefined) return null;
                 
                 const player = playersByID[playerId];
                 if (!player) {
                     console.warn(`Player with ID ${playerId} not found in playersByID`);
                     return null;
                 }
+                if (player.injured) {
+                    injuredPlayers.push(player);
+                    return null; // Remove from starting lineup
+                }
                 return player;
-            }); 
+            }).filter(p => p !== null);
         });
     });
-    
+
     team.subs = (team.subs as number[]).map(playerId => {
-        if (playerId === null || playerId === undefined) {
-            return null;
-        }
+        if (playerId === null || playerId === undefined) return null;
         const player = playersByID[playerId];
         if (!player) {
             console.warn(`Sub player with ID ${playerId} not found in playersByID`);
             return null;
         }
-        return player;
-    });
-    
-    team.unused = (team.unused as number[]).map(playerId => {
-        if (playerId === null || playerId === undefined) {
+        if (player.injured) {
+            injuredPlayers.push(player);
             return null;
         }
+        return player;
+    }).filter(p => p !== null);
+
+    team.unused = (team.unused as number[]).map(playerId => {
+        if (playerId === null || playerId === undefined) return null;
         const player = playersByID[playerId];
         if (!player) {
             console.warn(`Unused player with ID ${playerId} not found in playersByID`);
             return null;
         }
         return player;
-    });
+    }).filter(p => p !== null);
+
+    // Push all injured players into unused
+    team.unused.push(...injuredPlayers);
 }
 
 

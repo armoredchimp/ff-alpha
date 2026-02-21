@@ -1,7 +1,7 @@
 import type { Player, Manager } from "$lib/types/types"
 
-export let allPlayers = $state<Player[]>([])
-export let playersByID = $state<Record<number, Player>>({})
+export let allPlayers = $state<Player[]>([]) //Initial player object containing player objects
+export let playersByID = $state<Record<number, Player>>({}) // KVP object for quick lookups of player objects by ID
 export const playerCurrentStats: Record<string, { player: any; fantasyStats: any }> = $state({});
 
 

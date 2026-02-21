@@ -121,6 +121,10 @@ export type Player = {
   ints_per90: number;
   fouls_per90: number;
   created_at: string;
+  injured: {
+    category: string;
+    start_date: string;
+  }
 };
 
 export type Manager = {
