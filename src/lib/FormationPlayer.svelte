@@ -188,6 +188,10 @@
             // Skip if this is the current player or already found
             if ((!player || !player.id || rosterPlayer.id !== player.id) && 
                 !foundPlayerIds.has(rosterPlayer.id)){
+              if (rosterPlayer.injured?.category === 'injury' || rosterPlayer.injured?.category === 'suspended') {
+                console.log('fack');
+                continue;
+}
               foundPlayerIds.add(rosterPlayer.id);
               eligibleReplacements.push(rosterPlayer as Player);
             }
@@ -282,6 +286,9 @@
         const playersArray = positionData.players;
         for (let i = 0; i < playersArray.length; i++){
           const currentPlayer = playersArray[i];
+          if (currentPlayer?.injured?.category === 'injury' || currentPlayer?.injured?.category === 'suspended') {
+            continue;
+          }
           if (currentPlayer && typeof currentPlayer !== 'number' && 
               'id' in currentPlayer && currentPlayer.id === replacementPlayer.id) {
             return {

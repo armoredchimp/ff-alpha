@@ -10,6 +10,10 @@
     const validGroups = ['attackers', 'midfielders', 'defenders', 'keepers', 'subs'];
     let groupClass = $state(validGroups.includes(posGroup) ? posGroup : 'default');
 
+   
+    if(posGroup === "unused" && player?.injured?.category){
+      position = player?.injured?.category === 'injury' ? 'Injured' : 'Suspended'
+    }
  
 </script>
 
