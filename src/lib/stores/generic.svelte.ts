@@ -3,16 +3,17 @@ import type { Player, Manager } from "$lib/types/types"
 export let allPlayers = $state<Player[]>([]) //Initial player object containing player objects
 export let playersByID = $state<Record<number, Player>>({}) // KVP object for quick lookups of player objects by ID
 export const playerCurrentStats: Record<string, { player: any; fantasyStats: any }> = $state({});
-
+export let injuredByTeam: Record<string, Player[]> = $state({});
+export let injuredByFantasyTeam: Record<string, Player[]> = $state({});
 
 export let playerCall = $state(false)
 let playerPageInit = $state<boolean>(false)
 
-export function getPlayerInit(){
+export function getPlayerInit() {
     return playerPageInit
 }
 
-export function setPlayerInit(data: boolean){
+export function setPlayerInit(data: boolean) {
     playerPageInit = data
 }
 

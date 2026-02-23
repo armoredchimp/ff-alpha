@@ -2051,6 +2051,9 @@ function toggleDevBar() {
   <button>
     <a href={'/results'}>Results</a>
   </button>
+  <button>
+    <a href={'/injuries'}>Injuries</a>
+  </button>
 {/if}
 <style>
  button {

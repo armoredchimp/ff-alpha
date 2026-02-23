@@ -1,4 +1,4 @@
-import { allPlayers, playersByID } from '$lib/stores/generic.svelte';
+import { allPlayers, playersByID, injuredByTeam } from '$lib/stores/generic.svelte';
 import axios from 'axios';
 import type { Player } from '$lib/types/types';
 
@@ -8,12 +8,12 @@ export async function loadPlayersData(countriesCode: number): Promise<boolean> {
             console.log('Players already loaded, skipping...');
             return true;
         }
-        
+
         // Pass the countries code as a query parameter
         const response = await axios.get<{ players: Player[] }>('/api/supabase/players', {
             params: countriesCode ? { countriesCode } : {}
         });
-        
+
         // Load injuries from injuries endpoint
         const injuriesResponse = await axios.get('/api/supabase/injuries');
         if (injuriesResponse.data.injuries) {
@@ -24,7 +24,7 @@ export async function loadPlayersData(countriesCode: number): Promise<boolean> {
 
         if (response.data.players && response.data.players.length > 0 && injuriesResponse.data.injuries) {
             allPlayers.length = 0;
-            
+
             // Match injuries to players and add injury info to player objects
 
             const injuries = injuriesResponse.data.injuries;
@@ -35,7 +35,7 @@ export async function loadPlayersData(countriesCode: number): Promise<boolean> {
             }
 
             for (const player of response.data.players) {
-                if( injuriesByPlayerId[player.id]) {
+                if (injuriesByPlayerId[player.id]) {
                     const injury = injuriesByPlayerId[player.id];
                     player.injured = {
                         category: injury.category,
@@ -43,19 +43,29 @@ export async function loadPlayersData(countriesCode: number): Promise<boolean> {
                     }
                 }
                 allPlayers.push(player);
+
+                const grouped: Record<string, Player[]> = {};
+                for (const player of allPlayers) {
+                    if (player.injured?.category === 'injury' || player.injured?.category === 'suspended') {
+                        const team = player.player_team || 'Unknown';
+                        if (!grouped[team]) grouped[team] = [];
+                        grouped[team].push(player);
+                    }
+                }
+                Object.assign(injuredByTeam, grouped);
             }
-            
+
             // Create KVP object for quick lookups
             for (const player of allPlayers) {
                 playersByID[player.id] = player;
             }
-            
+
             console.log(`Loaded ${response.data.players.length} players from countries code ${countriesCode || 1}`);
             console.log(JSON.parse(JSON.stringify(allPlayers)))
             console.log('playersByID:', JSON.parse(JSON.stringify(playersByID)));
             return true;
         }
-        
+
         return false;
     } catch (error) {
         console.error('Error loading players:', error);

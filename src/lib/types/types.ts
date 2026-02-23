@@ -123,7 +123,7 @@ export type Player = {
   created_at: string;
   injured: {
     category: string;
-    start_date: string;
+    start_date: Date;
   }
 };
 
