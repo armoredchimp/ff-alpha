@@ -2049,10 +2049,10 @@ function toggleDevBar() {
     <a href={'/table'}>League Table</a>
   </button>
   <button>
-    <a href={'/results'}>Results</a>
+    <a href={'/injuries'}>Injuries</a>
   </button>
   <button>
-    <a href={'/injuries'}>Injuries</a>
+    <a href={'/results'}>Results</a>
   </button>
 {/if}
 <style>
