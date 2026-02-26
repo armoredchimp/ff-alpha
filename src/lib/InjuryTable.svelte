@@ -2,6 +2,8 @@
   import { injuredByTeam, injuredByFantasyTeam } from '$lib/stores/generic.svelte';
   import { onMount } from 'svelte';
 
+  let { mini = false }: { mini?: boolean } = $props();
+
   let now = $state<Date>(new Date());
   let showFantasy = $state<boolean>(true);
 
@@ -26,39 +28,56 @@
       return daysOut(a.injured.start_date) - daysOut(b.injured.start_date);
     });
   }
+
+  let allPlayers = $derived(Object.values(activeData).flat());
 </script>
 
-<div class="injury-table">
-  <div class="toggle-row">
-    <button 
-      class="toggle-btn" 
-      class:active={showFantasy}
-      onclick={() => showFantasy = true}
-    >Fantasy Teams</button>
-    <button 
-      class="toggle-btn" 
-      class:active={!showFantasy}
-      onclick={() => showFantasy = false}
-    >Real Teams</button>
-  </div>
-
-  {#each sortedTeams() as team}
-    <div class="team-section">
-      <h3 class="team-header">{team}</h3>
-      {#each sortedPlayers(team) as player}
-        <div class="injury-row">
-          <span class="player-name">{player.player_name}</span>
-          <span class="category" class:suspended={player.injured.category === 'suspended'} class:injury={player.injured.category === 'injury'}>
-            {player.injured.category}
-          </span>
-          <span class="days-out">{daysOut(player.injured.start_date)} days</span>
-        </div>
-      {/each}
+{#if mini}
+  <div class="w-[400px] text-sm">
+    <div class="flex items-center justify-between border-b border-gray-200 py-1">
+      <span class="font-semibold text-gray-500">Team</span>
+      <span class="font-semibold text-gray-500 w-[70px] text-right">Players Out</span>
     </div>
-  {:else}
-    <p class="no-injuries">No injuries to show.</p>
-  {/each}
-</div>
+    {#each Object.entries(injuredByFantasyTeam).sort(([a], [b]) => a.localeCompare(b)) as [teamName, players]}
+      <div class="flex items-center justify-between py-1 border-b border-gray-100">
+        <span class="truncate max-w-[180px] font-medium">{teamName}</span>
+        <span class="font-bold w-[70px] text-right">{players.length}</span>
+      </div>
+    {/each}
+  </div>
+{:else}
+  <div class="injury-table">
+    <div class="toggle-row">
+      <button 
+        class="toggle-btn" 
+        class:active={showFantasy}
+        onclick={() => showFantasy = true}
+      >Fantasy Teams</button>
+      <button 
+        class="toggle-btn" 
+        class:active={!showFantasy}
+        onclick={() => showFantasy = false}
+      >Real Teams</button>
+    </div>
+
+    {#each sortedTeams() as team}
+      <div class="team-section">
+        <h3 class="team-header">{team}</h3>
+        {#each sortedPlayers(team) as player}
+          <div class="injury-row">
+            <span class="player-name">{player.player_name}</span>
+            <span class="category" class:suspended={player.injured.category === 'suspended'} class:injury={player.injured.category === 'injury'}>
+              {player.injured.category}
+            </span>
+            <span class="days-out">{daysOut(player.injured.start_date)} days</span>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <p class="no-injuries">No injuries to show.</p>
+    {/each}
+  </div>
+{/if}
 
 <style>
   .injury-table {

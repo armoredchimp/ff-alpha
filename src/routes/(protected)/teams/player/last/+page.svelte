@@ -11,7 +11,7 @@
 <div class="page-container">
   <div class="top-buttons">
     {#if data.team}
-      <button><a href="/teams/{data.team.name.toLowerCase()}">Back</a></button>
+      <button><a href="/teams/player/main">Back</a></button>
     {/if}
   </div>
 

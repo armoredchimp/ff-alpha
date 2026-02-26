@@ -1,34 +1,51 @@
 <script lang="ts">
     import { results } from "./stores/generic.svelte";
     import { getPossessionColor, getPossessionPercentage } from "./utils/team";
+
+    let { mini = false }: { mini?: boolean } = $props();
 </script>
 
-<div class="results-list">
+{#if mini}
+  <div class="w-[400px] text-sm">
+    <div class="border-b border-gray-200 py-1 mb-1">
+      <span class="font-semibold text-gray-500">Last Results</span>
+    </div>
     {#each Object.values(results) as match}
-        {@const homePoss = getPossessionPercentage(match.homePossWins, match.awayPossWins)}
-        {@const awayPoss = getPossessionPercentage(match.awayPossWins, match.homePossWins)}
-        <a href="/match/{match.homeTeam?.dbId}-{match.awayTeam?.dbId}" class="match-card">
-            <div class="teams-row">
-                <span class="team-name home">{match.homeTeam?.name}</span>
-                <div class="score">
-                    <span>{match.homeScore}</span>
-                    <span class="divider">-</span>
-                    <span>{match.awayScore}</span>
-                </div>
-                <span class="team-name away">{match.awayTeam?.name}</span>
-            </div>
-            <div class="details-row">
-                <span class="detail">Chances: {Math.round(match.homeChancePts / 15)} - {Math.round(match.awayChancePts / 15)}</span>
-                <span class="detail">
-                    Poss: 
-                    <span style="color: {getPossessionColor(homePoss)}">{homePoss}%</span>
-                    -
-                    <span style="color: {getPossessionColor(awayPoss)}">{awayPoss}%</span>
-                </span>
-            </div>
-        </a>
+      <div class="flex items-center py-1 border-b border-gray-100">
+        <span class="truncate flex-1 font-medium text-right">{match.homeTeam?.name}</span>
+        <span class="font-bold px-2 whitespace-nowrap">{match.homeScore} - {match.awayScore}</span>
+        <span class="truncate flex-1 font-medium">{match.awayTeam?.name}</span>
+      </div>
     {/each}
-</div>
+  </div>
+{:else}
+    <div class="results-list">
+        {#each Object.values(results) as match}
+            {@const homePoss = getPossessionPercentage(match.homePossWins, match.awayPossWins)}
+            {@const awayPoss = getPossessionPercentage(match.awayPossWins, match.homePossWins)}
+            <a href="/match/{match.homeTeam?.dbId}-{match.awayTeam?.dbId}" class="match-card">
+                <div class="teams-row">
+                    <span class="team-name home">{match.homeTeam?.name}</span>
+                    <div class="score">
+                        <span>{match.homeScore}</span>
+                        <span class="divider">-</span>
+                        <span>{match.awayScore}</span>
+                    </div>
+                    <span class="team-name away">{match.awayTeam?.name}</span>
+                </div>
+                <div class="details-row">
+                    <span class="detail">Chances: {Math.round(match.homeChancePts / 15)} - {Math.round(match.awayChancePts / 15)}</span>
+                    <span class="detail">
+                        Poss: 
+                        <span style="color: {getPossessionColor(homePoss)}">{homePoss}%</span>
+                        -
+                        <span style="color: {getPossessionColor(awayPoss)}">{awayPoss}%</span>
+                    </span>
+                </div>
+            </a>
+        {/each}
+    </div>
+{/if}
 
 <style>
     .results-list {

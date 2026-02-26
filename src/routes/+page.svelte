@@ -171,10 +171,6 @@ async function fetchLeagueInfo() {
           setMatchweek(response.data.currentMatchweek)
         }
 
-        if(response.data.countriesCode){
-
-        }
-
         return response.data; 
     } catch (error) {
         console.error('Error fetching league info:', error);

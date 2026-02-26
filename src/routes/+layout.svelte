@@ -2040,7 +2040,7 @@ function toggleDevBar() {
     <h2>Signed in as {userStore.user ? userStore.user.signInDetails.loginId : null}</h2>
     <button onclick={signUserOut}>Logout</button>
 {/if}
-<button><a href="/">Home</a></button>
+<button><a href="/main">League Page</a></button>
 {#if !draft.complete}
 <button><a href="/draft">To Draft</a></button>
 {/if}
