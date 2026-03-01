@@ -3,6 +3,7 @@
     import MainPlayerUpdate from "$lib/components/admin/MainPlayerUpdate.svelte"
     import WeeklyScoring from "$lib/components/admin/WeeklyScoring.svelte";
     import LeagueMatchweeks from "$lib/components/admin/LeagueMatchweeks.svelte";
+    import Managers from "$lib/components/admin/Managers.svelte";
     import BasicScoring from "$lib/components/admin/BasicScoring.svelte";
     import NextMatchups from "$lib/components/admin/NextMatchups.svelte";
 	import TeamMatchups from "$lib/components/admin/TeamMatchups.svelte";
@@ -11,6 +12,7 @@
 
 <LeagueMatchweeks />
 <MainPlayerUpdate />
+<Managers />
 <BasicScoring />
 <div style="margin-top: 5rem;"></div>
 <FetchWeeklyMatches />

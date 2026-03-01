@@ -1,9 +1,10 @@
-<!-- AdminPlayerUpload.svelte -->
 <script>
     import axios from 'axios';
     import { supabase } from '$lib/client/supabase/supaClient';
 
-   let status = $state('idle');
+    // NOT TESTED YET - DON'T WANT TO BREAK CURRENT DATA
+
+    let status = $state('idle');
     let currentLeague = $state('');
     let currentTeam = $state('');
     let currentPlayer = $state('');
@@ -23,32 +24,142 @@
 
     const seasonString = '2526';
 
-    async function getPlayerStatsAndUpload(playerId, teamName, seasonId, leagueString, seasonStr) {
-        try {
-            const { data } = await axios.get(`/api/players/${playerId}`, {
-                params: { include: 'statistics.details.type' }
-            });
-            const player = data.data;
+    // Country lookup - replace with your actual implementation
+    function getCountry(nationalityId) {
+        return String(nationalityId);
+    }
 
-            // Your existing upload logic here
-            // await supabase.from('players').upsert({ ... })
+    function calculateAge(dob) {
+        const birth = new Date(dob);
+        const now = new Date();
+        let age = now.getFullYear() - birth.getFullYear();
+        if (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate())) age--;
+        return age;
+    }
 
-        } catch (err) {
-            throw new Error(`Player ${playerId} (${teamName}): ${err.message}`);
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function getPlayerStatsAndUpload(id, teamName, seasonId, leagueString, seasonStr) {
+        let seasonStats = null;
+        let table = `${leagueString}_stats_${seasonStr}`;
+        let miniTable = `${leagueString}_mini_${seasonStr}`;
+
+        const response = await axios.get(`/dev/players`, {
+            params: {
+                endpoint: 'player',
+                playerId: id,
+                seasonId: seasonId
+            }
+        });
+
+        const playerData = response.data.data;
+
+        await delay(500);
+
+        if (!playerData?.statistics?.length) {
+            console.log('No statistics found for player:', id);
+            return;
+        }
+
+        // Pick the right season stats block
+        if (playerData.statistics[0].details.length < 5 && playerData.statistics[1]) {
+            seasonStats = playerData.statistics[1];
+        } else {
+            seasonStats = playerData.statistics[0];
+        }
+
+        if (seasonStats.details.length <= 1) return;
+
+        // Build base stats object
+        const statsToInsert = {
+            id: playerData.id,
+            Position: playerData.position.name,
+            'Detailed Position': playerData.detailedposition?.name ?? null,
+            'Player Name': playerData.display_name,
+            'Player Team': teamName,
+            Age: calculateAge(playerData.date_of_birth),
+            Nation: getCountry(playerData.nationality_id)
+        };
+
+        const extraDataMini = {
+            id: playerData.id,
+            player_age: statsToInsert['Age'],
+            player_team: statsToInsert['Player Team'],
+            nationality: statsToInsert['Nation']
+        };
+
+        // Position normalization
+        const positionMap = {
+            'Right Midfield': 'Right Wing',
+            'Left Midfield': 'Left Wing',
+            'Secondary Striker': 'Centre Forward'
+        };
+        if (positionMap[statsToInsert['Detailed Position']]) {
+            statsToInsert['Detailed Position'] = positionMap[statsToInsert['Detailed Position']];
+        }
+
+        if (statsToInsert['Detailed Position'] === null) {
+            const fallback = {
+                Attacker: 'Centre Forward',
+                Midfielder: 'Central Midfield',
+                Defender: 'Centre Back',
+                Goalkeeper: 'Goalkeeper'
+            };
+            statsToInsert['Detailed Position'] = fallback[statsToInsert.Position] || null;
+        }
+
+        // Flatten stat details
+        for (const stat of seasonStats.details) {
+            const { type, value } = stat;
+            const statName = type.name;
+
+            switch (statName) {
+                case 'Crosses Blocked':
+                    if (value?.crosses_blocked !== undefined) statsToInsert[statName] = value.crosses_blocked;
+                    break;
+                case 'Rating':
+                    if (value?.average !== undefined) statsToInsert[statName] = value.average;
+                    break;
+                case 'Substitutions':
+                    if (value?.in !== undefined) statsToInsert[statName] = value.in;
+                    break;
+                case 'Average Points Per Game':
+                    if (value?.average !== undefined) statsToInsert[statName] = value.average;
+                    break;
+                default:
+                    if (value && typeof value === 'object' && value.total !== undefined) {
+                        statsToInsert[statName] = value.total;
+                    } else {
+                        statsToInsert[statName] = value;
+                    }
+                    break;
+            }
+        }
+
+        // Upsert full stats
+        const { error } = await supabase.from(table).upsert([statsToInsert]);
+        if (error) {
+            console.error(`Error inserting stats for ${playerData.display_name}:`, error);
+            throw new Error(`Stats upsert failed for ${playerData.display_name}: ${error.message}`);
+        }
+
+        // Upsert mini data
+        const { error: miniError } = await supabase.from(miniTable).upsert([extraDataMini]);
+        if (miniError) {
+            console.error(`Error inserting mini data for ${playerData.display_name}:`, miniError);
         }
     }
 
     async function uploadInjuries(sidelinedArray) {
         const current = sidelinedArray.filter(s => {
             if (s.completed) return false;
-            
             const start = new Date(s.start_date);
             const oneYearAgo = new Date();
             oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
             if (start < oneYearAgo) return false;
-            
             if (s.end_date && new Date(s.end_date) < new Date()) return false;
-            
             return true;
         });
         if (!current.length) return 0;
@@ -63,7 +174,6 @@
 
         const { error } = await supabase.from('injuries').upsert(rows, { onConflict: 'id' });
         if (error) throw new Error(`Injury upload failed: ${error.message}`);
-
         return rows.length;
     }
 
@@ -72,8 +182,11 @@
         let res;
 
         try {
-            res = await axios.get(`/api/teams/seasons/${seasonId}`, {
-                params: { include: 'players.player;coaches;sidelined' }
+            res = await axios.get(`/dev/players`, {
+                params: {
+                    endpoint: 'teams',
+                    seasonId: seasonId
+                }
             });
         } catch (err) {
             errors = [...errors, `Failed to fetch teams for ${leagueString}: ${err.message}`];
@@ -87,16 +200,15 @@
             return;
         }
 
-        // First pass: collect all sidelined data from every team
+        // Collect sidelined data
         for (const team of teams) {
             currentTeam = team.name;
-
             if (team.sidelined?.length) {
                 allSidelined.push(team.sidelined);
             }
         }
 
-        // Second pass: individual player uploads (only if checkbox is on)
+        // Individual player uploads if enabled
         if (includePlayerUpload) {
             for (const team of teams) {
                 currentTeam = team.name;
@@ -104,7 +216,6 @@
 
                 for (const player of team.players) {
                     if (!player.player.date_of_birth) continue;
-
                     currentPlayer = player.player.name || `ID: ${player.player.id}`;
 
                     try {
@@ -142,7 +253,6 @@
             await processLeague(league.seasonId, key, seasonString, allSidelined);
         }
 
-        // Wipe and repopulate all injuries
         try {
             const { error: delError } = await supabase.from('injuries').delete().gte('id', 0);
             if (delError) throw new Error(`Failed to clear injuries: ${delError.message}`);
@@ -164,7 +274,6 @@
 
         await processLeague(leagues[key].seasonId, key, seasonString, allSidelined);
 
-        // Upsert only (don't wipe other leagues)
         try {
             for (const batch of allSidelined) {
                 injuryCount += await uploadInjuries(batch);
@@ -182,7 +291,6 @@
     <h2>⚽ Player Upload Admin</h2>
     <p class="subtitle">Season 25/26 — Sportmonks → Supabase</p>
 
-    <!-- Mode Toggle -->
     <label class="toggle">
         <input type="checkbox" bind:checked={includePlayerUpload} disabled={status === 'running'} />
         <span class="toggle-label">
@@ -190,12 +298,10 @@
         </span>
     </label>
 
-    <!-- Run All -->
     <button class="btn btn-all" onclick={runAllLeagues} disabled={status === 'running'}>
         {status === 'running' ? '⏳ Running...' : '🚀 Run All Leagues'}
     </button>
 
-    <!-- Individual League Buttons -->
     <div class="league-grid">
         {#each Object.entries(leagues) as [key, league]}
             <button
@@ -209,7 +315,6 @@
         {/each}
     </div>
 
-    <!-- Live Status -->
     {#if status === 'running'}
         <div class="status-card running">
             <div class="status-header">
@@ -234,7 +339,6 @@
         </div>
     {/if}
 
-    <!-- Errors -->
     {#if errors.length > 0}
         <details class="panel error-panel">
             <summary>❌ Errors ({errors.length})</summary>
@@ -255,187 +359,64 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #e0e0e0;
     }
-
-    h2 {
-        margin: 0 0 0.25rem;
-        font-size: 1.5rem;
-    }
-
-    .subtitle {
-        color: #888;
-        font-size: 0.85rem;
-        margin: 0 0 1.5rem;
-    }
-
+    h2 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+    .subtitle { color: #888; font-size: 0.85rem; margin: 0 0 1.5rem; }
     .toggle {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.25rem;
-        cursor: pointer;
-        user-select: none;
+        display: flex; align-items: center; gap: 0.75rem;
+        margin-bottom: 1.25rem; cursor: pointer; user-select: none;
     }
-
-    .toggle input {
-        width: 20px;
-        height: 20px;
-        accent-color: #6366f1;
-        cursor: pointer;
-    }
-
-    .toggle-label {
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
+    .toggle input { width: 20px; height: 20px; accent-color: #6366f1; cursor: pointer; }
+    .toggle-label { font-weight: 600; font-size: 0.95rem; }
     .btn {
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 0.9rem;
+        border: none; border-radius: 8px; cursor: pointer;
+        font-weight: 600; font-size: 0.9rem;
         transition: opacity 0.15s, transform 0.1s;
     }
-
-    .btn:hover:not(:disabled) {
-        opacity: 0.85;
-        transform: translateY(-1px);
-    }
-
-    .btn:active:not(:disabled) {
-        transform: translateY(0);
-    }
-
-    .btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-
+    .btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-all {
-        display: block;
-        width: 100%;
-        padding: 0.85rem;
+        display: block; width: 100%; padding: 0.85rem;
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: white;
-        font-size: 1rem;
-        margin-bottom: 1rem;
+        color: white; font-size: 1rem; margin-bottom: 1rem;
     }
-
     .league-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.5rem; margin-bottom: 1.5rem;
     }
-
-    .btn-league {
-        padding: 0.65rem 0.75rem;
-        background: var(--accent);
-        color: white;
-        font-size: 0.85rem;
-    }
-
-    .status-card {
-        border-radius: 10px;
-        padding: 1rem 1.25rem;
-        margin-bottom: 1rem;
-    }
-
-    .status-card.running {
-        background: #111827;
-        border: 1px solid #374151;
-    }
-
-    .status-card.done {
-        background: #052e16;
-        border: 1px solid #166534;
-        color: #4ade80;
-        font-weight: 600;
-    }
-
+    .btn-league { padding: 0.65rem 0.75rem; background: var(--accent); color: white; font-size: 0.85rem; }
+    .status-card { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .status-card.running { background: #111827; border: 1px solid #374151; }
+    .status-card.done { background: #052e16; border: 1px solid #166534; color: #4ade80; font-weight: 600; }
     .status-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 700;
-        font-size: 1rem;
-        margin-bottom: 0.75rem;
-        color: #a5b4fc;
+        display: flex; align-items: center; gap: 0.5rem;
+        font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; color: #a5b4fc;
     }
-
     .pulse {
-        width: 10px;
-        height: 10px;
-        background: #6366f1;
-        border-radius: 50%;
-        animation: pulse 1.2s infinite;
+        width: 10px; height: 10px; background: #6366f1;
+        border-radius: 50%; animation: pulse 1.2s infinite;
     }
-
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(0.8); }
     }
-
     .status-details {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        font-size: 0.85rem;
-        color: #d1d5db;
-        margin-bottom: 0.75rem;
+        display: flex; flex-direction: column; gap: 0.25rem;
+        font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;
     }
-
-    .label {
-        color: #6b7280;
-        font-size: 0.8rem;
-    }
-
-    .status-counts {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .count {
-        font-weight: 700;
-        font-size: 0.95rem;
-    }
-
+    .label { color: #6b7280; font-size: 0.8rem; }
+    .status-counts { display: flex; gap: 1rem; }
+    .count { font-weight: 700; font-size: 0.95rem; }
     .count.good { color: #4ade80; }
     .count.injury { color: #60a5fa; }
     .count.bad { color: #f87171; }
-
-    .panel {
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        overflow: hidden;
-    }
-
-    .panel summary {
-        padding: 0.75rem 1rem;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 0.9rem;
-        user-select: none;
-    }
-
-    .panel-body {
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 0.75rem 1rem;
-    }
-
-    .error-panel {
-        background: #1c0a0a;
-        border: 1px solid #7f1d1d;
-    }
-
+    .panel { border-radius: 10px; margin-bottom: 1rem; overflow: hidden; }
+    .panel summary { padding: 0.75rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; user-select: none; }
+    .panel-body { max-height: 300px; overflow-y: auto; padding: 0.75rem 1rem; }
+    .error-panel { background: #1c0a0a; border: 1px solid #7f1d1d; }
     .error-panel summary { color: #f87171; }
-
     .error-line {
-        color: #fca5a5;
-        font-size: 0.8rem;
-        padding: 0.3rem 0;
-        border-bottom: 1px solid #2d1111;
-        font-family: monospace;
+        color: #fca5a5; font-size: 0.8rem; padding: 0.3rem 0;
+        border-bottom: 1px solid #2d1111; font-family: monospace;
     }
 </style>
