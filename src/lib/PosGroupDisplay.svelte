@@ -26,13 +26,13 @@
 
     const opponentGroupToDisplay = $derived(getOpponentGroup(group, opponentMode));
 
-    // Get players for each team from the group
+ 
     const teamPlayers = $derived(getPlayersFromGroup(team, group));
     const opponentPlayers = $derived(
         opponentGroupToDisplay ? getPlayersFromGroup(opponentTeam, opponentGroupToDisplay) : []
     );
 
-    // Get the appropriate scores for the group with dilution applied
+ 
     const teamScores = $derived(getGroupScoresWithDilution(team, group, teamPlayers.length));
     const opponentScores = $derived(
         opponentGroupToDisplay 
@@ -40,11 +40,11 @@
             : {}
     );
     
-    // Check if we have players
+
     const hasPlayers = $derived(teamPlayers.length > 0 || opponentPlayers.length > 0);
     const hasBothTeams = $derived(teamPlayers.length > 0 && opponentPlayers.length > 0);
     
-    // Calculate score differences for horizontal bars
+
     const scoreDifferences = $derived(calculateScoreDifferences());
 
     function calculateScoreDifferences() {
@@ -56,14 +56,14 @@
             winner: 'team' | 'opponent' | 'tie' 
         }> = {};
         
-        // Get all score keys from teamScores
+     
         Object.keys(teamScores).forEach(key => {
             const teamValue = teamScores[key] || 0;
             const opponentValue = opponentScores[key] || 0;
             const difference = teamValue - opponentValue;
             const maxPossible = Math.max(teamValue, opponentValue, 1);
             
-            // Calculate percentage for bar width (0-50 scale from center)
+          
             const percentage = Math.min((Math.abs(difference) / maxPossible) * 50, 50);
             
             differences[key] = {
@@ -78,7 +78,7 @@
         return differences;
     }
 
-    // Score labels and colors - adjusted for group scores
+ 
     const scoreConfig: Record<string, { label: string; color: string }> = {
         finishing: { label: 'Finishing', color: '#ef4444' },
         attacking: { label: 'Attacking', color: '#8b5cf6' },
@@ -88,7 +88,7 @@
         keeping: { label: 'Keeping', color: '#f59e0b' },
     };
 
-    // Format group name for display
+  
     function formatGroupName(group: string): string {
         const formatted = group.charAt(0).toUpperCase() + group.slice(1);
         return formatted === 'Keepers' ? 'Goalkeeper' : formatted;
@@ -96,13 +96,10 @@
 </script>
 
 <div class="positional-display-container">
-    <!-- Group Header -->
     <h1 class="group-title">{formatGroupName(group)}</h1>
     
     {#if hasPlayers}
-        <!-- Players Display -->
         <div class="players-section">
-            <!-- Team Players (Left) -->
             {#if teamPlayers.length > 0}
                 <div class="team-side">
                     <div class="players-grid">
@@ -120,7 +117,7 @@
                 </div>
             {/if}
 
-            <!-- Opponent Players (Right) -->
+            
             {#if opponentPlayers.length > 0}
                 <div class="opponent-side">
                     <div class="players-grid">
@@ -140,7 +137,6 @@
         </div>
 
         {#if hasBothTeams}
-            <!-- Comparison chart for both teams -->
             <div class="comparison-chart">
                 <div class="chart-header">
                     <span class="team-label">{team.name}</span>
@@ -154,18 +150,15 @@
                                 <span class="metric-label">{scoreConfig[key].label}</span>
                                 
                                 <div class="bar-container">
-                                    <!-- Team side score -->
                                     <div class="team-score">
                                         {Math.round(data.teamValue)}
                                     </div>
                                     
-                                    <!-- Horizontal bar wrapper -->
                                     <div class="horizontal-bar-wrapper">
                                         <div class="horizontal-bar-background"></div>
                                         <div class="center-line"></div>
                                         
                                         {#if data.winner === 'team'}
-                                            <!-- Bar extends to the left (team winning) -->
                                             <div 
                                                 class="horizontal-bar team-winning"
                                                 style="
@@ -175,7 +168,6 @@
                                                 "
                                             ></div>
                                         {:else if data.winner === 'opponent'}
-                                            <!-- Bar extends to the right (opponent winning) -->
                                             <div 
                                                 class="horizontal-bar opponent-winning"
                                                 style="
@@ -185,7 +177,6 @@
                                                 "
                                             ></div>
                                         {:else}
-                                            <!-- Tie - just show center line -->
                                             <div 
                                                 class="horizontal-bar tie"
                                                 style="
@@ -197,7 +188,7 @@
                                         {/if}
                                     </div>
                                     
-                                    <!-- Opponent side score -->
+
                                     <div class="opponent-score">
                                         {Math.round(data.opponentValue)}
                                     </div>
@@ -208,7 +199,6 @@
                 </div>
             </div>
         {:else if hasPlayers}
-            <!-- Single team display -->
             <div class="single-team-stats">
                 <h3 class="stats-title">
                     {teamPlayers.length > 0 ? team.name : opponentTeam.name} Stats

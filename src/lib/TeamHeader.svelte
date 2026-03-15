@@ -182,7 +182,6 @@
     </div>
 </div>
 
-<!-- Rival Popup -->
 {#if hoveredRival}
     {@const rivalTeam = getRivalTeam(hoveredRival.index)}
     {#if rivalTeam}
@@ -245,7 +244,6 @@
 {/if}
 
 <style>
-    /* All the existing styles remain the same */
     .header-container {
         width: 100%;
         padding: 2rem 1.5rem;
@@ -390,7 +388,6 @@
         color: #4338ca;
     }
 
-    /* Rivals styling */
     .rivals-container {
         display: flex;
         flex-wrap: wrap;

@@ -23,7 +23,6 @@
     // Determine which scores to display based on position
     const isGoalkeeper = $derived(fieldPosition === 'Goalkeeper');
     
-    // Check if we have players
     const hasPlayers = $derived(teamPlayers.length > 0 || opponentPlayers.length > 0);
     const hasBothTeams = $derived(teamPlayers.length > 0 && opponentPlayers.length > 0);
     
@@ -31,13 +30,11 @@
     const teamScores = $derived(calculateTeamScores(teamPlayers));
     const opponentScores = $derived(calculateTeamScores(opponentPlayers));
     
-    // Get maximum value for scaling bar charts
     const maxScore = $derived(Math.max(
         ...Object.values(teamScores),
         ...Object.values(opponentScores)
     ));
 
-    // Calculate score differences for horizontal bars
     const scoreDifferences = $derived(calculateScoreDifferences());
 
     function calculateTeamScores(players: Player[]) {
@@ -57,7 +54,7 @@
                 scores.keeper += player.keeper_score || 0;
             });
 
-            // Apply dilution factor
+           
             scores.total *= dilutionFactor;
             scores.passing *= dilutionFactor;
             scores.keeper *= dilutionFactor;
@@ -82,7 +79,7 @@
                 scores.defensive += player.defensive_score || 0;
             });
 
-            // Apply dilution factor
+          
             scores.total *= dilutionFactor;
             scores.passing *= dilutionFactor;
             scores.finishing *= dilutionFactor;
@@ -112,7 +109,7 @@
             const teamValue = teamScores[key as keyof typeof teamScores];
             const opponentValue = opponentScores[key as keyof typeof opponentScores];
             const difference = teamValue - opponentValue;
-            const maxDiff = Math.max(Math.abs(difference), 1); // Avoid division by zero
+            const maxDiff = Math.max(Math.abs(difference), 1); 
             const maxPossible = Math.max(teamValue, opponentValue, 1);
             
             // Calculate percentage for bar width (0-50 scale from center)
@@ -130,7 +127,7 @@
         return differences;
     }
 
-    // Score labels and colors
+    
     const scoreConfig = {
         total: { label: 'Total', color: '#3b82f6' },
         passing: { label: 'Passing', color: '#10b981' },
@@ -143,11 +140,9 @@
 </script>
 
 <div class="zone-display-container">
-    <!-- Position Header -->
     <h1 class="position-title">{mode === 0 ? fieldPosition : `Zone ${zone}`}</h1>
     
     {#if hasPlayers}
-        <!-- Players Display -->
         <div class="players-section">
             <!-- Team Players (Left) -->
             {#if teamPlayers.length > 0}
@@ -200,18 +195,16 @@
                             <span class="metric-label">{scoreConfig[key].label}</span>
                             
                             <div class="bar-container">
-                                <!-- Team side score -->
                                 <div class="team-score">
                                     {Math.round(data.teamValue)}
                                 </div>
                                 
-                                <!-- Horizontal bar wrapper -->
+    
                                 <div class="horizontal-bar-wrapper">
                                     <div class="horizontal-bar-background"></div>
                                     <div class="center-line"></div>
                                     
                                     {#if data.winner === 'team'}
-                                        <!-- Bar extends to the left (team winning) -->
                                         <div 
                                             class="horizontal-bar team-winning"
                                             style="
@@ -221,7 +214,6 @@
                                             "
                                         ></div>
                                     {:else if data.winner === 'opponent'}
-                                        <!-- Bar extends to the right (opponent winning) -->
                                         <div 
                                             class="horizontal-bar opponent-winning"
                                             style="
@@ -231,7 +223,6 @@
                                             "
                                         ></div>
                                     {:else}
-                                        <!-- Tie - just show center line -->
                                         <div 
                                             class="horizontal-bar tie"
                                             style="
@@ -243,7 +234,7 @@
                                     {/if}
                                 </div>
                                 
-                                <!-- Opponent side score -->
+                              
                                 <div class="opponent-score">
                                     {Math.round(data.opponentValue)}
                                 </div>
@@ -253,7 +244,7 @@
                 </div>
             </div>
         {:else if hasPlayers}
-            <!-- Single team bar chart - compact version -->
+            
             <div class="single-team-chart">
                 <h3 class="chart-title">
                     {teamPlayers.length > 0 ? teamName : opponentName}
@@ -344,7 +335,6 @@
     white-space: nowrap;
 }
 
-/* Single Team Compact Bar Chart */
 .single-team-chart {
     display: flex;
     flex-direction: column;
@@ -409,7 +399,6 @@
     max-width: 45px;
 }
 
-/* Comparison Chart Styles */
 .comparison-chart {
     display: flex;
     flex-direction: column;

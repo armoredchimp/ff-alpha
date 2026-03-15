@@ -15,16 +15,16 @@
         const teamsArray = Object.values(teams).filter(team => team.name !== '');
         const allTeams: Team[] = [...teamsArray, playerTeam];
         
-        // Check if all teams have zero points
+    
         const allZeroPoints = allTeams.every(team => team.points === 0);
         
         return allTeams.sort((a, b) => {
-            // If all teams have zero points, sort alphabetically
+      
             if (allZeroPoints) {
                 return (a.name || '').localeCompare(b.name || '');
             }
             
-            // Otherwise use the regular sorting logic
+        
             if (b.points !== a.points) {
                 return b.points - a.points;
             }
