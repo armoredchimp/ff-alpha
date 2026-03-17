@@ -12,18 +12,21 @@
         createFormationStructure, 
         resetScores, 
         populateLineup, 
+        populateLineupTactical,
         delay, 
         extractPlayerIds,
         calculateTotalScores,
         setSelected,
         dePopulateTeam,
-        getOpponentName
+        getOpponentName,
+        getOpponentTeam
     } from "$lib/utils";
     import type { Team } from "$lib/types/types";
 	
     
     // Key for #key to force formation to re-render and all its child components
     let formationKey = $state<number>(0);
+
     let init = getPlayerInit()
     let uploading = $state<boolean>(false);
     let uploadMessage = $state<string>('');
@@ -88,6 +91,11 @@
         formationKey++
     }
     
+    function autoPickTactical(): void {
+        populateLineupTactical(playerTeam as Team, getOpponentTeam(playerTeam.nextOpponentID))
+        formationKey++
+    }
+
     export async function uploadLeaguePlayers(allTeams): Promise<void> {
     uploading = true;
     uploadMessage = '';
@@ -268,6 +276,7 @@
             </select>
         </div>
         <button onclick={() => autoPick()}>Auto-Pick Team</button>
+        <button onclick={() => autoPickTactical()}>Pick Team (Counter Opposition)</button>
         <h1>{playerTeam.subs.length}</h1>
         <div class="content-wrapper">
             {#key formationKey}
