@@ -7,6 +7,7 @@
     import BasicScoring from "$lib/components/admin/BasicScoring.svelte";
     import NextMatchups from "$lib/components/admin/NextMatchups.svelte";
 	import TeamMatchups from "$lib/components/admin/TeamMatchups.svelte";
+    import RankPlayers from "$lib/components/admin/RankPlayers.svelte";
     import ResetLeague from "$lib/components/admin/ResetLeague.svelte";
 </script>
 
@@ -14,6 +15,7 @@
 <MainPlayerUpdate />
 <Managers />
 <BasicScoring />
+<RankPlayers />
 <div style="margin-top: 5rem;"></div>
 <FetchWeeklyMatches />
 <NextMatchups />

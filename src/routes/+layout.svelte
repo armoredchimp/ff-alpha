@@ -178,47 +178,47 @@
     }
 
 
-    async function getPlayerImages(leagueId, miniDB) {
-        const table = leagueIdConfig[leagueId[0]]
-        try {
-            let { data: players, error } = await supabase
-                .from(table)
-                .select('*')
+    // async function getPlayerImages(leagueId, miniDB) {
+    //     const table = leagueIdConfig[leagueId[0]]
+    //     try {
+    //         let { data: players, error } = await supabase
+    //             .from(table)
+    //             .select('*')
 
-            if (error) {
-                console.error('Error fetching players:', error);
-                return;
-            }
+    //         if (error) {
+    //             console.error('Error fetching players:', error);
+    //             return;
+    //         }
 
-            console.log(`Fetched ${players.length} players.`);
+    //         console.log(`Fetched ${players.length} players.`);
 
-            for (const player of players) {
+    //         for (const player of players) {
 
-                console.log(`Getting image for player: ${player["Player Name"]}`);
+    //             console.log(`Getting image for player: ${player["Player Name"]}`);
 
-                const imageURL = await getPlayerPicture(player["id"])
+    //             const imageURL = await getPlayerPicture(player["id"])
 
-                const { error: upsertError } = await supabase
-                    .from(miniDB)
-                    .upsert({
-                        id: player.id,
-                        image_path: imageURL
-                    }, {
-                        onConflict: 'id'
-                    })
+    //             const { error: upsertError } = await supabase
+    //                 .from(miniDB)
+    //                 .upsert({
+    //                     id: player.id,
+    //                     image_path: imageURL
+    //                 }, {
+    //                     onConflict: 'id'
+    //                 })
 
-                    if (upsertError) {
-                        console.error(`Error upserting image for player ${player["Player Name"]}:`, upsertError);
-                    } else {
-                        console.log(`Successfully updated image_path for ${player["Player Name"]}`);
-                    }
+    //                 if (upsertError) {
+    //                     console.error(`Error upserting image for player ${player["Player Name"]}:`, upsertError);
+    //                 } else {
+    //                     console.log(`Successfully updated image_path for ${player["Player Name"]}`);
+    //                 }
 
-                await delay(400)
-            }
-        } catch (err){
-            console.error(err)
-        }
-    }
+    //             await delay(400)
+    //         }
+    //     } catch (err){
+    //         console.error(err)
+    //     }
+    // }
 
  async function populatePlayerSeasonLog(lastSeason = '2425', currentSeason = '2526') {
     // Hash map to store player IDs with their season information
@@ -1345,23 +1345,6 @@ async function insertPer90s(ninetyTable, id, p90s){
 //End of API to Main Stat DB //
 //////////////////////////////
 
-//////////////////////////////
-//Testing Section ////////////
-    async function testWeightMap(){
-        await fetchAllWeights()
-
-        if(weightsFetched){
-            let { data: player, error } = await supabase
-                    .from('prem_stats_2425')
-                    .select('*')
-                    .limit(1)
-                    .single()
-
-            getDefensiveScore(player, player['Detailed Position'], defenseWeightMap)
-
-        }
-
-        }
 
 ////////////////////////////
 //Player Calculations /////    

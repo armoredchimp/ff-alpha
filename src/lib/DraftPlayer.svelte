@@ -1,6 +1,5 @@
 <script>
     import axios from "axios";
-    import { supabase } from "./client/supabase/supaClient";
     import { draft } from "./stores/draft.svelte";
     import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
     import { delay } from "./utils";
@@ -318,63 +317,21 @@
         });
     }
    
-
-    // async function getPlayerStatsDB(id) {
-    //     try {
-    //         const { data, error } = await supabase
-    //             .from('prem_stats_2425_per90')
-    //             .select('*')
-    //             .eq('id', id)
-    //             .single()
-
-
-    //         if (error) {
-    //             console.error(error)
-    //         }
-
-          
-
-    //         console.log(data)
-    //         const minutes = data.MinutesPlayed
-            
-    //         if (minutes === null){
-    //             console.log('No minutes for player, can not process stats')
-    //             return
-    //         }
-    //         data.forEach(p90Stat => {
-    //             const { stat, value } = p90Stat;
-    //             processStat(stat, value, minutes)
-
-    //         })
-    //         sortStatsByImportance(sortedDefStats)
-    //         sortStatsByImportance(sortedAttStats)
-    //         sortStatsByImportance(sortedKprStats)
-    //         sortStatsByImportance(sortedPassStats)
-    //         sortStatsByImportance(sortedPossStats)
-    //         statted = true
-    //     } catch(error){
-    //         console.error('Unexpected error', error)
-    //     }
-    // }
-
     async function getPlayerRankings(id) {
-        try {
-            const { data, error } = await supabase
-                .from(`${leaguePrefix}_stats_2425_rankings`)
-                .select('*')
-                .eq('id', id)
-                .single()
-            
-            if (error){
-                console.error('Supa error', error)
-                return;
-            }
-            console.log(data)
-            playerRankings = data
-        }catch(err){
-            console.log(`Error retrieving rankings`, err)
+    try {
+        const res = await fetch(`/api/supabase/rankings?id=${id}&leaguePrefix=${leaguePrefix}`);
+        const result = await res.json();
+
+        if (!res.ok) {
+            console.error('Rankings error:', result.error);
+            return;
         }
+
+        playerRankings = result.rankings;
+    } catch (err) {
+        console.error('Error retrieving rankings:', err);
     }
+}
 
     async function getPlayerStats(id) {
         try {
