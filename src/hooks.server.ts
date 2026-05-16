@@ -4,7 +4,7 @@ import { isAuthenticated, hasLeague, getSession } from "$lib/server/auth";
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
 const CORE_URL = 'https://api.sportmonks.com/v3/core';
-const API_TOKEN = import.meta.env.VITE_SPORTSMONK_KEY;
+const API_TOKEN = import.meta.env.SPORTSMONK_KEY;
 
 export const handle: Handle = async ({ event, resolve }) => {
     console.log('=== HOOK CALLED ===');
