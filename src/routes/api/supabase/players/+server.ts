@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabase } from "$lib/client/supabase/supaClient";
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
-import { TABLE_PREFIXES } from '$lib/stores/league.svelte';
+import { TABLE_PREFIXES, getSeasonNum } from '$lib/stores/league.svelte';
 
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
@@ -30,7 +30,11 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         // Build the table name
-        const season = '2425';
+        const season = getSeasonNum();
+        if(Math.abs(season).toString().length !== 4){
+            console.warn(`Incorrect season number`);
+            return;
+        }
         const tableName = `${TABLE_PREFIXES[countriesCode]}_mini_${season}`;
 
         console.log(`Loading players from table: ${tableName} for countries code: ${countriesCode}`);

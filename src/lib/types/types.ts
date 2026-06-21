@@ -10,15 +10,6 @@ export type FormationStructure = {
   };
 };
 
-// lastResult: {
-//     result: '',
-//     goalsFor: 0,
-//     goalsAgainst: 0,
-//     chancePoints: 0,
-//     chancePointsOpp: 0,
-//     possWins: 0,
-//     possWinsOpp: 0
-// },
 
 export type Team = {
   name: string;
@@ -121,6 +112,13 @@ export type Player = {
   ints_per90: number;
   fouls_per90: number;
   created_at: string;
+  upcomingFixtures?: {
+    fixture_id: number;
+    team_id: number;
+    opponent_team_id: number;
+    is_home: boolean;
+    kickoff: string;
+  }[];
   injured: {
     category: string;
     start_date: Date;

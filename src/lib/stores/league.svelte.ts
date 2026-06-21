@@ -1,5 +1,7 @@
 import type { Schedule } from "$lib/types/types";
 
+const CURRENT_SEASON_NUM = 2425
+
 export const TABLE_PREFIXES: Record<number, string> = {
     1: 'prem',     // Premier League
     2: 'laliga',   // La Liga
@@ -15,6 +17,14 @@ export const SEASON_ID_LOOKUP: Record<number, number> = {
     3: 23744,
     4: 23643,
     5: 23746
+}
+
+export const LEAGUE_ID_LOOKUP: Record<number, number> = {
+    1: 8,
+    2: 564,
+    3: 82,
+    4: 301,
+    5: 384
 }
 
 export const LEAGUE_MAX_GAMES = {
@@ -37,8 +47,9 @@ interface LeagueState {
     tokenExpiresAt: string | null;
     loading: boolean;
     error: string | null;
-    schedule: Schedule;
-    seasonID: number;
+    schedule: Schedule | null;
+    seasonID: number | null;
+    seasonNum: number;
 }
 
 interface LeagueStatusData {
@@ -60,7 +71,8 @@ let leagueState = $state<LeagueState>({
     loading: false,
     error: null,
     schedule: null,
-    seasonID: null
+    seasonID: null,
+    seasonNum: CURRENT_SEASON_NUM
 });
 
 
@@ -81,18 +93,24 @@ export function getCountry(): number {
     return leagueState.countryCode;
 }
 
-export function getSeasonID(): number {
+export function getSeasonID(): number | null {
     return leagueState.seasonID;
 }
 
 export function setMatchweek(currentMatchweek: number) {
     leagueState.currentMatchweek = currentMatchweek
 }
+
 export function getMatchweek(): number {
     return leagueState.currentMatchweek;
 }
+
 export function setLeagueSchedule(schedule: Schedule): void {
     leagueState.schedule = schedule
+}
+
+export function getSeasonNum(): number {
+    return leagueState.seasonNum;
 }
 
 export function setLeagueStatus(data: LeagueStatusData): void {
