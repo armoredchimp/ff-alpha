@@ -6,12 +6,13 @@
     import { populateTeamIdsToName } from '$lib/utils/team';
     import { setLeagueStatus, getLeagueState, setCountry, getSeasonID, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
-    import { loadTeamsData } from '$lib/loading/teams/loadTeams.js'
-    import { hydratePlayers } from '$lib/loading/players/hydratePlayers.js'
-    import { hydrateTeams } from '$lib/loading/teams/hydrateTeams.js'
-    import { loadPlayersData } from '$lib/loading/players/loadPlayers.js'
-    import { loadManagersData } from '$lib/loading/managers/loadManagers.js'
-    import { hydrateManagers } from '$lib/loading/managers/hydrateManagers.js'
+    import { loadTeamsData } from '$lib/loading/teams/loadTeams'
+    import { hydratePlayers } from '$lib/loading/players/hydratePlayers'
+    import { hydrateTeams } from '$lib/loading/teams/hydrateTeams'
+    import { loadPlayersData } from '$lib/loading/players/loadPlayers'
+    import { loadManagersData } from '$lib/loading/managers/loadManagers'
+    import { loadClubsData } from '$lib/loading/clubs/loadClubs'
+    import { hydrateManagers } from '$lib/loading/managers/hydrateManagers'
     import { delay } from '../lib/utils';
     import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     import { loadMatchResults } from '$lib/loading/results/hydrateResults';
@@ -135,6 +136,7 @@ async function signUserIn(values) {
                             await Promise.all([
                                 loadPlayersData(countriesCode), 
                                 loadManagersData(countriesCode)
+                                loadClubsData()
                             ]);
                             
                             await handlePostLeagueLoad(leagueData);
