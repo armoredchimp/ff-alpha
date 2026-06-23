@@ -20,6 +20,7 @@ export type Team = {
   defenders: (Player | number)[];
   keepers: (Player | number)[];
   selected: FormationStructure;
+  favored: any;
   subs: (Player | number)[];
   unused: (Player | number)[];
   playerCount: number;

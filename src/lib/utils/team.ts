@@ -1,5 +1,5 @@
 import { teams, playerTeam } from "$lib/stores/teams.svelte";
-import { teamIdsToName } from "$lib/stores/generic.svelte";
+import { teamIdsToName, playersByID } from "$lib/stores/generic.svelte";
 import { type Team, type Player } from "$lib/types/types";
 
 
@@ -129,6 +129,33 @@ export function recalculateSectionScores(team: Team): void {
             });
         }
     });
+}
+
+export function getFavoredCandidates(): Player[] {
+    const ids = new Set<number>();
+
+    // walk selected formation groups (ids live in cfg.players)
+    for (const [group, positions] of Object.entries(playerTeam.selected)) {
+        for (const cfg of Object.values(positions as any)) {
+            for (const pid of (cfg as any).players ?? []) {
+                if (pid != null) ids.add(typeof pid === 'number' ? pid : pid.id);
+            }
+        }
+    }
+    // walk subs (may be ids or objects depending on hydration state)
+    for (const s of playerTeam.subs ?? []) {
+        if (s == null) continue;
+        ids.add(typeof s === 'number' ? s : (s as Player).id);
+    }
+
+    const candidates: Player[] = [];
+    for (const id of ids) {
+        const p = playersByID[id];
+        if (p && p.upcomingFixtures && p.upcomingFixtures.length > 1) {
+            candidates.push(p);
+        }
+    }
+    return candidates;
 }
 
 export function getPlayersFromGroup(team: Team, group: string): Player[] {

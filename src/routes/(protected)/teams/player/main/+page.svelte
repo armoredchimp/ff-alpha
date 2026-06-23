@@ -2,8 +2,9 @@
     import { playerTeam, teams } from "$lib/stores/teams.svelte";
     import { getPlayerInit, setPlayerInit } from "$lib/stores/generic.svelte";
     import Formation from "$lib/Formation.svelte";
-    import { formationConfig } from "$lib/data/formationConfig";
+    import { formationConfig } from "$lib/data/formationConfig.js";
     import SelectedList from "$lib/SelectedList.svelte";
+    import FavoredModal from "$lib/FavoredModal.svelte";   
     import TeamHeader from "$lib/TeamHeader.svelte";
     import TeamScores from "$lib/TeamScores.svelte";
     import { getLeagueState } from "$lib/stores/league.svelte";
@@ -19,9 +20,11 @@
         setSelected,
         dePopulateTeam,
         getOpponentName,
-        getOpponentTeam
+        getOpponentTeam,
+        getFavoredCandidates
     } from "$lib/utils";
-    import type { Team } from "$lib/types/types";
+    import type { Team, Player } from "$lib/types/types";
+    
 	
     
     // Key for #key to force formation to re-render and all its child components
@@ -30,6 +33,8 @@
     let init = getPlayerInit()
     let uploading = $state<boolean>(false);
     let uploadMessage = $state<string>('');
+    let showFavoredModal = $state<boolean>(false);
+    let favoredCandidates = $state<Player[]>([]);
 
     onMount(() => {
         calculateTotalScores(playerTeam as Team)
@@ -97,144 +102,167 @@
     }
 
     export async function uploadLeaguePlayers(allTeams): Promise<void> {
-    uploading = true;
-    uploadMessage = '';
+        uploading = true;
+        uploadMessage = '';
 
-    const playerToId = (playerArray: any) => {
-        if (!Array.isArray(playerArray)) return [];
-        return playerArray.map(player => player.id);
-    };
-    
-    try {
-        // Prepare team players data identical to draft
-        const teamPlayersData = [];
-        const teamFormations = []; // Add formations array
+        const playerToId = (playerArray: any) => {
+            if (!Array.isArray(playerArray)) return [];
+            return playerArray.map(player => player.id);
+        };
         
-        // Add player team
-        console.log('Processing player team...');
-        console.log('playerTeam.dbId:', playerTeam.dbId);
-        
-        if (playerTeam.dbId) {
-            // Extract IDs for selected, subs, unused
-            const lightweightPlayerTeam = extractPlayerIds(playerTeam);
+        try {
+            const teamPlayersData = [];
+            const teamFormations = []; 
             
-            const playerTeamData = {
-                team_id: playerTeam.dbId,
-                attackers: playerToId(playerTeam.attackers) || [],
-                midfielders: playerToId(playerTeam.midfielders) || [],
-                defenders: playerToId(playerTeam.defenders) || [],
-                keepers: playerToId(playerTeam.keepers) || [],
-                selected: lightweightPlayerTeam.selected,
-                subs: lightweightPlayerTeam.subs,
-                unused: lightweightPlayerTeam.unused
-            };
-            console.log('Player team data prepared:', playerTeamData);
-            teamPlayersData.push(playerTeamData);
+            console.log('Processing player team...');
+            console.log('playerTeam.dbId:', playerTeam.dbId);
             
-            // Add formation data
-            teamFormations.push({
-                team_id: playerTeam.dbId,
-                formation: playerTeam.formation
-            });
-        } else {
-            console.error('Player team missing database ID');
-        }
-        
-        const leagueState = getLeagueState()
-
-        if(!leagueState || !leagueState.numOfTeams){
-            console.error('League state error')
-            return;
-        }
-
-        if(allTeams){
-            console.log('Processing AI teams...');
-            setSelected(teams)
-            for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
-                const teamKey = `team${i}` as keyof typeof teams;
-                const team = teams[teamKey];
+            if (playerTeam.dbId) {
+                // Extract IDs for selected, subs, unused
+                const lightweightPlayerTeam = extractPlayerIds(playerTeam);
                 
-                if (team && team.dbId && team.dbId > 0) {
-                    console.log(`Processing team ${i}...`);
+                const playerTeamData = {
+                    team_id: playerTeam.dbId,
+                    attackers: playerToId(playerTeam.attackers) || [],
+                    midfielders: playerToId(playerTeam.midfielders) || [],
+                    defenders: playerToId(playerTeam.defenders) || [],
+                    keepers: playerToId(playerTeam.keepers) || [],
+                    selected: lightweightPlayerTeam.selected,
+                    subs: lightweightPlayerTeam.subs,
+                    unused: lightweightPlayerTeam.unused,
+                    favored: playerTeam.favored ?? {}
+                };
+                console.log('Player team data prepared:', playerTeamData);
+                teamPlayersData.push(playerTeamData);
+                
+               
+                teamFormations.push({
+                    team_id: playerTeam.dbId,
+                    formation: playerTeam.formation
+                });
+            } else {
+                console.error('Player team missing database ID');
+            }
+            
+            const leagueState = getLeagueState()
+
+            if(!leagueState || !leagueState.numOfTeams){
+                console.error('League state error')
+                return;
+            }
+
+            if(allTeams){
+                console.log('Processing AI teams...');
+                setSelected(teams)
+                for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
+                    const teamKey = `team${i}` as keyof typeof teams;
+                    const team = teams[teamKey];
                     
-                    // Extract IDs for selected, subs, unused
-                    const lightweightTeam = extractPlayerIds(team);
+                    if (team && team.dbId && team.dbId > 0) {
+                        console.log(`Processing team ${i}...`);
+                        
+                        // Extract IDs for selected, subs, unused
+                        const lightweightTeam = extractPlayerIds(team);
+                        
+                        const aiTeamData = {
+                            team_id: team.dbId,
+                            attackers: playerToId(team.attackers) || [],
+                            midfielders: playerToId(team.midfielders) || [],
+                            defenders: playerToId(team.defenders) || [],
+                            keepers: playerToId(team.keepers) || [],
+                            selected: lightweightTeam.selected,
+                            subs: lightweightTeam.subs,
+                            unused: lightweightTeam.unused
+                        };
+                        console.log(`Team ${i} data prepared:`, aiTeamData);
+                        teamPlayersData.push(aiTeamData);
+                        
                     
-                    const aiTeamData = {
-                        team_id: team.dbId,
-                        attackers: playerToId(team.attackers) || [],
-                        midfielders: playerToId(team.midfielders) || [],
-                        defenders: playerToId(team.defenders) || [],
-                        keepers: playerToId(team.keepers) || [],
-                        selected: lightweightTeam.selected,
-                        subs: lightweightTeam.subs,
-                        unused: lightweightTeam.unused
-                    };
-                    console.log(`Team ${i} data prepared:`, aiTeamData);
-                    teamPlayersData.push(aiTeamData);
-                    
-                    // Add formation data
-                    teamFormations.push({
-                        team_id: team.dbId,
-                        formation: team.formation
-                    });
+                        teamFormations.push({
+                            team_id: team.dbId,
+                            formation: team.formation
+                        });
+                    }
                 }
             }
+            
+            console.log('Total teams to upload:', teamPlayersData.length);
+            
+            if (teamPlayersData.length === 0) {
+                uploadMessage = '✗ No teams with valid data to upload';
+                return;
+            }
+            
+        
+            const uploadFormData = new FormData();
+        
+            uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
+            uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
+            
+            
+            uploadFormData.append('isPartialUpdate', (!allTeams).toString());
+
+            console.log('Calling /api/supabase/player_upload...');
+            console.log('Is partial update:', !allTeams);
+            
+            const response = await fetch('/api/supabase/player_upload', {
+                method: 'POST',
+                body: uploadFormData
+            });
+            
+            console.log('Response status:', response.status);
+            const result = await response.json();
+            console.log('Result:', result);
+            
+            if (response.ok && result.success) {
+                uploadMessage = `✓ Successfully uploaded ${teamPlayersData.length} team${teamPlayersData.length > 1 ? 's' : ''}`;
+                console.log('Upload successful');
+            } else {
+                uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
+                console.error('Upload failed:', result);
+            }
+        } catch (error) {
+            uploadMessage = '✗ Network error during upload';
+            console.error('Upload error:', error);
+        } finally {
+            uploading = false;
+            setTimeout(() => {
+                uploadMessage = '';
+            }, 5000);
         }
-        
-        console.log('Total teams to upload:', teamPlayersData.length);
-        
-        if (teamPlayersData.length === 0) {
-            uploadMessage = '✗ No teams with valid data to upload';
+    }
+
+    // Modal confirm → stash favored on playerTeam, then run the real upload
+    function onFavoredConfirm(favored: Record<number, number>): void {
+        playerTeam.favored = favored;       // the new Team field you added
+        showFavoredModal = false;
+        favoredCandidates = [];
+        uploadLeaguePlayers(false);
+    }
+
+    function onFavoredCancel(): void {
+        showFavoredModal = false;
+        favoredCandidates = [];
+        // upload aborted — user backed out
+    }
+
+    function handlePlayerUpload(): void {
+        const candidates = getFavoredCandidates();
+        if (candidates.length === 0) {
+            // no multi-fixture players — upload straight away, no favored map
+            uploadLeaguePlayers(false);
             return;
         }
-        
-        // Upload team players using FormData exactly like draft
-        const uploadFormData = new FormData();
-    
-        uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
-        uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
-        
-        // ADD THIS: Flag to indicate if this is a partial update (only player team)
-        uploadFormData.append('isPartialUpdate', (!allTeams).toString());
-
-        console.log('Calling /api/supabase/player_upload...');
-        console.log('Is partial update:', !allTeams);
-        
-        const response = await fetch('/api/supabase/player_upload', {
-            method: 'POST',
-            body: uploadFormData
-        });
-        
-        console.log('Response status:', response.status);
-        const result = await response.json();
-        console.log('Result:', result);
-        
-        if (response.ok && result.success) {
-            uploadMessage = `✓ Successfully uploaded ${teamPlayersData.length} team${teamPlayersData.length > 1 ? 's' : ''}`;
-            console.log('Upload successful');
-        } else {
-            uploadMessage = `✗ ${result.error || 'Failed to upload league players'}`;
-            console.error('Upload failed:', result);
-        }
-    } catch (error) {
-        uploadMessage = '✗ Network error during upload';
-        console.error('Upload error:', error);
-    } finally {
-        uploading = false;
-        // Clear message after 5 seconds
-        setTimeout(() => {
-            uploadMessage = '';
-        }, 5000);
+        favoredCandidates = candidates;
+        showFavoredModal = true;
     }
-}
 </script>
 
 <div class="page-container">
     <div class="top-buttons">
         <button><a href="/teams/player/matchup">Matchup</a></button>
-        <button 
-            onclick={() => uploadLeaguePlayers(false)}
+        <button
+            onclick={handlePlayerUpload}
             disabled={uploading}
             class="upload-button"
         >
@@ -285,6 +313,13 @@
             {/key}
         </div>
     </div>
+    {#if showFavoredModal}
+        <FavoredModal
+            players={favoredCandidates}
+            onConfirm={onFavoredConfirm}
+            onCancel={onFavoredCancel}
+        />
+    {/if}
 </div>
 
 <style>

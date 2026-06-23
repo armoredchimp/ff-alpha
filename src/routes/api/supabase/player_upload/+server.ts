@@ -34,7 +34,8 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
             keepers: tp.keepers,
             selected: tp.selected,
             subs: tp.subs,
-            unused: tp.unused
+            unused: tp.unused,
+            favored: tp.favored ?? {}
         }));
        
         console.log('Team players with IDs only:', JSON.stringify(teamPlayersWithIds, null, 2));
