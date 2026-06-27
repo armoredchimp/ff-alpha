@@ -8,7 +8,6 @@
   import type { Team } from '$lib/types/types';
   import type { PageData } from './$types';
 	import { calculateTotalScores, recalculateSectionScores } from "$lib/utils/team";
-	import { teamIdsToName } from "$lib/stores/generic.svelte";
 
   let { data }: { data: PageData & { team: Team } } = $props();
     

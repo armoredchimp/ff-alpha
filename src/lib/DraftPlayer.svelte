@@ -2,15 +2,11 @@
     import axios from "axios";
     import { draft } from "./stores/draft.svelte";
     import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
-    import { delay } from "./utils";
+    import { delay, calculatePer90, condenseString } from "./utils";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap, finishingWeightMap, finishingImpMap } from "./stores/generic.svelte";
-    import Page from "../routes/+page.svelte";
-    import { error } from "@sveltejs/kit";
-	import PlayerDraftTeam from "./PlayerDraftTeam.svelte";
-	import { get } from "svelte/store";
 	import { onMount } from "svelte";
 
     let {
@@ -164,26 +160,7 @@
             // getPlayerStatsDB(player.id)
         }
     }
-
-    function calculateAge(date_of_birth) {
-        const dob = new Date(date_of_birth);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const monthDifference = today.getMonth() - dob.getMonth();
-        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
-            age--;
-        }
-        return age;
-    }
-
-    function condenseString(str) {
-        return str.replace(/\s/g, '');
-    }
-
-    function calculatePer90(statValue, minutes) {
-        return minutes > 0 ? ((statValue / minutes) * 90).toFixed(2) : 0;
-    }
-
+  
     function sortStatsByImportance(statArray) {
         statArray.sort((a, b) => Math.abs(b.importanceValue) - Math.abs(a.importanceValue));
         // console.log(`stat array`, statArray);

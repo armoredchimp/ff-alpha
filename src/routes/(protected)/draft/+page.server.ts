@@ -108,14 +108,6 @@ export const actions: Actions = {
 
             const teamPlayers = JSON.parse(teamPlayersJson);
             
-            // console.log('Parsed teamPlayers:', teamPlayers);
-            
-            // Helper function to extract player IDs from player objects
-            // const extractPlayerIds = (playerArray) => {
-            //     if (!Array.isArray(playerArray)) return [];
-            //     return playerArray.map(player => player.id); 
-            // };
-            
             // Convert player objects to ID arrays and add league_id
             const teamPlayersWithIds = teamPlayers.map(tp => ({
                 league_id: leagueId, 
