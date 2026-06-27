@@ -13,5 +13,9 @@ export class Draft {
     availablePlayers: any[] = $state([]);
 }
 
+export const traitsEffectsCache = new Map()
+export const doubleNameFirsts = new Map(); // Tracks how many times a first part is used in double names
+export const singleNameFirsts = new Map(); // Tracks first parts used as single names
+export const usedSecondParts = new Set()
 // Create and export a single instance
 export const draft = new Draft();

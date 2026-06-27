@@ -1,7 +1,4 @@
-const doubleNameFirsts = new Map(); // Tracks how many times a first part is used in double names
-const singleNameFirsts = new Map(); // Tracks first parts used as single names
-const usedSecondParts = new Set()
-
+import { traitsEffectsCache, doubleNameFirsts, singleNameFirsts, usedSecondParts } from "$lib/stores/draft.svelte";
 
 export function generateClubName(firstParts, commonNames, secondParts) {
     const isDoubleName = Math.random() < 0.8; // 80% chance for double name

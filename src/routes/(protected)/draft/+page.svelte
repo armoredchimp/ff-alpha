@@ -12,8 +12,7 @@
         createFormationStructure,
         populateLineup,
         getRandomItem, 
-        extractPlayerIds,
-        getTraitEffects, 
+        extractPlayerIds, 
         getPlayerValue,
         getPositionalNeeds
     } from '$lib/utils';
