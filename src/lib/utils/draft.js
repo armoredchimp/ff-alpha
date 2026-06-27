@@ -1,4 +1,5 @@
 import { traitsEffectsCache, doubleNameFirsts, singleNameFirsts, usedSecondParts } from "$lib/stores/draft.svelte";
+import { formationConfig } from "$lib/data/formationConfig";
 
 export function generateClubName(firstParts, commonNames, secondParts) {
     const isDoubleName = Math.random() < 0.8; // 80% chance for double name
@@ -174,8 +175,8 @@ export function generateClubTraits() {
 
 export const getTraitEffects = (traits = []) => {
         const traitsKey = JSON.stringify([...traits].sort());
-        if (traitEffectsCache.has(traitsKey)) {
-            return traitEffectsCache.get(traitsKey);
+        if (traitsEffectsCache.has(traitsKey)) {
+            return traitsEffectsCache.get(traitsKey);
         }
 
         const traitSet = new Set(traits);
@@ -192,7 +193,7 @@ export const getTraitEffects = (traits = []) => {
             setPiece: traitSet.has('Set Piece Specialists'),
         };
 
-        traitEffectsCache.set(traitsKey, effects);
+        traitsEffectsCache.set(traitsKey, effects);
         return effects;
 };
 

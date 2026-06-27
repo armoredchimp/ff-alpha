@@ -19,13 +19,12 @@
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
     import { draft } from '$lib/stores/draft.svelte';
     import { loadPlayersData } from '$lib/loading/players/loadPlayers';
-    import { formationConfig } from '$lib/data/formationConfig';
     import DraftPlayer from '$lib/DraftPlayer.svelte';
     import DraftTicker from '$lib/DraftTicker.svelte';
     import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
     import DraftTeam from '$lib/DraftTeam.svelte';
     import { managers } from "$lib/stores/generic.svelte";
-    import { getLeagueState, TABLE_PREFIXES, setLeagueId, getCountry } from '$lib/stores/league.svelte';
+    import { getLeagueState, TABLE_PREFIXES } from '$lib/stores/league.svelte';
 
 
     // Props
@@ -46,8 +45,6 @@
     let secondParts = $state([]);
     let commonNames = $state([]);
     let leagueState = $state()
-    // Caching
-    const traitEffectsCache = new Map();
 
     // Lifecycle
     onMount(async () => {
