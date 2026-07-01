@@ -135,7 +135,7 @@ async function signUserIn(values) {
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
                                 loadPlayersData(countriesCode), 
-                                loadManagersData(countriesCode)
+                                loadManagersData(countriesCode),
                                 loadClubsData()
                             ]);
                             
