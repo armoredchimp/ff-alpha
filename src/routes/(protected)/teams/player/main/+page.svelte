@@ -17,7 +17,6 @@
         delay, 
         extractPlayerIds,
         calculateTotalScores,
-        setSelected,
         dePopulateTeam,
         getOpponentName,
         getOpponentTeam,
@@ -49,7 +48,7 @@
             }
         }
         
-        console.log(playerTeam)
+    
        
         // Listen for player swap events from FormationPlayer components
         const handlePlayerSwap = (): void => {
@@ -101,21 +100,21 @@
         formationKey++
     }
 
-    export async function uploadLeaguePlayers(allTeams): Promise<void> {
+    export async function uploadLeaguePlayers(): Promise<void> {
         uploading = true;
         uploadMessage = '';
 
-        const playerToId = (playerArray: any) => {
-            if (!Array.isArray(playerArray)) return [];
-            return playerArray.map(player => player.id);
-        };
+        // const playerToId = (playerArray: any) => {
+        //     if (!Array.isArray(playerArray)) return [];
+        //     return playerArray.map(player => player.id);
+        // };
         
         try {
             const teamPlayersData = [];
             const teamFormations = []; 
             
             console.log('Processing player team...');
-            console.log('playerTeam.dbId:', playerTeam.dbId);
+       
             
             if (playerTeam.dbId) {
                 // Extract IDs for selected, subs, unused
@@ -123,16 +122,12 @@
                 
                 const playerTeamData = {
                     team_id: playerTeam.dbId,
-                    attackers: playerToId(playerTeam.attackers) || [],
-                    midfielders: playerToId(playerTeam.midfielders) || [],
-                    defenders: playerToId(playerTeam.defenders) || [],
-                    keepers: playerToId(playerTeam.keepers) || [],
                     selected: lightweightPlayerTeam.selected,
                     subs: lightweightPlayerTeam.subs,
                     unused: lightweightPlayerTeam.unused,
                     favored: playerTeam.favored ?? {}
                 };
-                console.log('Player team data prepared:', playerTeamData);
+        
                 teamPlayersData.push(playerTeamData);
                 
                
@@ -151,42 +146,6 @@
                 return;
             }
 
-            if(allTeams){
-                console.log('Processing AI teams...');
-                setSelected(teams)
-                for (let i = 1; i <= leagueState.numOfTeams -1; i++) {  
-                    const teamKey = `team${i}` as keyof typeof teams;
-                    const team = teams[teamKey];
-                    
-                    if (team && team.dbId && team.dbId > 0) {
-                        console.log(`Processing team ${i}...`);
-                        
-                        // Extract IDs for selected, subs, unused
-                        const lightweightTeam = extractPlayerIds(team);
-                        
-                        const aiTeamData = {
-                            team_id: team.dbId,
-                            attackers: playerToId(team.attackers) || [],
-                            midfielders: playerToId(team.midfielders) || [],
-                            defenders: playerToId(team.defenders) || [],
-                            keepers: playerToId(team.keepers) || [],
-                            selected: lightweightTeam.selected,
-                            subs: lightweightTeam.subs,
-                            unused: lightweightTeam.unused
-                        };
-                        console.log(`Team ${i} data prepared:`, aiTeamData);
-                        teamPlayersData.push(aiTeamData);
-                        
-                    
-                        teamFormations.push({
-                            team_id: team.dbId,
-                            formation: team.formation
-                        });
-                    }
-                }
-            }
-            
-            console.log('Total teams to upload:', teamPlayersData.length);
             
             if (teamPlayersData.length === 0) {
                 uploadMessage = '✗ No teams with valid data to upload';
@@ -199,11 +158,8 @@
             uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
             uploadFormData.append('teamFormations', JSON.stringify(teamFormations));
             
-            
-            uploadFormData.append('isPartialUpdate', (!allTeams).toString());
-
             console.log('Calling /api/supabase/player_upload...');
-            console.log('Is partial update:', !allTeams);
+        
             
             const response = await fetch('/api/supabase/player_upload', {
                 method: 'POST',
@@ -237,7 +193,7 @@
         playerTeam.favored = favored;       // the new Team field you added
         showFavoredModal = false;
         favoredCandidates = [];
-        uploadLeaguePlayers(false);
+        uploadLeaguePlayers();
     }
 
     function onFavoredCancel(): void {
@@ -250,7 +206,7 @@
         const candidates = getFavoredCandidates();
         if (candidates.length === 0) {
             // no multi-fixture players — upload straight away, no favored map
-            uploadLeaguePlayers(false);
+            uploadLeaguePlayers();
             return;
         }
         favoredCandidates = candidates;
@@ -268,13 +224,7 @@
         >
             {uploading ? 'Uploading...' : 'Upload Player Team Players'}
         </button>
-        <button 
-            onclick={() => uploadLeaguePlayers(true)}
-            disabled={uploading}
-            class="upload-button"
-        >
-            {uploading ? 'Uploading...' : 'Upload League Players'}
-        </button>
+      
         {#if uploadMessage}
             <span class="upload-message" class:success={uploadMessage.startsWith('✓')}>
                 {uploadMessage}
