@@ -1,11 +1,12 @@
 <script>
     import axios from "axios";
     import { draft } from "./stores/draft.svelte";
-    import { getCountry, TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./stores/league.svelte";
+    import { getCountry } from "./stores/league.svelte";
     import { delay, calculatePer90, condenseString } from "./utils";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
+    import { TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./data/leagueConstants";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap, finishingWeightMap, finishingImpMap } from "./stores/generic.svelte";
 	import { onMount } from "svelte";
 

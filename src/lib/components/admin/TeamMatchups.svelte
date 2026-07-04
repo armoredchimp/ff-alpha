@@ -1,6 +1,6 @@
 <script>
   import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
-  import { TABLE_PREFIXES } from "$lib/stores/league.svelte";
+  import { TABLE_PREFIXES } from "$lib/data/leagueConstants";
   import Simulator from "./Simulator.svelte";
 
   let isProcessing = $state(false);

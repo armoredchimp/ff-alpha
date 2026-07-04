@@ -1,7 +1,7 @@
 <script>
     import { supabase } from "$lib/client/supabase/supaClient";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
-    import { TABLE_PREFIXES, LEAGUE_MAX_GAMES } from "$lib/stores/league.svelte";
+    import { TABLE_PREFIXES, LEAGUE_MAX_GAMES } from "$lib/data/leagueConstants";
     import { onMount } from 'svelte';
     
     let weightsFetched = false;
