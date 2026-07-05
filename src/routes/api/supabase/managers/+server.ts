@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabase } from "$lib/client/supabase/supaClient";
 import { isAuthenticated } from '$lib/server/auth';
-import { TABLE_PREFIXES } from '$lib/stores/league.svelte';
+import { TABLE_PREFIXES } from '$lib/data/leagueConstants';
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
     // Check authentication

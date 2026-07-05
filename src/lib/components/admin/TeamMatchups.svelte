@@ -1,6 +1,6 @@
 <script>
   import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
-  import { TABLE_PREFIXES } from "$lib/stores/league.svelte";
+  import { TABLE_PREFIXES } from "$lib/data/leagueConstants";
   import Simulator from "./Simulator.svelte";
 
   let isProcessing = $state(false);
@@ -34,7 +34,7 @@
   async function loadMatchweeks() {
     const { data, error } = await supabase
         .from('league_info_reference')
-        .select('country_code, current_matchweek')
+        .select('countries_code, current_matchweek')
     
     if (error) {
         console.error('Error fetching matchweeks:', error);
@@ -42,7 +42,7 @@
     }
     
     data.forEach(row => {
-        matchweeksByCountry.set(row.country_code, row.current_matchweek);
+        matchweeksByCountry.set(row.countries_code, row.current_matchweek);
     });
     
     console.log('Loaded matchweeks:', matchweeksByCountry);
@@ -239,12 +239,12 @@
       let leagueCount = 0;
 
       for (const [leagueId, leagueMatchups] of matchupsByLeague) {
-          const countryCode = leagueCountries.get(leagueId);
-          if (countryCode && !loadedCountryCodes.has(countryCode)) {
-              statusMessage = `Loading players for country code ${countryCode}...`;
-              await loadPlayers(countryCode);
-              loadedCountryCodes.add(countryCode);
-              console.log(`Loaded players for country code ${countryCode}`);
+          const countriesCode = leagueCountries.get(leagueId);
+          if (countriesCode && !loadedCountryCodes.has(countriesCode)) {
+              statusMessage = `Loading players for country code ${countriesCode}...`;
+              await loadPlayers(countriesCode);
+              loadedCountryCodes.add(countriesCode);
+              console.log(`Loaded players for country code ${countriesCode}`);
           }
       }
 
@@ -255,11 +255,11 @@
         statusMessage = `Processing League ${leagueId} (${leagueCount}/${matchupsByLeague.size}) - ${leagueMatchups.length} matchups...`;
         
         // Get country code for this league and load players if needed
-        const countryCode = leagueCountries.get(leagueId);
-        if (countryCode && !loadedCountryCodes.has(countryCode)) {
-            await loadPlayers(countryCode);
-            loadedCountryCodes.add(countryCode);
-            console.log(`Loaded players for country code ${countryCode}`);
+        const countriesCode = leagueCountries.get(leagueId);
+        if (countriesCode && !loadedCountryCodes.has(countriesCode)) {
+            await loadPlayers(countriesCode);
+            loadedCountryCodes.add(countriesCode);
+            console.log(`Loaded players for country code ${countriesCode}`);
         }
 
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -293,11 +293,11 @@
     const { leagueId, matchResults } = leagueResult;
     const season = '2526'; 
     
-    const countryCode = leagueCountries.get(leagueId)
-    if(!countryCode){
+    const countriesCode = leagueCountries.get(leagueId)
+    if(!countriesCode){
       throw new Error('Failed to retrieve country code')
     }
-    const gameweek = matchweeksByCountry.get(countryCode) 
+    const gameweek = matchweeksByCountry.get(countriesCode) 
     if(!gameweek){
       throw new Error('Failed to retrieve game week')
     }

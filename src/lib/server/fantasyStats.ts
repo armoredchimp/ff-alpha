@@ -1,4 +1,4 @@
-import { supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabaseScaling } from "$lib/client/supabase/supaClient";
 
 export async function getFantasyStats(leagueId: string, playerId: string) {
     const { data, error } = await supabaseScaling

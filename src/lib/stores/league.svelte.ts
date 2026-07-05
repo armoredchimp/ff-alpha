@@ -1,46 +1,12 @@
 import type { Schedule } from "$lib/types/types";
-
-const CURRENT_SEASON_NUM = 2425
-
-export const TABLE_PREFIXES: Record<number, string> = {
-    1: 'prem',     // Premier League
-    2: 'laliga',   // La Liga
-    3: 'bundes',    // Bundesliga
-    4: 'ligue1',   // Ligue 1
-    5: 'seriea'    // Serie A
-};
-
-//THIS IS LAST SEASON (24/25) VALUES, STILL IN PLACE SO NOTHING BREAKS
-export const SEASON_ID_LOOKUP: Record<number, number> = {
-    1: 23614,
-    2: 23621,
-    3: 23744,
-    4: 23643,
-    5: 23746
-}
-
-export const LEAGUE_ID_LOOKUP: Record<number, number> = {
-    1: 8,
-    2: 564,
-    3: 82,
-    4: 301,
-    5: 384
-}
-
-export const LEAGUE_MAX_GAMES = {
-    prem: 38,
-    laliga: 38,
-    bundes: 34,
-    seriea: 38,
-    ligue1: 34
-};
+import { CURRENT_SEASON, SEASON_ID_LOOKUP } from "$lib/data/leagueConstants";
 
 
 interface LeagueState {
     hasLeague: boolean;
     leagueId: string | null;
     canCreateLeague: boolean;
-    countryCode: number;
+    countriesCode: number;
     numOfTeams: number;
     currentMatchweek: number;
     creationToken: string | null;
@@ -49,7 +15,7 @@ interface LeagueState {
     error: string | null;
     schedule: Schedule | null;
     seasonID: number | null;
-    seasonNum: number;
+    seasonNum: string;
 }
 
 interface LeagueStatusData {
@@ -63,7 +29,7 @@ let leagueState = $state<LeagueState>({
     hasLeague: false,
     leagueId: null,
     canCreateLeague: false,
-    countryCode: 0,
+    countriesCode: 0,
     numOfTeams: 14,
     currentMatchweek: 0,
     creationToken: null,
@@ -72,7 +38,7 @@ let leagueState = $state<LeagueState>({
     error: null,
     schedule: null,
     seasonID: null,
-    seasonNum: CURRENT_SEASON_NUM
+    seasonNum: CURRENT_SEASON
 });
 
 
@@ -84,13 +50,13 @@ export function setTeamCount(numOfTeams: number) {
     leagueState.numOfTeams = numOfTeams
 }
 
-export function setCountry(countryCode: number) {
-    leagueState.countryCode = countryCode
-    leagueState.seasonID = SEASON_ID_LOOKUP[countryCode];
+export function setCountry(countriesCode: number) {
+    leagueState.countriesCode = countriesCode
+    leagueState.seasonID = SEASON_ID_LOOKUP[countriesCode];
 }
 
 export function getCountry(): number {
-    return leagueState.countryCode;
+    return leagueState.countriesCode;
 }
 
 export function getSeasonID(): number | null {
@@ -109,7 +75,7 @@ export function setLeagueSchedule(schedule: Schedule): void {
     leagueState.schedule = schedule
 }
 
-export function getSeasonNum(): number {
+export function getSeasonNum(): string {
     return leagueState.seasonNum;
 }
 

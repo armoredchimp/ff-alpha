@@ -6,11 +6,11 @@
     
     // League data constants
     const LEAGUES = [
-        { country_code: 1, nation: 'England', league_string: 'prem', max_games: 38 },
-        { country_code: 2, nation: 'Spain', league_string: 'laliga', max_games: 38 },
-        { country_code: 3, nation: 'Germany', league_string: 'bundes', max_games: 34 },
-        { country_code: 4, nation: 'France', league_string: 'ligue1', max_games: 34 },
-        { country_code: 5, nation: 'Italy', league_string: 'seriea', max_games: 38 }
+        { countries_code: 1, nation: 'England', league_string: 'prem', max_games: 38 },
+        { countries_code: 2, nation: 'Spain', league_string: 'laliga', max_games: 38 },
+        { countries_code: 3, nation: 'Germany', league_string: 'bundes', max_games: 34 },
+        { countries_code: 4, nation: 'France', league_string: 'ligue1', max_games: 34 },
+        { countries_code: 5, nation: 'Italy', league_string: 'seriea', max_games: 38 }
     ];
     
     // Matchweek values for each league
@@ -35,8 +35,8 @@
         try {
             const { data, error } = await supabase
                 .from('league_info_reference')
-                .select('country_code, current_matchweek')
-                .in('country_code', [1, 2, 3, 4, 5]);
+                .select('countries_code, current_matchweek')
+                .in('countries_code', [1, 2, 3, 4, 5]);
             
             if (error) {
                 console.error('Error fetching matchweeks:', error);
@@ -51,7 +51,7 @@
             // Update matchweeks object with fetched values
             data.forEach(row => {
                 if (row.current_matchweek !== null) {
-                    matchweeks[row.country_code] = row.current_matchweek;
+                    matchweeks[row.countries_code] = row.current_matchweek;
                 }
             });
             
@@ -71,7 +71,7 @@
         try {
             // Prepare league data for insertion
             const leagueData = LEAGUES.map(league => ({
-                country_code: league.country_code,
+                countries_code: league.countries_code,
                 nation: league.nation,
                 league_string: league.league_string,
                 max_games: league.max_games,
@@ -81,7 +81,7 @@
             const { data, error } = await supabase
                 .from('league_info_reference')
                 .upsert(leagueData, { 
-                    onConflict: 'country_code',
+                    onConflict: 'countries_code',
                     ignoreDuplicates: false 
                 });
             
@@ -108,8 +108,8 @@
         
         try {
             // Prepare updates for all leagues
-            const updates = Object.entries(matchweeks).map(([country_code, current_matchweek]) => ({
-                country_code: parseInt(country_code),
+            const updates = Object.entries(matchweeks).map(([countries_code, current_matchweek]) => ({
+                countries_code: parseInt(countries_code),
                 current_matchweek: current_matchweek ? parseInt(current_matchweek) : null
             }));
             
@@ -127,7 +127,7 @@
                 supabase
                     .from('league_info_reference')
                     .update({ current_matchweek: update.current_matchweek })
-                    .eq('country_code', update.country_code)
+                    .eq('countries_code', update.countries_code)
             );
             
             const results = await Promise.all(updatePromises);
@@ -150,9 +150,9 @@
     }
     
     // Helper function to get league name
-    function getLeagueName(countryCode) {
-        const league = LEAGUES.find(l => l.country_code === countryCode);
-        return league ? `${league.nation} (${league.league_string})` : `League ${countryCode}`;
+    function getLeagueName(countriesCode) {
+        const league = LEAGUES.find(l => l.countries_code === countriesCode);
+        return league ? `${league.nation} (${league.league_string})` : `League ${countriesCode}`;
     }
 </script>
 
@@ -175,17 +175,17 @@
     <div class="section">
         <h2>Current Matchweeks</h2>
         <div class="matchweek-grid">
-            {#each Object.entries(matchweeks) as [countryCode, matchweek]}
+            {#each Object.entries(matchweeks) as [countriesCode, matchweek]}
                 <div class="matchweek-item">
-                    <label for="mw-{countryCode}">
-                        {getLeagueName(parseInt(countryCode))}
+                    <label for="mw-{countriesCode}">
+                        {getLeagueName(parseInt(countriesCode))}
                     </label>
                     <input 
-                        id="mw-{countryCode}"
+                        id="mw-{countriesCode}"
                         type="number" 
-                        bind:value={matchweeks[countryCode]}
+                        bind:value={matchweeks[countriesCode]}
                         min="1"
-                        max={LEAGUES.find(l => l.country_code === parseInt(countryCode))?.max_games || 38}
+                        max={LEAGUES.find(l => l.countries_code === parseInt(countriesCode))?.max_games || 38}
                         placeholder="MW"
                     />
                 </div>

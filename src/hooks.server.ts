@@ -1,10 +1,11 @@
 import axios from "axios";
 import { redirect, type Handle } from "@sveltejs/kit";
 import { isAuthenticated, hasLeague, getSession } from "$lib/server/auth";
+import { SPORTSMONK_KEY } from "$env/static/private";
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
 const CORE_URL = 'https://api.sportmonks.com/v3/core';
-const API_TOKEN = import.meta.env.SPORTSMONK_KEY;
+const API_TOKEN = SPORTSMONK_KEY
 
 export const handle: Handle = async ({ event, resolve }) => {
     console.log('=== HOOK CALLED ===');

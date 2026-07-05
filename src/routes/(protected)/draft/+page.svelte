@@ -1,20 +1,13 @@
 <script>
     import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
     import '../../../app.css';
-    import { allPlayers } from '$lib/stores/generic.svelte';
+    import { allPlayers, managers, managersByID } from '$lib/stores/generic.svelte';
     import {
         generateClubName,
-        assignDraftOrder,
-        organizeDraftOrder,
         generateClubTraits,
-        parseTeamIdMap,
-        playerName,
-        createFormationStructure,
-        populateLineup,
-        getRandomItem, 
-        extractPlayerIds, 
-        getPlayerValue,
-        getPositionalNeeds
+        getRandomItem,
+        playerName
     } from '$lib/utils';
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
     import { draft } from '$lib/stores/draft.svelte';
@@ -23,420 +16,345 @@
     import DraftTicker from '$lib/DraftTicker.svelte';
     import PlayerDraftTeam from '$lib/PlayerDraftTeam.svelte';
     import DraftTeam from '$lib/DraftTeam.svelte';
-    import { managers } from "$lib/stores/generic.svelte";
-    import { getLeagueState, TABLE_PREFIXES } from '$lib/stores/league.svelte';
+    import { getLeagueState } from '$lib/stores/league.svelte';
+    import { TABLE_PREFIXES } from '$lib/data/leagueConstants';
 
+    const { data } = $props();
 
-    // Props
-    const { data } = $props()
-
-    // State Variables
-    let halfOfTeams = $derived(draft.totalTeams / 2);
-    let numberPool = $state(null);
-    let draftUploading = $state(false);
-    let draftUploaded = $state(false);
+    // ---- view state (server is authoritative; these mirror it for rendering) ----
     let selectedNames = $state({});
     let clubsWithRivals = $state({});
-    let clubsWithoutMoney = $state({
-        total: 0,
-        clubNumbers: []
-    });
     let firstParts = $state([]);
     let secondParts = $state([]);
     let commonNames = $state([]);
-    let leagueState = $state()
+    let leagueState = $state();
+    let submitting = $state(false);
 
-    // Lifecycle
+    // non-reactive helpers (their effects funnel through the draft store)
+    let cursor = 0;                         // index into draft.orderList (order position)
+    let draftedIds = new Set();
+    let playersById = new Map();
+
     onMount(async () => {
-        if(!draft.loaded){
-            console.log('data: ', data)
-            leagueState = getLeagueState();
-            await loadClubNames(leagueState.countryCode);
-            // Check if players are loaded in the store
-            if (allPlayers.length > 0) {
-                console.log(`Using ${allPlayers.length} pre-loaded players`);
-            } else {
-                console.log('No players loaded - should only happen right after league creation');
-                await loadPlayersData(leagueState.countriesCode);
-            }
-            draft.gate0 = true
-            // Set number of teams
-            if (data.numOfTeams && data.numOfTeams > 14) {
-                draft.totalTeams = data.numOfTeams
-                console.log('total teams value', draft.totalTeams)
-            } else if(leagueState.numOfTeams > 14) {
-                draft.totalTeams = leagueState.numOfTeams
-                
-            } else {
-                console.log('Condition failed - using default 14');
+        if (draft.loaded) return;
+        leagueState = getLeagueState();
 
-            }
-            
-            // Load managers if needed
-            if (data.managers && data.managers.length > 0) {
-                managers.length = 0;
-                for (const manager of data.managers) {
-                    managers.push(manager);
-                }
-                console.log(`Loaded ${data.managers.length} managers`);
-            }
-            
-            numberPool = Array.from({length: draft.totalTeams }, (_, i) => i + 1);
-            draft.loaded = true
+        await loadClubNames(leagueState.countriesCode);
+
+        if (allPlayers.length > 0) {
+            console.log(`Using ${allPlayers.length} pre-loaded players`);
+        } else {
+            await loadPlayersData(leagueState.countriesCode);
         }
+        // fast id -> player lookup for delta application
+        for (const p of allPlayers) playersById.set(p.id, p);
+
+        // team count (server league row is source of truth; data.numOfTeams from load)
+        if (data.numOfTeams && data.numOfTeams > 14) draft.totalTeams = data.numOfTeams;
+        else if (leagueState.numOfTeams > 14) draft.totalTeams = leagueState.numOfTeams;
+
+        if (data.managers && data.managers.length > 0) {
+            managers.length = 0;
+            for (const m of data.managers) managers.push(m);
+        }
+
+       
+
+        // ---- resume check: if a draft is already in progress, rehydrate ----
+        try {
+            const res = await fetch('/api/supabase/draft/resume');
+            const state = await res.json();
+            if (res.ok && state.inProgress) {
+                syncFullState(state);
+                draft.loaded = true;
+                return;
+            }
+        } catch (err) {
+            console.error('Resume check failed:', err);
+        }
+
+        draft.gate0 = true;   // fresh: show "Create Teams"
+        draft.loaded = true;
     });
 
-    async function loadClubNames(countryCode) {
-        const prefix = TABLE_PREFIXES[countryCode];
-        if (!prefix) {
-            console.error('Invalid country code:', countryCode);
-            // Fallback to default (prem) if invalid code
-            return;
-        }
-        
+    async function loadClubNames(countriesCode) {
+        const prefix = TABLE_PREFIXES[countriesCode];
+        if (!prefix) { console.error('Invalid country code:', countriesCode); return; }
         try {
             const module = await import(`$lib/data/${prefix}/rngClubNames.js`);
             firstParts = module.firstParts || [];
             secondParts = module.secondParts || [];
             commonNames = module.commonNames || [];
-            console.log(`Loaded club names for ${prefix}`);
         } catch (error) {
             console.error(`Failed to load club names for ${prefix}:`, error);
         }
     }
 
-    $effect(() => {
-        if (draft.complete && !draftUploading && !draftUploaded) {
-            finalizeAndUploadDraft();
+    // ---- lookups ----
+    function localTeamByDbId(teamId) {
+        if (playerTeam.dbId === teamId) return playerTeam;
+        for (let i = 1; i < draft.totalTeams; i++) {
+            if (teams[`team${i}`].dbId === teamId) return teams[`team${i}`];
         }
-    });
+        return null;
+    }
 
-    async function draftSetup() {
-        playerTeam.name = playerName();
-        console.log('About to create teams, totalTeams:', draft.totalTeams);
-        for (let i = 1; i < draft.totalTeams ; i++) {
-            console.log('Creating team', i);
-            const {
-                name,
-                sameCity,
-                firstName
-            } = generateClubName(firstParts, commonNames, secondParts);
-            teams[`team${i}`].name = name;
-            if (!selectedNames[firstName]) {
-                selectedNames[firstName] = {
-                    name: name,
-                    index: i
-                };
-            }
-            teams[`team${i}`].traits = generateClubTraits();
-            teams[`team${i}`].draftOrder = assignDraftOrder(numberPool);
-            console.log(`number pool:`, numberPool.length)
-            if (managers.length > 0) {
-                teams[`team${i}`].manager = getRandomItem(managers)
-                if (teams[`team${i}`].manager.preferred_formation !== null) {
-                    teams[`team${i}`].formation = teams[`team${i}`].manager.preferred_formation
-                }
-                // console.log('manager: ', teams[`team${i}`].manager)
-            }
-            if (sameCity) {
-                assignRivals(firstName, true, i);
-            }
+    function teamNameFor(teamId, frontendNumber) {
+        if (frontendNumber === 0) return playerTeam.name;
+        const t = localTeamByDbId(teamId);
+        return t ? t.name : `Team ${frontendNumber}`;
+    }
+
+    // round-1 order sequence -> local display draftOrder (so cards sort by true pick order)
+    function syncDisplayOrder(order) {
+        const round1 = order.filter(o => o.round === 1).sort((a, b) => a.pick - b.pick);
+        round1.forEach((slot, idx) => {
+            const t = localTeamByDbId(slot.teamId);
+            if (t) t.draftOrder = idx + 1;
+        });
+    }
+
+    function updateTurnDisplay() {
+        const cur = draft.orderList[cursor];
+        const nxt = draft.orderList[cursor + 1];
+        if (cur) {
+            draft.currentRound = cur.round;
+            draft.currentPick = cur.pick;
+            draft.currentTeam = teamNameFor(cur.teamId, cur.frontendNumber);
+        }
+        draft.nextTeam = nxt ? teamNameFor(nxt.teamId, nxt.frontendNumber) : 'None';
+    }
+
+    // ---- place a pick's player onto its team's roster ----
+    function placePick(pick, decrementBudget) {
+        if (pick.playerId == null) return;             // sentinel/skip — no roster change
+        draftedIds.add(pick.playerId);
+        const player = playersById.get(pick.playerId);
+        const team = localTeamByDbId(pick.teamId);
+        if (!player || !team) return;
+        switch (pick.position) {
+            case 'Goalkeeper': team.keepers.push(player); break;
+            case 'Defender':   team.defenders.push(player); break;
+            case 'Midfielder': team.midfielders.push(player); break;
+            case 'Attacker':   team.attackers.push(player); break;
+        }
+        if (decrementBudget) {
+            team.transferBudget -= pick.transferValue;
+            team.playerCount = (team.playerCount || 0) + 1;
+        }
+    }
+
+    // ---- apply a live delta from pick/advance ----
+    function applyDelta(delta) {
+        const { picks = [], overallDone, done } = delta;
+        for (const pick of picks) placePick(pick, true);
+        draft.availablePlayers = allPlayers.filter(p => !draftedIds.has(p.id));
+        cursor = overallDone;
+        updateTurnDisplay();
+        if (done) finishDraft();
+    }
+
+    // ---- rehydrate the entire view from a resume/full-state payload ----
+    function syncFullState(state) {
+        draft.totalTeams = state.teams.length;
+
+        for (const st of state.teams) {
+            const target = st.frontendNumber === 0 ? playerTeam : teams[`team${st.frontendNumber}`];
+            target.name = st.name;
+            target.dbId = st.teamId;
+            target.traits = st.traits ?? [];
+            target.formation = st.formation;
+            target.rivals = st.rivals ?? [];
+            target.manager = st.manager != null
+                ? (managersByID[st.manager] ?? null)
+                : (target.manager ?? null);
+            target.transferBudget = st.budget;     // server-computed current budget
+            target.keepers = []; target.defenders = []; target.midfielders = []; target.attackers = [];
+            target.playerCount = 0;
         }
 
-        for (let i = draft.totalTeams ; i > 0; i--) {
-            if ((clubsWithRivals[i] || []).length < 2) {
-                assignRivals('', false, i);
-            }
+        draft.orderList = state.order;
+        syncDisplayOrder(state.order);
+
+        draftedIds.clear();
+        for (const pick of state.picks) placePick(pick, false);   // budgets already current
+        // playerCount = roster size after rebuild
+        for (const st of state.teams) {
+            const t = st.frontendNumber === 0 ? playerTeam : teams[`team${st.frontendNumber}`];
+            t.playerCount = t.keepers.length + t.defenders.length + t.midfielders.length + t.attackers.length;
         }
 
-
-        draft.availablePlayers = allPlayers
-        playerTeam.draftOrder = assignDraftOrder(numberPool);
-        draft.orderList = organizeDraftOrder(playerTeam, teams, draft.totalTeams);
+        draft.availablePlayers = allPlayers.filter(p => !draftedIds.has(p.id));
+        cursor = state.overallDone;
+        draft.gate0 = true;
         draft.gate1 = true;
+        draft.started = true;
+        updateTurnDisplay();
+    }
 
-        // Prepare teams data for Supabase insertion
-        const teamsToInsert = [];
+    function finishDraft() {
+        draft.complete = true;
+        // server has finalized (team_players + budgets + draft_complete). Leaving the
+        // page triggers the load() redirect to the main app.
+        setTimeout(() => goto('/main'), 1200);
+    }
 
-        
-        teamsToInsert.push({
-            league_id: leagueState.leagueId,
+    // ============================================================
+    // Draft setup — cosmetic identity generation, then server draft-start
+    // ============================================================
+    async function draftSetup() {
+        if (submitting) return;
+        submitting = true;
+
+        playerTeam.name = playerName();
+        for (let i = 1; i < draft.totalTeams; i++) {
+            const { name, sameCity, firstName } = generateClubName(firstParts, commonNames, secondParts);
+            teams[`team${i}`].name = name;
+            if (!selectedNames[firstName]) selectedNames[firstName] = { name, index: i };
+            teams[`team${i}`].traits = generateClubTraits();
+            if (managers.length > 0) {
+                teams[`team${i}`].manager = getRandomItem(managers);
+                if (teams[`team${i}`].manager.preferred_formation !== null) {
+                    teams[`team${i}`].formation = teams[`team${i}`].manager.preferred_formation;
+                }
+            }
+            if (sameCity) assignRivals(firstName, true, i);
+        }
+        for (let i = draft.totalTeams; i > 0; i--) {
+            if ((clubsWithRivals[i] || []).length < 2) assignRivals('', false, i);
+        }
+
+        draft.availablePlayers = allPlayers;
+
+        // build team payload (identities only; server sets budget/frontend/draft_order)
+        const teamsToInsert = [{
             team_name: playerTeam.name,
             rivals: playerTeam.rivals || [],
             formation: playerTeam.formation || '4-4-2',
-            transfer_budget: 50000,
-            player_count: 0,
-            frontend_number: 0,
-            draft_order: playerTeam.draftOrder
-        });
-
-        
-        for (let i = 1; i < draft.totalTeams ; i++) {
+            frontend_number: 0
+        }];
+        for (let i = 1; i < draft.totalTeams; i++) {
             const team = teams[`team${i}`];
             teamsToInsert.push({
-                league_id: leagueState.leagueId,
                 team_name: team.name,
                 rivals: team.rivals || [],
                 traits: team.traits || [],
                 frontend_number: i,
-                manager_id: team.manager.id,
-                formation: team.formation || '4-4-2',
-                transfer_budget: 50000,
-                player_count: 0,
-                draft_order: team.draftOrder,
+                manager_id: team.manager?.id ?? null,
+                formation: team.formation || '4-4-2'
             });
         }
 
-        console.log('Teams to insert:', JSON.stringify(teamsToInsert, null, 2));
-        
-        // Supabase server action
         try {
-            const formData = new FormData();
-            formData.append('teams', JSON.stringify(teamsToInsert));
-            
-            const response = await fetch('?/insertTeams', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const responseText = await response.text();
-            console.log('RAW response text:', responseText);
-
-            const result = JSON.parse(responseText);
-            console.log('Parsed result:', result);
-            
-            if (result.type === 'success' && result.data) {
-        
-                let parsedData = typeof result.data === 'string' 
-                    ? JSON.parse(result.data) 
-                    : result.data;
-                
-                console.log('Parsed data:', parsedData);
-                
-                let teamIdMap = parseTeamIdMap(parsedData)
-                
-                console.log('Extracted teamIdMap:', teamIdMap);
-                
-                playerTeam.dbId = teamIdMap["0"];
-                console.log('Player team dbId stored:', playerTeam.dbId);
-                
-                // Store AI team IDs
-                for (let i = 1; i < draft.totalTeams; i++) {
-                    teams[`team${i}`].dbId = teamIdMap[i.toString()];
-                    console.log(`Team ${i} dbId stored:`, teams[`team${i}`].dbId);
-                }
-                
-                console.log('All team IDs stored in frontend state');
-        } else {
-            console.error('Failed to insert teams:', result.data?.error || 'Unknown error');
-            throw new Error(result.data?.error || 'Failed to insert teams');
-        }
-        } catch (error) {
-            console.error('Failed to upload teams to Supabase:', error);
-        }
-    }
-
-    async function finalizeAndUploadDraft() {
-        console.log('Draft completed, finalizing and uploading teams...');
-        console.log('Starting with draft.totalTeams:', draft.totalTeams);
-        
-        draftUploading = true;
-
-        const playerToId = (playerArray) => {
-                if (!Array.isArray(playerArray)) return [];
-                return playerArray.map(player => player.id);
-            };
-            
-        try {
-            // Prepare team players data using stored dbIds
-            const teamPlayersData = [];
-            
-            // Add player team
-            console.log('Processing player team...');
-            console.log('playerTeam.dbId:', playerTeam.dbId);
-            
-            if (playerTeam.dbId) {
-                const playerTeamData = {
-                    team_id: playerTeam.dbId,
-                    attackers: playerToId(playerTeam.attackers) || [],
-                    midfielders: playerToId(playerTeam.midfielders) || [],
-                    defenders: playerToId(playerTeam.defenders) || [],
-                    keepers: playerToId(playerTeam.keepers) || [],
-                    selected: [], 
-                    subs: [], 
-                    unused: [] 
-                };
-                console.log('Player team data prepared:', playerTeamData);
-                teamPlayersData.push(playerTeamData);
-            } else {
-                console.error('Player team missing database ID');
+            const fd = new FormData();
+            fd.append('teams', JSON.stringify(teamsToInsert));
+            const res = await fetch('/api/supabase/draft/start', { method: 'POST', body: fd });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                console.error('Draft start failed:', result.error);
+                submitting = false;
+                return;
             }
-            
-            // Add AI teams
-            console.log('Processing AI teams...');
+
+            // store server-assigned team ids
+            playerTeam.dbId = result.teamIdMap['0'];
             for (let i = 1; i < draft.totalTeams; i++) {
-                console.log(`Processing team ${i}...`);
-                const team = teams[`team${i}`];
-                console.log(`team${i} exists:`, !!team);
-                console.log(`team${i}.dbId:`, team?.dbId);
-                console.log(`team${i}.formation:`, team?.formation);
-                
-                team.selected = createFormationStructure(team.formation)
-                console.log(`team${i}.selected after createFormationStructure:`, team.selected);
-                
-                populateLineup(team)
-                console.log(`team${i} after populateLineup - selected:`, team.selected?.length, 'subs:', team.subs?.length, 'unused:', team.unused?.length);
-
-                if (team.dbId) {
-
-                    //Currently selected, subs and unused are extracted here,
-                    //  and the main pos arrays are extracted server side, this will be changed
-                    const lightweightTeam = extractPlayerIds(team);
-
-
-                    const aiTeamData = {
-                        team_id: team.dbId,
-                        attackers: playerToId(team.attackers) || [],
-                        midfielders: playerToId(team.midfielders) || [],
-                        defenders: playerToId(team.defenders) || [],
-                        keepers: playerToId(team.keepers) || [],
-                        selected: lightweightTeam.selected,  
-                        subs: lightweightTeam.subs,          
-                        unused: lightweightTeam.unused  
-                    };
-                    console.log(`Team ${i} data prepared:`, aiTeamData);
-                    teamPlayersData.push(aiTeamData);
-                } else {
-                    console.error(`Team ${i} missing database ID`);
-                }
+                teams[`team${i}`].dbId = result.teamIdMap[i.toString()];
             }
-            
-            console.log('Total teams to upload:', teamPlayersData.length);
-            console.log('teamPlayersData:', JSON.stringify(teamPlayersData));
-            
-            // Upload team players
-            const uploadFormData = new FormData();
-            uploadFormData.append('teamPlayers', JSON.stringify(teamPlayersData));
-            
-            console.log('Calling ?/uploadTeamPlayers...');
-            const uploadResponse = await fetch('?/uploadTeamPlayers', {
-                method: 'POST',
-                body: uploadFormData
-            });
-            
-            console.log('uploadResponse status:', uploadResponse.status);
-            const uploadResult = await uploadResponse.json();
-            console.log('uploadResult:', uploadResult);
-            
-            if (uploadResult.type === 'success') {
-                console.log('Team players successfully uploaded');
-                
-                // Finalize draft for teams table (transfer budget, player count)
-                const teamUpdates = [];
-                
-                // Player team update
-                console.log('Preparing player team update...');
-                if (playerTeam.dbId) {
-                    const playerUpdate = {
-                        team_id: playerTeam.dbId,
-                        transfer_budget: Math.round(playerTeam.transferBudget),
-                        player_count: playerTeam.playerCount
-                    };
-                    console.log('Player team update:', playerUpdate);
-                    teamUpdates.push(playerUpdate);
-                }
-                
-                // AI teams updates
-                console.log('Preparing AI team updates...');
-                for (let i = 1; i < draft.totalTeams; i++) {
-                    const team = teams[`team${i}`];
-                    
-                    if (team.dbId) {
-                        const teamUpdate = {
-                            team_id: team.dbId,
-                            transfer_budget: Math.round(team.transferBudget),
-                            player_count: team.playerCount
-                        };
-                        console.log(`Team ${i} update:`, teamUpdate);
-                        teamUpdates.push(teamUpdate);
-                    }
-                }
-                
-                console.log('Total team updates:', teamUpdates.length);
-                console.log('teamUpdates:', JSON.stringify(teamUpdates));
-            
-                const updateFormData = new FormData();
-                updateFormData.append('teamUpdates', JSON.stringify(teamUpdates));
-                
-                console.log('Calling ?/draftTeamsFinalize...');
-                const updateResponse = await fetch('?/draftTeamsFinalize', {
-                    method: 'POST',
-                    body: updateFormData
-                });
-                
-                console.log('updateResponse status:', updateResponse.status);
-                const updateResult = await updateResponse.json();
-                console.log('updateResult:', updateResult);
-                
-                if (updateResult.type === 'success') {
-                    console.log('Draft teams finalized');
-                    
-                    draftUploaded = true;
-                    console.log('draftUploaded set to true');
 
-                    console.log('Calling ?/draftUploaded...');
-                    const draftFinalizedResponse = await fetch('?/draftUploaded',{
-                        method: 'POST',
-                        body: new FormData()
-                    })
-                    
-                    console.log('draftFinalizedResponse status:', draftFinalizedResponse.status);
-                    const draftFinalized = await draftFinalizedResponse.json()
-                    console.log('draftFinalized result:', draftFinalized);
-
-                    if (draftFinalized.type === 'success'){
-                        console.log('Draft marked as complete in leagues DB')
-                    } else {
-                        console.error('Failed to mark draft as complete:', draftFinalized);
-                    }
-                } else {
-                    console.error('Failed to finalize draft teams:', updateResult);
-                    console.error('Error detail:', updateResult.data?.error);
-                }
-            } else {
-                console.error('Failed to upload team players:', uploadResult);
-                console.error('Error detail:', uploadResult.data?.error);
-            }
-            
+            draft.orderList = result.order;
+            syncDisplayOrder(result.order);
+            cursor = 0;
+            draft.gate1 = true;
         } catch (error) {
-            console.error('Error in finalizeAndUploadDraft:', error);
-            console.error('Error stack:', error.stack);
+            console.error('Failed to start draft:', error);
         } finally {
-            console.log('finalizeAndUploadDraft completed');
-            console.log('Final draftUploaded value:', draftUploaded);
+            submitting = false;
         }
     }
 
+    // ============================================================
+    // Draft flow — all picks go through the server
+    // ============================================================
+    function beginDraft() {
+        if (draft.started) return;
+        draft.started = true;
+        cursor = 0;
+        updateTurnDisplay();
+    }
 
+    async function handlePlayerPick(player, e) {
+        if (draft.complete || submitting) return;
+        if (draft.currentTeam !== playerTeam.name) return;   // not your turn
+        if (!player.image_path) player.image_path = e;
+        submitting = true;
+        try {
+            const res = await fetch('/api/supabase/draft/pick', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerId: player.id })
+            });
+            const delta = await res.json();
+            if (!res.ok) { console.error('Pick rejected:', delta.error); return; }
+            applyDelta(delta);
+        } catch (err) {
+            console.error('Pick failed:', err);
+        } finally {
+            submitting = false;
+        }
+    }
+
+    async function handleAdvance() {
+        if (draft.complete || submitting) return;
+        submitting = true;
+        try {
+            const res = await fetch('/api/supabase/draft/advance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'single' })
+            });
+            const delta = await res.json();
+            if (!res.ok) { console.error('Advance failed:', delta.error); return; }
+            applyDelta(delta);
+        } catch (err) {
+            console.error('Advance failed:', err);
+        } finally {
+            submitting = false;
+        }
+    }
+
+    async function skipToPlayerPick() {
+        if (draft.complete || submitting) return;
+        submitting = true;
+        try {
+            const res = await fetch('/api/supabase/draft/advance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'skip' })
+            });
+            const delta = await res.json();
+            if (!res.ok) { console.error('Skip failed:', delta.error); return; }
+            applyDelta(delta);
+        } catch (err) {
+            console.error('Skip failed:', err);
+        } finally {
+            submitting = false;
+        }
+    }
+
+    // ============================================================
+    // Rivals (cosmetic, client-side) — unchanged
+    // ============================================================
     function assignRivals(firstName, bool, index) {
         clubsWithRivals[index] = clubsWithRivals[index] || [];
-
         if (clubsWithRivals[index].length >= 2) return;
 
         if (bool === true) {
             if (selectedNames[firstName]) {
                 const foundRival = selectedNames[firstName];
-
-                teams[`team${index}`].rivals.push({
-                    name: foundRival.name,
-                    index: foundRival.index,
-                });
+                teams[`team${index}`].rivals.push({ name: foundRival.name, index: foundRival.index });
                 clubsWithRivals[index].push(foundRival.index);
-
-                teams[`team${foundRival.index}`].rivals.push({
-                    name: teams[`team${index}`].name,
-                    index: index,
-                });
+                teams[`team${foundRival.index}`].rivals.push({ name: teams[`team${index}`].name, index });
                 clubsWithRivals[foundRival.index] = clubsWithRivals[foundRival.index] || [];
                 clubsWithRivals[foundRival.index].push(index);
             }
@@ -446,360 +364,128 @@
         const attempts = 3;
         for (let i = 0; i < attempts && clubsWithRivals[index].length < 2; i++) {
             const potentialRivalIndex = Math.floor(Math.random() * (draft.totalTeams - 1)) + 1;
-
-            if (index === draft.totalTeams ) {
+            if (index === draft.totalTeams) {
                 if ((clubsWithRivals[potentialRivalIndex] || []).length <= 1) {
-                    playerTeam.rivals.push({
-                        name: teams[`team${potentialRivalIndex}`].name,
-                        index: potentialRivalIndex,
-                    });
-                    teams[`team${potentialRivalIndex}`].rivals.push({
-                        name: playerTeam.name,
-                        index: 0,
-                    });
+                    playerTeam.rivals.push({ name: teams[`team${potentialRivalIndex}`].name, index: potentialRivalIndex });
+                    teams[`team${potentialRivalIndex}`].rivals.push({ name: playerTeam.name, index: 0 });
                 }
                 clubsWithRivals[index].push(potentialRivalIndex);
                 clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
                 clubsWithRivals[potentialRivalIndex].push(index);
                 return;
             }
-
             if (
                 potentialRivalIndex === index ||
                 clubsWithRivals[index].includes(potentialRivalIndex) ||
                 (clubsWithRivals[potentialRivalIndex] || []).length >= 2
-            ) {
-                continue;
-            }
+            ) continue;
 
             if (Math.random() < 0.5) {
-                teams[`team${index}`].rivals.push({
-                    name: teams[`team${potentialRivalIndex}`].name,
-                    index: potentialRivalIndex,
-                });
-                teams[`team${potentialRivalIndex}`].rivals.push({
-                    name: teams[`team${index}`].name,
-                    index: index,
-                });
-
+                teams[`team${index}`].rivals.push({ name: teams[`team${potentialRivalIndex}`].name, index: potentialRivalIndex });
+                teams[`team${potentialRivalIndex}`].rivals.push({ name: teams[`team${index}`].name, index });
                 clubsWithRivals[index].push(potentialRivalIndex);
                 clubsWithRivals[potentialRivalIndex] = clubsWithRivals[potentialRivalIndex] || [];
                 clubsWithRivals[potentialRivalIndex].push(index);
             }
         }
     }
-
-    // Draft Flow Functions
-    function beginDraft() {
-        if (!draft.started) {
-            draft.started = true;
-            draft.currentRound = 1;
-            draft.currentPick = 1;
-            console.log('order list', draft.orderList)
-            let currPick = draft.orderList[0];
-            let nextPick = draft.orderList[1];
-            console.log(currPick)
-            draft.currentTeam = currPick.id === 'player' ? playerTeam.name : currPick.name;
-            console.log('currentTeam: ', draft.currentTeam);
-            draft.nextTeam = nextPick.id === 'player' ? playerTeam.name : nextPick.name;
-        }
-    }
-
-    function advanceDraft() {
-        let pickIndex = (draft.currentRound - 1) * draft.totalTeams  + (draft.currentPick - 1);
-
-        if(draft.currentRound >= 16){
-            draft.complete = true;
-        }
-
-        if (clubsWithoutMoney.total >= halfOfTeams){
-            draft.complete = true;
-        }
-
-        if (draft.currentPick === draft.totalTeams) {
-            draft.currentRound++;
-            draft.currentPick = 1;
-        } else {
-            draft.currentPick++;
-        }
-
-        if (draft.availablePlayers.length < 30) {
-            draft.complete = true;
-            return;
-        }
-
-        let nextPickIndex = (draft.currentRound - 1) * draft.totalTeams + (draft.currentPick - 1);
-
-        draft.currentTeam = draft.orderList[nextPickIndex].id === 'player' ?
-            playerTeam.name : draft.orderList[nextPickIndex].name;
-
-        draft.nextTeam = (nextPickIndex + 1 < draft.orderList.length) ?
-            (draft.orderList[nextPickIndex + 1].id === 'player' ?
-                playerTeam.name : draft.orderList[nextPickIndex + 1].name) :
-            'None';
-    }
-
-    async function skipToPlayerPick() {
-        while (!draft.complete &&
-            draft.currentTeam !== playerTeam.name) {
-            const currentTeamId = draft.orderList[
-                (draft.currentRound - 1) * draft.totalTeams + (draft.currentPick - 1)
-            ].id;
-
-            await executePick(currentTeamId, false);
-            advanceDraft();
-        }
-
-        if (draft.complete) {
-            return;
-        }
-    }
-
-    // Draft Pick Handlers
-    function handleAIPick(teamId) {
-        if(!draft.complete){
-            executePick(teamId, false);
-            advanceDraft()
-        }
-    }
-
-    function handlePlayerPick(player, e) {
-        if(!draft.complete){
-            if (!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null) {
-                player.image_path = e
-            }
-            executePick('player', true, player)
-            advanceDraft()
-        }
-    }
-
-    async function executePick(teamId, isPlayer, player = null, transferVal = null) {
-        const pickingTeam = teamId === 'player' ? playerTeam : teams[teamId];
-        const traits = pickingTeam.traits || [];
-
-        if (clubsWithoutMoney.clubNumbers.includes(teamId)){
-            return false;
-        }
-        if (!isPlayer) {
-            const affordablePlayers = draft.availablePlayers.filter(
-                (p) => p.transfer_value <= pickingTeam.transferBudget
-            );
-            
-            if (affordablePlayers.length < 15) {
-                console.log('Club is running low on funds, adding to broke list');
-                clubsWithoutMoney.clubNumbers.push(teamId);
-                clubsWithoutMoney.total += 1;
-                return false;
-            }
-
-            if (affordablePlayers.length < 1) {
-                console.log('No affordable players available');
-                return false;
-            }
-
-            const positionScores = getPositionalNeeds(pickingTeam, traits);
-
-            const scoredPlayers = affordablePlayers.slice(0, (Math.floor(Math.random() * 12) + 15)).map((p, index) => ({
-                ...p,
-                score: getPlayerValue(index, p, traits) + positionScores[p.position]
-            })).sort((a, b) => b.score - a.score)
-
-            if (scoredPlayers.length < 1) {
-                return false;
-            }
-
-            player = scoredPlayers[0]
-            if (!player.image_path || player.image_path === '' || player.image_path === undefined || player.image_path === null) {
-                player.image_path = await getPlayerPicture(player.id)
-            }
-        }
-
-        transferVal = player.transfer_value;
-
-        if (transferVal > pickingTeam.transferBudget) {
-            console.log('Insufficient funds');
-            return false;
-        }
-
-        const position = player.position ? player.position : null;
-        if (position === null) return false;
-
-        if (player.keeper_score) {
-            pickingTeam.scores.total.keeping += player.keeper_score;
-        }
-        if (player.defensive_score) {
-            pickingTeam.scores.total.defense += player.defensive_score;
-        }
-        if (player.possession_score) {
-            pickingTeam.scores.total.possession += player.possession_score;
-        }
-        if (player.passing_score) {
-            pickingTeam.scores.total.passing += player.passing_score;
-        }
-        if (player.attacking_score) {
-            pickingTeam.scores.total.attacking += player.attacking_score;
-        }
-        if (player.finishing_score) {
-            pickingTeam.scores.total.finishing += player.finishing_score;
-        }
-
-        switch (position) {
-            case 'Goalkeeper':
-                pickingTeam.keepers.push(player);
-                break;
-            case 'Defender':
-                pickingTeam.defenders.push(player);
-                break;
-            case 'Midfielder':
-                pickingTeam.midfielders.push(player);
-                break;
-            case 'Attacker':
-                pickingTeam.attackers.push(player);
-                break;
-            default:
-                return false;
-        }
-
-        pickingTeam.transferBudget -= transferVal;
-        pickingTeam.playerCount++;
-
-        draft.availablePlayers = draft.availablePlayers.filter(p => p.id !== player.id)
-
-        console.log(player)
-        return player;
-    }
-
 </script>
-
 
 <div class="draft-main-container">
     {#if draft.gate1}
-    <div class="draft-ticker-container">
-        <!-- {draft.currentTeam} -->
-        <DraftTicker ticker={draft}/>
-    </div>
-            {/if}
-            {#if draft.gate0 && !draft.gate1}
-            <div class="create-teams-btn">
-                <button
-                    onclick={draftSetup}
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6"
-                    >
-                    Create Teams and Prepare Draft
-                </button>
-            </div>
-            {/if}
-            {#if draft.gate1 && !draft.started}
-            <div class="start-draft-btn">
-                <button
-                    onclick={beginDraft}
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6"
-                    >
-                    Start Draft
-                </button>
-            </div>
-            {/if}
+        <div class="draft-ticker-container">
+            <DraftTicker ticker={draft} />
+        </div>
+    {/if}
 
-            {#if draft.started && !draft.complete}
-            {#if draft.currentTeam !== playerTeam.name}
+    {#if draft.gate0 && !draft.gate1}
+        <div class="create-teams-btn">
+            <button
+                onclick={draftSetup}
+                disabled={submitting}
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6">
+                {submitting ? 'Preparing…' : 'Create Teams and Prepare Draft'}
+            </button>
+        </div>
+    {/if}
+
+    {#if draft.gate1 && !draft.started}
+        <div class="start-draft-btn">
+            <button
+                onclick={beginDraft}
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-6">
+                Start Draft
+            </button>
+        </div>
+    {/if}
+
+    {#if draft.started && !draft.complete}
+        {#if draft.currentTeam !== playerTeam.name}
             <div class="draft-buttons">
-                <!-- {draft.currPick.id}
-                {draft.currPick.name} -->
-                <button
-                    onclick={() => handleAIPick(draft.orderList[(draft.currentRound - 1) * draft.totalTeams +(draft.currentPick -1)].id)}
-                    class="advance-btn">Advance Draft
+                <button onclick={handleAdvance} disabled={submitting} class="advance-btn">
+                    Advance Draft
                 </button>
-                <button
-                    onclick={skipToPlayerPick}
-                    class="skip-btn">Skip to Next Player Pick
+                <button onclick={skipToPlayerPick} disabled={submitting} class="skip-btn">
+                    Skip to Next Player Pick
                 </button>
             </div>
-            {/if}
-            {/if}
-            </div>
+        {/if}
+    {/if}
+</div>
 
-            {#if !draft.complete}
-                <div class="page-container">
-                    <div class="players-section">
-                        <h3>Total Players: {draft.availablePlayers.length}</h3>
-                        <div class="player-list">
-                            {#each draft.availablePlayers as player (player.id)}
-                            <DraftPlayer player={player}
-                                onDraft={(e)=> handlePlayerPick(player, e)}
-                                />
-                                {/each}
-                        </div>
-                    </div>
-                    {#if draft.gate1}
-                    <div class="player-team-section">
-                        <PlayerDraftTeam team={playerTeam}/>
-                    </div>
-                    <div class="ai-teams-section">
-                        <div class="teams-grid">
-                            {#each Object.entries(teams)
-                            .filter(([,team]) => team.name !== '')
-                            .sort(([,a],[,b]) => a.draftOrder - b.draftOrder) as [key, team]}
-                            <DraftTeam team={team} />
-                            {/each}
-                        </div>
-                    </div>
-                    {/if}
+{#if !draft.complete}
+    <div class="page-container">
+        <div class="players-section">
+            <h3>Total Players: {draft.availablePlayers.length}</h3>
+            <div class="player-list">
+                {#each draft.availablePlayers as player (player.id)}
+                    <DraftPlayer {player} onDraft={(e) => handlePlayerPick(player, e)} />
+                {/each}
+            </div>
+        </div>
+        {#if draft.gate1}
+            <div class="player-team-section">
+                <PlayerDraftTeam team={playerTeam} />
+            </div>
+            <div class="ai-teams-section">
+                <div class="teams-grid">
+                    {#each Object.entries(teams).filter(([, team]) => team.name !== '').sort(([, a], [, b]) => a.draftOrder - b.draftOrder) as [key, team]}
+                        <DraftTeam {team} />
+                    {/each}
                 </div>
-            {:else}
-                <h1>Draft Complete!</h1>
-            {/if}
+            </div>
+        {/if}
+    </div>
+{:else}
+    <h1>Draft Complete!</h1>
+{/if}
+
 <style>
-button {
-    background-color: blue;
-    color: white;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-}
+    button {
+        background-color: blue;
+        color: white;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    button:hover { background-color: darkblue; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-button:hover {
-    background-color: darkblue;
-}
-
-.page-container {
-    display: flex;
-    width: 100%;
-    max-width: 2000px;
-    margin: 0 auto;
-    gap: 2rem;
-    padding: 1rem;
-    height: calc(100vh - 180px);
-}
-
-.players-section {
-    flex: 0 0 40%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.player-list {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-}
-
-.player-team-section {
-    flex: 0 0 30%;
-}
-
-.ai-teams-section {
-    flex: 0 0 30%;
-    background-color: #f8fafc;
-}
-
-h3 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #1e293b;
-}
+    .page-container {
+        display: flex;
+        width: 100%;
+        max-width: 2000px;
+        margin: 0 auto;
+        gap: 2rem;
+        padding: 1rem;
+        height: calc(100vh - 180px);
+    }
+    .players-section { flex: 0 0 40%; display: flex; flex-direction: column; gap: 1rem; }
+    .player-list { flex: 1; overflow-y: auto; padding-right: 0.5rem; }
+    .player-team-section { flex: 0 0 30%; }
+    .ai-teams-section { flex: 0 0 30%; background-color: #f8fafc; }
+    h3 { margin: 0; font-size: 1.5rem; font-weight: 600; color: #1e293b; }
 </style>

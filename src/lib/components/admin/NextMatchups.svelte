@@ -30,11 +30,11 @@
       }
       
       // Get all country codes at once
-      const countryCodes = leagues
+      const countriesCodes = leagues
         .filter(l => l.countries_code)
         .map(l => l.countries_code);
       
-      if (countryCodes.length === 0) {
+      if (countriesCodes.length === 0) {
         statusMessage = 'No leagues with valid country codes';
         statusType = 'error';
         return;
@@ -43,15 +43,15 @@
       // Batch fetch all matchweek info
       const { data: leagueInfos, error: infoError } = await supabase
         .from('league_info_reference')
-        .select('country_code, current_matchweek')
-        .in('country_code', countryCodes);
+        .select('countries_code, current_matchweek')
+        .in('countries_code', countriesCodes);
       
       if (infoError) throw new Error(`Failed to fetch matchweek info: ${infoError.message}`);
       
       // Create lookup map for matchweeks
       const matchweekMap = new Map();
       leagueInfos?.forEach(info => {
-        matchweekMap.set(info.country_code, info.current_matchweek);
+        matchweekMap.set(info.countries_code, info.current_matchweek);
       });
       
       progress.total = leagues.length;

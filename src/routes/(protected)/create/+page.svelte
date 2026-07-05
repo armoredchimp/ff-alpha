@@ -17,7 +17,7 @@
     let creationToken = $state<string>('');
 
     // Map countries to their codes
-    const countryCodeMap: Record<string, number> = {
+    const countriesCodeMap: Record<string, number> = {
         'england': 1,
         'spain': 2,
         'germany': 3,
@@ -43,8 +43,8 @@
     const handleFormSubmit: SubmitFunction = async ({ formData, action, cancel }) => {
         isCreating = true;
         
-        const country_code = countryCodeMap[selectedCountry]
-        formData.append('countryCode', country_code.toString());
+        const countries_code = countriesCodeMap[selectedCountry]
+        formData.append('countriesCode', countries_code.toString());
         
         // Let the form submit to server action
         return async ({ result, update }) => {
@@ -67,13 +67,13 @@
                     if (registerResponse.data.success) {
                         console.log('League registered successfully!');
                         
-                        setCountry(country_code)
+                        setCountry(countries_code)
                         setTeamCount(selectedTeams)
                         // Update local state
                         const leagueState = getLeagueState();
                         leagueState.hasLeague = true;
                         leagueState.leagueId = result.data.league.id;
-                        leagueState.countryCode = country_code;
+                        leagueState.countriesCode = countries_code;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
                         setLeagueSchedule(result.data.schedule)

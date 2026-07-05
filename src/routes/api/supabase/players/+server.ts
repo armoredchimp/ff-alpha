@@ -2,7 +2,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabase } from "$lib/client/supabase/supaClient";
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
-import { TABLE_PREFIXES, getSeasonNum } from '$lib/stores/league.svelte';
+import { getSeasonNum } from '$lib/stores/league.svelte';
+import { TABLE_PREFIXES } from '$lib/data/leagueConstants';
 
 
 export const GET: RequestHandler = async ({ cookies, url }) => {

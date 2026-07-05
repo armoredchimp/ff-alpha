@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { sportsmonksGet } from '$lib/server/sportsmonks';
-import { getFantasyStats } from '$lib/server/supabase';
+import { getFantasyStats } from '$lib/server/fantasyStats';
 import { playerCache } from '$lib/server/playerCache';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
