@@ -5,7 +5,7 @@ import { supabase } from '$lib/client/supabase/supaClient';
 import { getPlayerValue, getPositionalNeeds } from '$lib/utils';
 import { TABLE_PREFIXES, CURRENT_SEASON } from '$lib/data/leagueConstants'
 
-export const STARTING_BUDGET = 50000;
+export const STARTING_BUDGET = 500000;
 export const TOTAL_ROUNDS = 16;
 
 // ------------------------------------------------------------
@@ -215,7 +215,7 @@ export function buildPickRow(leagueId: string, entry: OrderEntry, player: any) {
         team_id: entry.teamId,
         player_id: player.id,
         position: player.position,
-        transfer_value: player.transfer_value,
+        transfer_value: Math.round(player.transfer_value),
         round: entry.round,
         pick: entry.pick,
         overall_pick: entry.overallPick

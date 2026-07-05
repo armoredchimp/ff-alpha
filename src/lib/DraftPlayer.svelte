@@ -2,6 +2,7 @@
     import axios from "axios";
     import { draft } from "./stores/draft.svelte";
     import { getCountry } from "./stores/league.svelte";
+    import { getCountryUrl } from "./data/countryImages";
     import { delay, calculatePer90, condenseString } from "./utils";
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
@@ -127,7 +128,7 @@
     async function handleDraftClick(e){
         e.stopPropagation();
         if(player.image_path === '' || player.image_path === undefined || player.image_path === null){
-            player.image_path = await getPlayerPicture(player.id)
+            player.image_path = await getCountryUrl(player.nationality)
         }
         if(isExpanded){
             isExpanded = !isExpanded

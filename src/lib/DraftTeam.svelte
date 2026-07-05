@@ -21,6 +21,7 @@
    
     function expanded() {
         isExpanded = !isExpanded;
+        console.log(team.manager)
     }
    
 </script>

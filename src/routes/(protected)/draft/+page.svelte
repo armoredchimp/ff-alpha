@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import '../../../app.css';
-    import { allPlayers, managers } from '$lib/stores/generic.svelte';
+    import { allPlayers, managers, managersByID } from '$lib/stores/generic.svelte';
     import {
         generateClubName,
         generateClubTraits,
@@ -165,7 +165,9 @@
             target.traits = st.traits ?? [];
             target.formation = st.formation;
             target.rivals = st.rivals ?? [];
-            target.manager = st.manager ?? target.manager ?? null;
+            target.manager = st.manager != null
+                ? (managersByID[st.manager] ?? null)
+                : (target.manager ?? null);
             target.transferBudget = st.budget;     // server-computed current budget
             target.keepers = []; target.defenders = []; target.midfielders = []; target.attackers = [];
             target.playerCount = 0;
