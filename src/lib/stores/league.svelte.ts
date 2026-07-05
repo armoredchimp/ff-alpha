@@ -6,7 +6,7 @@ interface LeagueState {
     hasLeague: boolean;
     leagueId: string | null;
     canCreateLeague: boolean;
-    countryCode: number;
+    countriesCode: number;
     numOfTeams: number;
     currentMatchweek: number;
     creationToken: string | null;
@@ -29,7 +29,7 @@ let leagueState = $state<LeagueState>({
     hasLeague: false,
     leagueId: null,
     canCreateLeague: false,
-    countryCode: 0,
+    countriesCode: 0,
     numOfTeams: 14,
     currentMatchweek: 0,
     creationToken: null,
@@ -50,13 +50,13 @@ export function setTeamCount(numOfTeams: number) {
     leagueState.numOfTeams = numOfTeams
 }
 
-export function setCountry(countryCode: number) {
-    leagueState.countryCode = countryCode
-    leagueState.seasonID = SEASON_ID_LOOKUP[countryCode];
+export function setCountry(countriesCode: number) {
+    leagueState.countriesCode = countriesCode
+    leagueState.seasonID = SEASON_ID_LOOKUP[countriesCode];
 }
 
 export function getCountry(): number {
-    return leagueState.countryCode;
+    return leagueState.countriesCode;
 }
 
 export function getSeasonID(): number | null {

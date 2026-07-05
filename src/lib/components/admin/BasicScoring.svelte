@@ -44,7 +44,7 @@
         try {
             const { data, error } = await supabase
                 .from('league_info_reference')
-                .select('country_code, current_matchweek, league_string');
+                .select('countries_code, current_matchweek, league_string');
             
             if (error) {
                 console.error('Error fetching matchweeks:', error);
@@ -54,7 +54,7 @@
             
             if (data && data.length > 0) {
                 data.forEach(row => {
-                    const league = TABLE_PREFIXES[row.country_code];
+                    const league = TABLE_PREFIXES[row.countries_code];
                     if (league && row.current_matchweek !== null) {
                         matchweeks[league] = row.current_matchweek;
                     }

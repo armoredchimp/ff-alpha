@@ -35,9 +35,9 @@ export const actions: Actions = {
         const leagueName = data.get('leagueName') as string;
         const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
         const creationToken = data.get('creationToken') as string;
-        const countryCode = parseInt(data.get('countryCode') as string, 10);
+        const countriesCode = parseInt(data.get('countriesCode') as string, 10);
 
-        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countryCode])
+        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode])
        
         if (!leagueName?.trim()) {
             return fail(400, { error: 'Please enter a league name' });
@@ -47,7 +47,7 @@ export const actions: Actions = {
             return fail(403, { error: 'Not authorized to create a league' });
         }
 
-        if (!countryCode || countryCode < 1 || countryCode > 5) {
+        if (!countriesCode || countriesCode < 1 || countriesCode > 5) {
             return fail(400, { error: 'Invalid country selection' });
         }
        
@@ -58,7 +58,7 @@ export const actions: Actions = {
                     creator: session.userId,
                     league_name: leagueName,
                     total_teams: selectedTeams,
-                    countries_code: countryCode, 
+                    countries_code: countriesCode, 
                     draft_complete: false,
                     schedule: schedule
                 })
@@ -87,7 +87,7 @@ export const actions: Actions = {
                     id: league.league_id.toString(),
                     name: league.league_name,
                     totalTeams: league.total_teams,
-                    countryCode: league.countries_code,
+                    countriesCode: league.countries_code,
                     schedule: schedule
                 }
             };

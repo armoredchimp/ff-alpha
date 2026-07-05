@@ -84,7 +84,7 @@ export const POST: RequestHandler = async (event) => {
     const term = checkTermination(state, pool, order);
 
     if (term.done) {
-        await finalizeDraft(leagueId, state);
+        await finalizeDraft(leagueId, state, pool);
     } else if (nextEntry) {
         await supabaseScaling.from('draft_state')
             .update({ current_round: nextEntry.round, current_pick: nextEntry.pick })

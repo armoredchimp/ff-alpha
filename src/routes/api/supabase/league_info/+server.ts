@@ -13,11 +13,11 @@ const maxGames = {
     5: 38
 };
 
-async function getMatchweek(countryCode: number) {
+async function getMatchweek(countriesCode: number) {
     const { data: leagueInfo, error } = await supabase
         .from('league_info_reference')
         .select('league_week')
-        .eq('country_code', countryCode)
+        .eq('countries_code', countriesCode)
         .single()
 
     if (error) {

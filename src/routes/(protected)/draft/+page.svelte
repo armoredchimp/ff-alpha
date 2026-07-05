@@ -39,7 +39,7 @@
         if (draft.loaded) return;
         leagueState = getLeagueState();
 
-        await loadClubNames(leagueState.countryCode);
+        await loadClubNames(leagueState.countriesCode);
 
         if (allPlayers.length > 0) {
             console.log(`Using ${allPlayers.length} pre-loaded players`);
@@ -58,7 +58,7 @@
             for (const m of data.managers) managers.push(m);
         }
 
-        numberPool = Array.from({ length: draft.totalTeams }, (_, i) => i + 1);
+       
 
         // ---- resume check: if a draft is already in progress, rehydrate ----
         try {
@@ -77,9 +77,9 @@
         draft.loaded = true;
     });
 
-    async function loadClubNames(countryCode) {
-        const prefix = TABLE_PREFIXES[countryCode];
-        if (!prefix) { console.error('Invalid country code:', countryCode); return; }
+    async function loadClubNames(countriesCode) {
+        const prefix = TABLE_PREFIXES[countriesCode];
+        if (!prefix) { console.error('Invalid country code:', countriesCode); return; }
         try {
             const module = await import(`$lib/data/${prefix}/rngClubNames.js`);
             firstParts = module.firstParts || [];

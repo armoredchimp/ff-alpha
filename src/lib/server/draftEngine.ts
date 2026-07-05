@@ -13,8 +13,8 @@ export const TOTAL_ROUNDS = 16;
 // ------------------------------------------------------------
 const poolCache = new Map<string, any[]>();
 
-export function prefixForCountry(countryCode: number): string | null {
-    return TABLE_PREFIXES[countryCode] ?? null;
+export function prefixForCountry(countriesCode: number): string | null {
+    return TABLE_PREFIXES[countriesCode] ?? null;
 }
 
 export async function loadPool(prefix: string, season: string = CURRENT_SEASON): Promise<any[]> {
@@ -23,8 +23,7 @@ export async function loadPool(prefix: string, season: string = CURRENT_SEASON):
     if (cached) return cached;
 
     const table = `${prefix}_mini_${season}`;
-    // sorted by transfer_value desc to match the client draft's pool ordering
-    // (the AI window takes the top-N most valuable affordable players).
+ 
     const { data, error } = await supabase
         .from(table)
         .select('*')
@@ -108,6 +107,7 @@ export function reconstructState(picks: any[], teams: any[], order: OrderEntry[]
     }
 
     for (const pick of picks) {
+        if (pick.player_id == null) continue;
         draftedSet.add(pick.player_id);
         const ts = teamState.get(pick.team_id);
         if (!ts) continue;
@@ -216,6 +216,19 @@ export function buildPickRow(leagueId: string, entry: OrderEntry, player: any) {
         player_id: player.id,
         position: player.position,
         transfer_value: player.transfer_value,
+        round: entry.round,
+        pick: entry.pick,
+        overall_pick: entry.overallPick
+    };
+}
+
+export function buildSkipRow(leagueId: string, entry: OrderEntry) {
+    return {
+        league_id: leagueId,
+        team_id: entry.teamId,
+        player_id: null,
+        position: null,
+        transfer_value: 0,
         round: entry.round,
         pick: entry.pick,
         overall_pick: entry.overallPick
