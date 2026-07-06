@@ -1,3 +1,5 @@
+import { PICK_DEADLINES } from "$lib/data/leagueConstants";
+
 export function calculateAge(date_of_birth) {
     const dob = new Date(date_of_birth);
     const today = new Date();
@@ -81,4 +83,46 @@ export function formatPlayerName(name: string, maxLength: number = 14): string {
     }
     
     return name.substring(0, maxLength - 3) + '...';
+}
+
+function deadlineForWeek(weekStartTue: Date, spec: { day: number; hour: number; minute: number }): Date {
+    const offset = (spec.day - 2 + 7) % 7;   // days from the week-start Tuesday (Mon wraps to +6)
+    const d = new Date(weekStartTue);
+    d.setDate(weekStartTue.getDate() + offset);
+    d.setHours(spec.hour, spec.minute, 0, 0);
+    return d;
+}
+
+export interface WeekDeadlines {
+    awayLock: Date;
+    kickoff: Date;
+    matchesInProgress: boolean;
+}
+
+
+export function currentWeekDeadlines(now: Date = new Date()): WeekDeadlines {
+    const day = now.getDay();
+ 
+    // most recent kickoff moment (Monday 23:59) — used for the in-progress window
+    const sinceMon = (day - 1 + 7) % 7;
+    const lastKickoff = new Date(now);
+    lastKickoff.setDate(now.getDate() - sinceMon);
+    lastKickoff.setHours(PICK_DEADLINES.kickoff.hour, PICK_DEADLINES.kickoff.minute, 0, 0);
+    if (lastKickoff > now) lastKickoff.setDate(lastKickoff.getDate() - 7); // Mon before 23:59 -> previous Mon
+ 
+    // in-progress window: from that kickoff through +61 min (Tue 01:00)
+    const inProgressEnd = new Date(lastKickoff.getTime() + 61 * 60 * 1000);
+    const matchesInProgress = now >= lastKickoff && now < inProgressEnd;
+ 
+    // this week's Tuesday anchor -> the two deadlines
+    const sinceTue = (day - 2 + 7) % 7;
+    const weekStartTue = new Date(now);
+    weekStartTue.setDate(now.getDate() - sinceTue);
+    weekStartTue.setHours(0, 0, 0, 0);
+ 
+    return {
+        awayLock: deadlineForWeek(weekStartTue, PICK_DEADLINES.awayLock),
+        kickoff: deadlineForWeek(weekStartTue, PICK_DEADLINES.kickoff),
+        matchesInProgress
+    };
 }

@@ -32,3 +32,8 @@ export const LEAGUE_MAX_GAMES = {
     seriea: 38,
     ligue1: 34
 };
+
+export const PICK_DEADLINES = {
+    awayLock: { day: 6, hour: 23, minute: 59 },  // Saturday — away AI locks; home team may counter after
+    kickoff:  { day: 1, hour: 23, minute: 59 }    // Monday — sim runs; the human's hard deadline
+};

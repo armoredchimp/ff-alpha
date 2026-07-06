@@ -14,6 +14,7 @@
 	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
 	import { goto, invalidateAll } from "$app/navigation";
+	import LineupCountdown from "$lib/LineupCountdown.svelte";
 	
     
 
@@ -2037,6 +2038,7 @@ function toggleDevBar() {
   <button>
     <a href={'/results'}>Results</a>
   </button>
+  <LineupCountdown />
 {/if}
 <style>
  button {
