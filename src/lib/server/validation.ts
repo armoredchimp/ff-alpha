@@ -117,15 +117,20 @@ export function isValidFormation(formation: unknown): formation is string {
 }
 
 
+// Validates a submitted favored map: every favored player is on the roster,
+// every favored fixture is a real current fixture for that player, AND the
+// pick deadline (the first kickoff of the player's fixtures) has not passed.
+// A rejected late pick lands no favored entry, so the resolver's 0.48/0.48
+// default fires — enforcing the "miss the deadline, take the default" rule.
+
 export async function validateFavored(
     favored: any,
     roster: StoredRoster
 ): Promise<ValidationError | null> {
-    if (!favored || typeof favored !== 'object') return null; // empty/absent favored is fine
+    if (!favored || typeof favored !== 'object') return null;   // empty/absent is fine
     const entries = Object.entries(favored);
     if (entries.length === 0) return null;
 
-    // player ids referenced by favored
     const playerIds = entries.map(([pid]) => Number(pid));
 
     // every favored player must be on the roster
@@ -135,24 +140,46 @@ export async function validateFavored(
         }
     }
 
-    // load the real upcoming fixtures for those players, build allowed (player -> fixture) pairs
+    // load the players' current fixtures (id + kickoff): needed both to validate
+    // the chosen fixture is real and to compute the deadline (earliest kickoff).
     const { supabase } = await import('$lib/client/supabase/supaClient');
     const { data: fixtures, error } = await supabase
         .from('upcoming_fixtures')
-        .select('player_id, fixture_id')
+        .select('player_id, fixture_id, kickoff')
         .in('player_id', playerIds);
 
     if (error) {
         return fail(500, 'Failed to validate favored fixtures');
     }
 
-    const validPairs = new Set<string>();
-    for (const f of fixtures ?? []) validPairs.add(`${f.player_id}:${f.fixture_id}`);
+    // group by player: the set of valid fixture ids + the earliest kickoff
+    const byPlayer = new Map<number, { fixtureIds: Set<number>; firstKickoff: number }>();
+    for (const f of fixtures ?? []) {
+        const k = new Date(f.kickoff).getTime();
+        let entry = byPlayer.get(f.player_id);
+        if (!entry) {
+            entry = { fixtureIds: new Set<number>(), firstKickoff: k };
+            byPlayer.set(f.player_id, entry);
+        }
+        entry.fixtureIds.add(f.fixture_id);
+        if (k < entry.firstKickoff) entry.firstKickoff = k;
+    }
+
+    const now = Date.now();
 
     for (const [pidStr, fixtureId] of entries) {
-        const key = `${Number(pidStr)}:${fixtureId}`;
-        if (!validPairs.has(key)) {
+        const pid = Number(pidStr);
+        const player = byPlayer.get(pid);
+
+        // the favored fixture must be a real current fixture for this player
+        if (!player || !player.fixtureIds.has(Number(fixtureId))) {
             return fail(400, `favored fixture ${fixtureId} is not a valid current fixture for player ${pidStr}`);
+        }
+
+        // deadline: once the first of the player's fixtures has kicked off, the
+        // pick is locked — even if they favored the later fixture.
+        if (now >= player.firstKickoff) {
+            return fail(400, `favored pick closed for player ${pidStr} (first fixture already kicked off)`);
         }
     }
 
