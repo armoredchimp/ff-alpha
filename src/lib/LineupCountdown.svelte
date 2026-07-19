@@ -3,7 +3,6 @@
     import { goto } from '$app/navigation';
     import { currentWeekDeadlines } from './utils';
 
-    // FLAG: set to your team selection route
     const TEAM_ROUTE = '/teams/player/main';
 
     let home = $state(null);      // null while loading; true/false once known
