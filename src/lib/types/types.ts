@@ -136,6 +136,28 @@ export type Manager = {
   preferred_formation: string | null;
 };
 
+export type Fixture = {
+    fixture_id: number;
+    created_at: string;
+    league_id: number | null;
+    season_id: number | null;
+    round_id: number | null;
+    stage_id: number | null;
+    state_id: number | null;
+    venue_id: number | null;
+    name: string | null;
+    starting_at: string | null;
+    starting_at_timestamp: number | null;
+    result_info: string | null;
+    home_team_id: number | null;
+    home_team_name: string | null;
+    away_team_id: number | null;
+    away_team_name: string | null;
+    home_score: number | null;
+    away_score: number | null;
+};
+
+
 export interface Schedule {
   [weekNumber: string]: Array<[number, number]>;
 }

@@ -8,7 +8,6 @@ export const GET: RequestHandler = async ({ cookies }) => {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
     try {
-        // All clubs, all leagues — small reference set, loaded once.
         const { data: clubs, error } = await supabase
             .from('clubs')
             .select('team_id, name');

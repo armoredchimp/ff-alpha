@@ -4,7 +4,7 @@
     import { setRegStatus, setUser } from '$lib/stores/userStore.svelte';
     import { draft } from '../lib/stores/draft.svelte';
     import { populateTeamIdsToName } from '$lib/utils/team';
-    import { setLeagueStatus, getLeagueState, setCountry, getSeasonID, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek } from '$lib/stores/league.svelte';
+    import { setLeagueStatus, getLeagueState, setCountry, getSeasonID, setTeamCount, setLeagueSchedule, setMatchweek, getMatchweek, getLeagueID } from '$lib/stores/league.svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { loadTeamsData } from '$lib/loading/teams/loadTeams'
     import { hydratePlayers } from '$lib/loading/players/hydratePlayers'
@@ -12,6 +12,7 @@
     import { loadPlayersData } from '$lib/loading/players/loadPlayers'
     import { loadManagersData } from '$lib/loading/managers/loadManagers'
     import { loadClubsData } from '$lib/loading/clubs/loadClubs'
+    import { loadFixturesData} from '$lib/loading/fixtures/loadFixtures'
     import { hydrateManagers } from '$lib/loading/managers/hydrateManagers'
     import { delay } from '../lib/utils';
     import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
@@ -130,13 +131,16 @@ async function signUserIn(values) {
                             const numOfTeams = leagueData.numOfTeams;
                             setCountry(countriesCode)
                             const seasonID = getSeasonID();
+                            const leagueId = getLeagueID();
                             console.log(`SEASON ID`, seasonID)
+                            console.log(`LEAGUE ID`, leagueId)
                             setTeamCount(numOfTeams)
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
                                 loadPlayersData(countriesCode), 
                                 loadManagersData(countriesCode),
-                                loadClubsData()
+                                loadClubsData(),
+                                loadFixturesData()
                             ]);
                             
                             await handlePostLeagueLoad(leagueData);
@@ -193,7 +197,7 @@ async function handlePostLeagueLoad(leagueData) {
             try {
                 populateTeamIdsToName()
             } catch(err) {
-                console.error('error populating team Ids to names')
+                console.error('error populating team Ids to names', err)
             }
 
             if (teamsLoaded && leagueData.redirect) {
