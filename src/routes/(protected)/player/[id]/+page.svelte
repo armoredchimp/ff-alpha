@@ -17,8 +17,12 @@
 });
 
     const player = data.player;
+    let frontend_player = $state({})
 
-    const frontend_player = playersByID[player.id];
+    if(player.id){
+        frontend_player = playersByID[player.id];
+
+    }
 
     let nationImage = player ? getCountryUrl(getCountry(player.nationality_id)) : null;
 

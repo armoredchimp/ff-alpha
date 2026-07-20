@@ -1,1 +1,1 @@
-export const playerCache: Record<string, { player: any; fantasyStats: any }> = {};
+export const playerCache: Record<string, { player: any; fantasyStats: any; currentStats?: any[] }> = {};
