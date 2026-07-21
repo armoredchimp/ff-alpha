@@ -11,7 +11,8 @@
     if (data.player) {
         clientPlayerCache[player.id] = {
             player: data.player,
-            fantasyStats: data.fantasyStats
+            fantasyStats: data.fantasyStats,
+            currentStats: data.currentStats,
         };
     }
 });

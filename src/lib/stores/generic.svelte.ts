@@ -40,6 +40,15 @@ export let attackingImpMap = $state({})
 export let finishingImpMap = $state({})
 export let keepingImpMap = $state({})
 
+export const IMP_MAPS: Record<string, Record<string, any>> = {
+  defense: defenseImpMap,
+  passing: passingImpMap,
+  possession: possessionImpMap,
+  attacking: attackingImpMap,
+  keeping: keepingImpMap,
+  finishing: finishingImpMap,
+};
+
 export let outfieldAverages = $state({})
 export let keeperAverages = $state({})
 
