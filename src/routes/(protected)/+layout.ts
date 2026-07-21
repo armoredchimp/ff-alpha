@@ -4,8 +4,7 @@ import type { LayoutLoad } from './$types';
 
 interface SessionData {
     userId: string;
-    leagueId: string | null;
-    // Add other session properties as needed
+    leagueId: string | null; 
 }
 
 interface ParentData {
