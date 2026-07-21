@@ -148,10 +148,13 @@ export function getFavoredCandidates(): Player[] {
         ids.add(typeof s === 'number' ? s : (s as Player).id);
     }
 
+    const now = Date.now()
     const candidates: Player[] = [];
     for (const id of ids) {
         const p = playersByID[id];
-        if (p && p.upcomingFixtures && p.upcomingFixtures.length > 1) {
+        if (p && p.upcomingFixtures && p.upcomingFixtures.length > 1 
+            && now < new Date(p.upcomingFixtures[0].kickoff).getTime()
+        ) {
             candidates.push(p);
         }
     }

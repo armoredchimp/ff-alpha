@@ -1,10 +1,10 @@
 import type { Schedule } from "$lib/types/types";
-import { CURRENT_SEASON, SEASON_ID_LOOKUP } from "$lib/data/leagueConstants";
+import { CURRENT_SEASON, LEAGUE_ID_LOOKUP, SEASON_ID_LOOKUP } from "$lib/data/leagueConstants";
 
 
 interface LeagueState {
     hasLeague: boolean;
-    leagueId: string | null;
+    leagueId: number | null;
     canCreateLeague: boolean;
     countriesCode: number;
     numOfTeams: number;
@@ -20,7 +20,7 @@ interface LeagueState {
 
 interface LeagueStatusData {
     status: 'HAS_LEAGUE' | 'CAN_CREATE_LEAGUE';
-    leagueId?: string;
+    leagueId?: number;
     creationToken?: string;
     expiresAt?: string;
 }
@@ -53,6 +53,7 @@ export function setTeamCount(numOfTeams: number) {
 export function setCountry(countriesCode: number) {
     leagueState.countriesCode = countriesCode
     leagueState.seasonID = SEASON_ID_LOOKUP[countriesCode];
+    leagueState.leagueId = LEAGUE_ID_LOOKUP[countriesCode]
 }
 
 export function getCountry(): number {
@@ -61,6 +62,10 @@ export function getCountry(): number {
 
 export function getSeasonID(): number | null {
     return leagueState.seasonID;
+
+}
+export function getLeagueID(): number | null {
+    return leagueState.leagueId;
 }
 
 export function setMatchweek(currentMatchweek: number) {
@@ -93,7 +98,7 @@ export function setLeagueStatus(data: LeagueStatusData): void {
     }
 }
 
-export function setLeagueId(id: string | null): void {
+export function setLeagueId(id: number | null): void {
     leagueState.leagueId = id;
 }
 

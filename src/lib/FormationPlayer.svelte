@@ -6,7 +6,7 @@
   import { getFallbackPos } from "./data/fallbackOrder";
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
-  import { playerCurrentStats } from '$lib/stores/generic.svelte';
+  import { clientPlayerCache } from '$lib/stores/generic.svelte';
   import { onMount } from "svelte";
   import type { Player, Team } from "$lib/types/types";
 
@@ -98,7 +98,7 @@
   }
 
   async function ensurePlayerStats(playerId: number) {
-    if (playerCurrentStats[playerId]){
+    if (clientPlayerCache[playerId]){
       console.log('Client side player cache hit')
       return;
     }
@@ -112,12 +112,12 @@
         const playerData = playerRes.ok ? await playerRes.json() : null;
         const fantasyData = fantasyRes.ok ? await fantasyRes.json() : null;
 
-        playerCurrentStats[playerId] = {
+        clientPlayerCache[playerId] = {
             player: playerData?.data ?? null,
             fantasyStats: fantasyData?.fantasyStats ?? null
         };
 
-        console.log('Stored in cache:', playerCurrentStats[playerId]);
+        console.log('Stored in cache:', clientPlayerCache[playerId]);
     } catch (err) {
         console.error('Failed to fetch player stats:', err);
     }
@@ -715,8 +715,8 @@
 
      </div>
 
-     {#if playerCurrentStats[player.id]}
-       {@const stats = playerCurrentStats[player.id]}
+     {#if clientPlayerCache[player.id]}
+       {@const stats = clientPlayerCache[player.id]}
        <div class="cache-stats">
            {#if stats.player?.statistics?.length}
                {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
@@ -835,8 +835,8 @@
 
       </div>
 
-      {#if playerCurrentStats[hoveredReplacement.id]}
-        {@const stats = playerCurrentStats[hoveredReplacement.id]}
+      {#if clientPlayerCache[hoveredReplacement.id]}
+        {@const stats = clientPlayerCache[hoveredReplacement.id]}
         <div class="cache-stats">
             {#if stats.player?.statistics?.length}
                 {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}

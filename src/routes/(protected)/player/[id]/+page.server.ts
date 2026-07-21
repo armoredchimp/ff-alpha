@@ -3,7 +3,7 @@ import { isAuthenticated, getLeagueId } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { sportsmonksGet } from '$lib/server/sportsmonks';
 import { getFantasyStats } from '$lib/server/fantasyStats';
-import { playerCache } from '$lib/server/playerCache';
+import { serverPlayerCache } from '$lib/server/serverPlayerCache';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
     if (!isAuthenticated(cookies)) {
@@ -12,11 +12,11 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
     const id = params.id;
 
-    if (playerCache[id]) {
+    if (serverPlayerCache[id]) {
         console.log(`player found on player cache`)
         return {
-            player: playerCache[id].player,
-            fantasyStats: playerCache[id].fantasyStats,
+            player: serverPlayerCache[id].player,
+            fantasyStats: serverPlayerCache[id].fantasyStats,
             error: null
         };
     }
@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     }
 
     if (player) {
-        playerCache[id] = { player, fantasyStats };
+        serverPlayerCache[id] = { player, fantasyStats };
     }
 
     return { player, fantasyStats, error };
