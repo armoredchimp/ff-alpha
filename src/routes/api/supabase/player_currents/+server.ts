@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { playerCache } from '$lib/server/playerCache';
+import { serverPlayerCache } from '$lib/server/serverPlayerCache';
 import { getCurrentStats } from '$lib/server/currentStats';
 import { getCurrentScores } from '$lib/server/currentScores';
 
@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             return json({ error: 'Player ID required' }, { status: 400 });
         }
 
-        const cached = playerCache[playerId];
+        const cached = serverPlayerCache[playerId];
 
         if (cached?.currentStats && cached?.currentScores) {
             return json({
@@ -43,10 +43,10 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         const currentScores =
             scoresResult.status === 'fulfilled' ? scoresResult.value : cached?.currentScores;
 
-        playerCache[playerId] = {
-            ...playerCache[playerId],
-            player: playerCache[playerId]?.player ?? null,
-            fantasyStats: playerCache[playerId]?.fantasyStats ?? null,
+        serverPlayerCache[playerId] = {
+            ...serverPlayerCache[playerId],
+            player: serverPlayerCache[playerId]?.player ?? null,
+            fantasyStats: serverPlayerCache[playerId]?.fantasyStats ?? null,
             currentStats,
             currentScores
         };

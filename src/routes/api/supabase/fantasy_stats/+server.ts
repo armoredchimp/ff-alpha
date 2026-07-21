@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
-import { playerCache } from '$lib/server/playerCache';
+import { serverPlayerCache } from '$lib/server/serverPlayerCache';
 import { getFantasyStats } from '$lib/server/fantasyStats';
 
 
@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         const fantasyStats = await getFantasyStats(leagueId, playerId);
       
         if (fantasyStats) {
-            playerCache[playerId] = { ...playerCache[playerId], player: playerCache[playerId]?.player ?? null, fantasyStats };
+            serverPlayerCache[playerId] = { ...serverPlayerCache[playerId], player: serverPlayerCache[playerId]?.player ?? null, fantasyStats };
         }
         return json({ fantasyStats });
     } catch (err) {

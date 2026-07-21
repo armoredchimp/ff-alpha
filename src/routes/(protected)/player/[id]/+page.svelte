@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getCountry } from '$lib/data/countries';
-    import { teamIdsToName, playersByID, playerCurrentStats } from "$lib/stores/generic.svelte";
+    import { teamIdsToName, playersByID, clientPlayerCache } from "$lib/stores/generic.svelte";
     import { getCountryUrl } from '$lib/data/countryImages';
     import { calculateAge } from '$lib/utils';
     import { getSeasonID } from '$lib/stores/league.svelte';
@@ -9,7 +9,7 @@
 
     $effect(() => {
     if (data.player) {
-        playerCurrentStats[player.id] = {
+        clientPlayerCache[player.id] = {
             player: data.player,
             fantasyStats: data.fantasyStats
         };
