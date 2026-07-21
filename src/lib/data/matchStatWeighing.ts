@@ -47,3 +47,31 @@ export const STAT_CATEGORIES: Record<string, string[]> = {
 };
 
 export const KEEPER_ALWAYS_SHOW = ['saves', 'punches', 'goalkeeper_goals_conceded']
+
+// Outfield fallback fill order. When fewer than TOP_STAT_LIMIT ranked stats
+// exist, top up from this list (skipping any already shown), shown even when
+// null/zero (rendered blank, no number). current_week_stats column keys.
+export const FALLBACK_STAT_ORDER = [
+	'goals',
+	'assists',
+	'big_chances_created',
+	'error_lead_to_goal',
+	'interceptions',
+	'tackles',
+	'successful_dribbles',
+	'dispossessed'
+];
+ 
+export const TOP_STAT_LIMIT = 6;
+ 
+// Columns on a current_week_stats row that are metadata, not stats — excluded
+// from the dropdown's "everything not null" listing.
+export const STATS_ROW_METADATA = new Set([
+	'player_id',
+	'fixture_id',
+	'season_id',
+	'team_id',
+	'player_name',
+	'created_at',
+	'detailed_position'
+]);
