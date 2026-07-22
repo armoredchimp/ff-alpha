@@ -9,6 +9,8 @@ import { getFallbackPos} from "$lib/data/fallbackOrder";
 // Zone Data
 // ═════════════════════════════════════════════════════════════════════════════
 
+export const KEEPER_ZONE = 1;
+
 export const zoneMatchups = {
     3: 17,   // LB vs RW
     4: 16,   // CB vs ST
@@ -54,6 +56,59 @@ export const zoneAdjacency = {
     17: [14, 16]
 };
 
+export const ZONE_IDS = [15, 16, 17, 12, 13, 14, 9, 10, 11, 6, 7, 8, 3, 4, 5, 1];
+ 
+export interface ZoneLayout {
+	/** player-container position (centre point, paired with translate(-50%,-50%)) */
+	left: string;
+	top: string;
+	/** hover-square + strength-overlay rectangle */
+	rect: { left: string; top: string; width: string; height: string };
+	/** which side of the pitch — drives the ZoneDisplay popup offset class */
+	column: 'left' | 'center' | 'right';
+	/** fieldPosition label passed to ZoneDisplay */
+	label: string;
+}
+ 
+export const ZONE_LAYOUT: Record<number, ZoneLayout> = {
+	// Attacker row
+	15: { left: '20%', top: '10%', rect: { left: '0%',  top: '0%',    width: '35%', height: '17.5%' }, column: 'left',   label: 'Left Wing' },
+	16: { left: '50%', top: '10%', rect: { left: '35%', top: '0%',    width: '30%', height: '17.5%' }, column: 'center', label: 'Centre Forward' },
+	17: { left: '80%', top: '10%', rect: { left: '65%', top: '0%',    width: '35%', height: '17.5%' }, column: 'right',  label: 'Right Wing' },
+ 
+	// AM / winger row
+	12: { left: '20%', top: '25%', rect: { left: '0%',  top: '17.5%', width: '35%', height: '15%' },   column: 'left',   label: 'Left Wing' },
+	13: { left: '50%', top: '25%', rect: { left: '35%', top: '17.5%', width: '30%', height: '15%' },   column: 'center', label: 'Attacking Midfield' },
+	14: { left: '80%', top: '25%', rect: { left: '65%', top: '17.5%', width: '35%', height: '15%' },   column: 'right',  label: 'Right Wing' },
+ 
+	// Central midfield row
+	9:  { left: '20%', top: '40%', rect: { left: '0%',  top: '32.5%', width: '35%', height: '15%' },   column: 'left',   label: 'Left Midfield' },
+	10: { left: '50%', top: '40%', rect: { left: '35%', top: '32.5%', width: '30%', height: '15%' },   column: 'center', label: 'Central Midfield' },
+	11: { left: '80%', top: '40%', rect: { left: '65%', top: '32.5%', width: '35%', height: '15%' },   column: 'right',  label: 'Right Midfield' },
+ 
+	// Wingback / DM row
+	6:  { left: '20%', top: '55%', rect: { left: '0%',  top: '47.5%', width: '35%', height: '15%' },   column: 'left',   label: 'Left Wingback' },
+	7:  { left: '50%', top: '55%', rect: { left: '35%', top: '47.5%', width: '30%', height: '15%' },   column: 'center', label: 'Defensive Midfield' },
+	8:  { left: '80%', top: '55%', rect: { left: '65%', top: '47.5%', width: '35%', height: '15%' },   column: 'right',  label: 'Right Wingback' },
+ 
+	// Defender row
+	3:  { left: '20%', top: '70%', rect: { left: '0%',  top: '62.5%', width: '35%', height: '17.5%' }, column: 'left',   label: 'Left Fullback' },
+	4:  { left: '50%', top: '70%', rect: { left: '35%', top: '62.5%', width: '30%', height: '17.5%' }, column: 'center', label: 'Centre Back' },
+	5:  { left: '80%', top: '70%', rect: { left: '65%', top: '62.5%', width: '35%', height: '17.5%' }, column: 'right',  label: 'Right Fullback' },
+ 
+	// Keeper
+	1:  { left: '50%', top: '90%', rect: { left: '35%', top: '80%',   width: '30%', height: '20%' },   column: 'center', label: 'Goalkeeper' }
+};
+ 
+/** Popup offset class for a zone's ZoneDisplay, by pitch column. */
+export function zoneDisplayClass(zone: number): string {
+	const col = ZONE_LAYOUT[zone]?.column;
+	if (col === 'left') return 'zone-display-container-left';
+	if (col === 'right') return 'zone-display-container-right';
+	return 'zone-display-container';
+}
+ 
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Shared Constants & Helpers
@@ -73,6 +128,14 @@ const posOrder = [
     'Left-Mid',
     'Right-Mid'
 ];
+
+export const GROUP_ROWS = [
+	{ group: 'attackers',   scoreKey: 'attackers',   top: '0%',    height: '32.5%' },
+	{ group: 'midfielders', scoreKey: 'midfielders', top: '32.5%', height: '30%' },
+	{ group: 'defenders',   scoreKey: 'defenders',   top: '62.5%', height: '17.5%' },
+	{ group: 'keepers',     scoreKey: 'keeper',      top: '80%',   height: '20%' }
+];
+
 
 /** Accumulate a player's scores into the appropriate team.scores bucket. */
 function addPlayerScores(team: Team, player: Player, group: string): void {
@@ -104,6 +167,33 @@ function isEligibleForPosition(player: Player, slotPosition: string): boolean {
     if (player.detailed_position === slotPosition) return true;
     const allowed = getFallbackPos(slotPosition);
     return allowed ? allowed.includes(player.detailed_position) : false;
+}
+
+export function getSlotsByZone(zone: number, team: any) {
+	const slots: { player: any; currentPosition: string }[] = [];
+	if (!team?.selected) return slots;
+	Object.values(team.selected).forEach((group: any) => {
+		Object.entries(group).forEach(([positionName, positionData]: [string, any]) => {
+			if (positionData.zone === zone) {
+				for (let i = 0; i < positionData.max; i++) {
+					const player = i < positionData.players.length ? positionData.players[i] : null;
+					slots.push({ player, currentPosition: positionName });
+				}
+			}
+		});
+	});
+	return slots;
+}
+ 
+/** True when the team's formation defines any position in this zone. */
+export function hasZoneInFormation(zone: number, team: any): boolean {
+	if (!team?.selected) return false;
+	for (const group of Object.values(team.selected) as any[]) {
+		for (const positionData of Object.values(group) as any[]) {
+			if (positionData.zone === zone) return true;
+		}
+	}
+	return false;
 }
 
 
