@@ -1,32 +1,31 @@
 <script lang="ts">
     import FormationTab from "./FormationTab.svelte";
     import FormationZone from "./FormationZone.svelte";
+    import FormationDetailPanel from "./FormationDetailPanel.svelte";
     import type { Team } from "$lib/types/types";
-    import ZoneDisplay from "./ZoneDisplay.svelte";
-    import PosGroupDisplay from "./PosGroupDisplay.svelte";
     import { calculateGroupMatchup, getGroupStrengthColor } from "./utils/team";
     import { zoneMatchups, zoneAdjacency, ZONE_IDS, ZONE_LAYOUT, KEEPER_ZONE,
-         GROUP_ROWS, zoneDisplayClass, getSlotsByZone, hasZoneInFormation } from "./utils/formation";
+         GROUP_ROWS } from "./utils/formation";
 
     let {
       team = {} as Team,
       opponent = {} as Team,
       viewOpponent = false,
       opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view,
-      tabDisplay = 0, // 0 = Positional groups // 2 = Individual zones (to be created)
+      tabDisplay = 0, // 0 = Positional groups // 1 = Individual zones
       base = true,
       zonesVisible = true,
       mode = null
     } = $props();
 
-     let resolvedMode = $derived(mode ?? (base ? 'select' : 'preview'));
+    let resolvedMode = $derived(mode ?? (base ? 'select' : 'preview'));
+
     let activeTab = $state(null)
     let activeZone = $state(null) // For zone-based highlighting
-    let focusedZone = $state(null) 
+    let focusedZone = $state(null)
     let previousFocusedZone = $state(null)
-    let dropdownActive = $state(false) 
+    let dropdownActive = $state(false)
     let zoneData = $derived(initializeZoneData());
-
 
     const groupStrengths = $derived({
         attackers: calculateGroupMatchup(team, opponent, 'attackers', opponentMode),
@@ -34,22 +33,6 @@
         defenders: calculateGroupMatchup(team, opponent, 'defenders', opponentMode),
         keepers: calculateGroupMatchup(team, opponent, 'keepers', opponentMode)
     });
-
-    // Zone to group mapping for zone-based highlighting
-    const zoneToGroup = {
-        15: 'attackers', 16: 'attackers', 17: 'attackers',
-        12: 'attackers', 13: 'attackers', 14: 'attackers',
-        9: 'midfielders', 10: 'midfielders', 11: 'midfielders',
-        6: 'midfielders', 7: 'midfielders', 8: 'midfielders',
-        3: 'defenders', 4: 'defenders', 5: 'defenders',
-        1: 'keepers'
-    };
-
-
-    // zoneData = initializeZoneData()
-
-
-  
 
     function setActiveTab(tab){
         activeTab = tab;
@@ -62,7 +45,7 @@
     function getZoneDisplay(zone) {
         const data = zoneData[zone];
         if (!data) return null;
-        
+
         return {
             teamPlayers: data.teamPlayers,
             opponentPlayers: data.opponentPlayers,
@@ -72,26 +55,26 @@
             sourceZones: data.sourceZones
         };
     }
-    
+
     function initializeZoneData() {
         const data = {};
         const emptyZones = [];
-        
+
         // Process each zone
         for (const zone of ZONE_IDS) {
             const zoneResult = processZone(zone, team, opponent, opponentMode);
             data[zone] = zoneResult;
-            
+
             if (zoneResult.isEmpty) {
                 emptyZones.push(zone);
             }
         }
-        
+
         // Second pass: Calculate empty zone scores based on adjacent filled zones
         for (const zone of emptyZones) {
             const adjacentZones = zoneAdjacency[zone] || [];
             const filledAdjacent = adjacentZones.filter(adj => !data[adj]?.isEmpty);
-            
+
             if (filledAdjacent.length > 0) {
                 const scores = averageAdjacentScores(filledAdjacent, data);
                 data[zone] = {
@@ -107,14 +90,14 @@
                 };
             }
         }
-        
+
         return data;
     }
 
     function processZone(zone, team, opponent, opponentMode) {
         const teamPlayers = [];
         const opponentPlayers = [];
-        
+
         // Get team players
         if (team.selected) {
             Object.values(team.selected).forEach(group => {
@@ -124,19 +107,19 @@
                             if (player) {
                                 teamPlayers.push({
                                     player,
-                                    currentPosition: positionName  
+                                    currentPosition: positionName
                                 });
-                            }    
+                            }
                         });
                     }
                 });
             });
         }
-        
+
         // Get opponent players based on current mode only
         if (opponent.selected) {
             const targetZone = opponentMode === 0 ? zone : zoneMatchups[zone];
-            
+
             if (targetZone) {
                 Object.values(opponent.selected).forEach(group => {
                     Object.entries(group).forEach(([positionName, positionData]) => {
@@ -145,7 +128,7 @@
                                 if (player) {
                                     opponentPlayers.push({
                                         player,
-                                        currentPosition: positionName  
+                                        currentPosition: positionName
                                     });
                                 }
                             });
@@ -154,15 +137,15 @@
                 });
             }
         }
-        
+
         const isEmpty = teamPlayers.length === 0 && opponentPlayers.length === 0;
-        
+
         return {
             teamPlayers,
             opponentPlayers,
             scores: isEmpty ? null : calculateAllMatchups(
-                teamPlayers.map(tp => tp.player), 
-                opponentPlayers.map(op => op.player)  
+                teamPlayers.map(tp => tp.player),
+                opponentPlayers.map(op => op.player)
             ),
             isEmpty
         };
@@ -188,7 +171,7 @@
             passing: 0,
             defensive: 0
         };
-        
+
         let validCount = 0;
         adjacentZones.forEach(zone => {
             const zoneScores = data[zone].scores
@@ -199,43 +182,27 @@
                 validCount++;
             }
         });
-        
+
         // Average the scores
         if (validCount > 0) {
             Object.keys(scores).forEach(key => {
                 scores[key] = scores[key] / validCount * 0.5; // Reduce strength for interpolated zones
             });
         }
-        
+
         return scores;
     }
 
     function getZoneColor(strength, scoreType = 'total') {
-        const value = typeof strength === 'object' 
+        const value = typeof strength === 'object'
             ? strength.scores?.[scoreType] || 0
             : strength;
-        
+
         if (Math.abs(value) < 5) return 'transparent';
-        
+
         const color = value > 0 ? '59, 130, 246' : '239, 68, 68';
         const opacity = Math.min(Math.abs(value) / 100 * 0.35, 0.35);
         return `rgba(${color}, ${opacity})`;
-    }
-
-    // Get zone-specific scores when in zone mode
-    function getZoneScores(zone) {
-        const group = zoneToGroup[zone];
-        if (!group || !team.scores) return null;
-        
-        // For now, return the group scores - you can customize this
-        // to have zone-specific scoring if needed
-        return group === 'keepers' ? team.scores.keeper : team.scores[group];
-    }
-
-
-    // Get zone-specific player count
-    function getZonePlayerCount(zone) {
-        return getSlotsByZone(zone, team).filter(slot => slot.player).length;
     }
 
     // Handle focus event from FormationPlayer
@@ -265,156 +232,143 @@
       Object.values(team.selected[groupName] || {})
         .reduce((sum, posData) => sum + posData.players.length, 0);
 
-
     function calculateMatchup(teamPlayers, opponentPlayers, scoreType) {
         const teamScore = teamPlayers.reduce((sum, player) => {
             const score = scoreType === 'keeper_score' ? (player[scoreType] || 0) : player[scoreType];
             return sum + score;
         }, 0);
-        
+
         const opponentScore = opponentPlayers.reduce((sum, player) => {
             const score = scoreType === 'keeper_score' ? (player[scoreType] || 0) : player[scoreType];
             return sum + score;
         }, 0);
-        
+
         // Return difference: positive = team stronger, negative = opponent stronger
         // Scale to -100 to 100 range (adjust divisor as needed based on your score ranges)
         const difference = teamScore - opponentScore;
         const scaledDifference = Math.max(-100, Math.min(100, difference / 10));
-        
+
         return scaledDifference;
     }
 </script>
 
-<div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
-    {#if zonesVisible}
-    <div class="zone-lines">
-      <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
-      <div class="horizontal-line" style="top: 17.5%;"></div>
-      <div class="horizontal-line" style="top: 32.5%;"></div>
-      <div class="horizontal-line" style="top: 47.5%;"></div>
-      <div class="horizontal-line" style="top: 62.5%;"></div>
-      <div class="horizontal-line" style="top: 80%;"></div>
-      <div class="vertical-line" style="left: 35%;"></div>
-      <div class="vertical-line" style="left: 65%;"></div>
-    </div>
-    {/if}
-    {#if !base}
-        <!-- Zone overlays for strength visualization -->
-        <div class="zone-overlays">
-            {#each ZONE_IDS as zone}
-                {@const displayData = getZoneDisplay(zone)}
-                {@const rect = ZONE_LAYOUT[zone].rect}
-                {#if displayData && displayData.scores}
-                    <div
-                        class="zone-overlay"
-                        style="left: {rect.left}; top: {rect.top}; width: {rect.width}; height: {rect.height}; background-color: {getZoneColor(displayData.strengthValue)}"
-                    ></div>
-                {/if}
-            {/each}
+<div class="formation-layout">
+    <div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
+        {#if zonesVisible}
+        <div class="zone-lines">
+          <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
+          <div class="horizontal-line" style="top: 17.5%;"></div>
+          <div class="horizontal-line" style="top: 32.5%;"></div>
+          <div class="horizontal-line" style="top: 47.5%;"></div>
+          <div class="horizontal-line" style="top: 62.5%;"></div>
+          <div class="horizontal-line" style="top: 80%;"></div>
+          <div class="vertical-line" style="left: 35%;"></div>
+          <div class="vertical-line" style="left: 65%;"></div>
         </div>
-    {/if}
+        {/if}
 
-    <!-- Conditional hover zones based on 'base' prop -->
-    {#if base}
-     <div class="hover-zones">
-        {#each GROUP_ROWS as row}
-          <div
-            role="presentation"
-            onmouseenter={()=> setActiveTab(row.group)}
-            onmouseleave={()=> setActiveTab(null)}
-            class="hover-zone"
-            style="top: {row.top}; height: {row.height};"
-          >
-            {#if activeTab === row.group}
-              <div class="tab-container">
-                <FormationTab group={row.group} scores={team.scores[row.scoreKey]} playerCount={playerCount(row.group)}/>
+        {#if resolvedMode !== 'select'}
+            <!-- Zone overlays for strength visualization -->
+            <div class="zone-overlays">
+                {#each ZONE_IDS as zone}
+                    {@const displayData = getZoneDisplay(zone)}
+                    {@const rect = ZONE_LAYOUT[zone].rect}
+                    {#if displayData && displayData.scores}
+                        <div
+                            class="zone-overlay"
+                            style="left: {rect.left}; top: {rect.top}; width: {rect.width}; height: {rect.height}; background-color: {getZoneColor(displayData.strengthValue)}"
+                        ></div>
+                    {/if}
+                {/each}
+            </div>
+        {/if}
+
+        <!-- Conditional hover zones based on 'base' prop -->
+        {#if resolvedMode === 'select'}
+          <!-- Selection screen: unchanged, keeps its in-field FormationTab popups -->
+          <div class="hover-zones">
+            {#each GROUP_ROWS as row}
+              <div
+                role="presentation"
+                onmouseenter={()=> setActiveTab(row.group)}
+                onmouseleave={()=> setActiveTab(null)}
+                class="hover-zone"
+                style="top: {row.top}; height: {row.height};"
+              >
+                {#if activeTab === row.group}
+                  <div class="tab-container">
+                    <FormationTab group={row.group} scores={team.scores[row.scoreKey]} playerCount={playerCount(row.group)}/>
+                  </div>
+                {/if}
               </div>
-            {/if}
+            {/each}
           </div>
-        {/each}
-      </div>
 
+        {:else if tabDisplay === 0}
+          <!-- Preview: hovering only sets state; content renders in the side panel -->
+          <div class="hover-zones">
+            {#each GROUP_ROWS as row}
+              <div
+                role="presentation"
+                onmouseenter={()=> setActiveTab(row.group)}
+                class="hover-zone"
+                class:is-active={activeTab === row.group}
+                style="top: {row.top}; height: {row.height}; background-color: {getGroupStrengthColor(groupStrengths[row.group])};"
+              ></div>
+            {/each}
+          </div>
 
-   {:else if !base && tabDisplay === 0}
-    <div class="hover-zones">
-      {#each GROUP_ROWS as row}
-        <div
-          role="presentation"
-          onmouseenter={()=> setActiveTab(row.group)}
-          onmouseleave={()=> setActiveTab(null)}
-          class="hover-zone"
-          style="top: {row.top}; height: {row.height}; background-color: {getGroupStrengthColor(groupStrengths[row.group])};"
-        >
-          {#if activeTab === row.group}
-            <div class="tab-container">
-              <PosGroupDisplay group={row.group} {team} opponentTeam={opponent} {opponentMode}/>
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </div>
-    {:else if !base && tabDisplay === 1}
-      <!-- Zone-based hover zones  -->
-      <div class="hover-zones-detailed">
-        {#each ZONE_IDS as zone}
-          {@const layout = ZONE_LAYOUT[zone]}
-          {#if zone !== KEEPER_ZONE || opponentMode !== 1}
-            <div
-              role="presentation"
-              onmouseenter={()=> setActiveZone(zone)}
-              onmouseleave={()=> setActiveZone(null)}
-              class="hover-zone-square"
-              style="left: {layout.rect.left}; top: {layout.rect.top}; width: {layout.rect.width}; height: {layout.rect.height};"
-            >
-              {#if activeZone === zone}
-                {#if zone === KEEPER_ZONE}
-                  <div class="tab-container-zone">
-                    <FormationTab group="Zone 1" scores={getZoneScores(1)} playerCount={getZonePlayerCount(1)}/>
-                  </div>
-                {:else}
-                  {@const displayData = getZoneDisplay(zone)}
-                  <div class={zoneDisplayClass(zone)}>
-                    <ZoneDisplay
-                      fieldPosition={layout.label}
-                      teamPlayers={displayData?.teamPlayers.map(tp => tp.player)}
-                      opponentPlayers={displayData?.opponentPlayers.map(op => op.player)}
-                      {zone}
-                      mode={opponentMode}
-                      teamName={team.name}
-                      opponentName={opponent.name}
-                    />
-                  </div>
-                {/if}
+        {:else if tabDisplay === 1}
+          <!-- Zone-based hover zones -->
+          <div class="hover-zones-detailed">
+            {#each ZONE_IDS as zone}
+              {@const layout = ZONE_LAYOUT[zone]}
+              {#if zone !== KEEPER_ZONE || opponentMode !== 1}
+                <div
+                  role="presentation"
+                  onmouseenter={()=> setActiveZone(zone)}
+                  class="hover-zone-square"
+                  class:is-active={activeZone === zone}
+                  style="left: {layout.rect.left}; top: {layout.rect.top}; width: {layout.rect.width}; height: {layout.rect.height};"
+                ></div>
               {/if}
-            </div>
-          {/if}
-        {/each}
-      </div>
-    {/if}
-    
+            {/each}
+          </div>
+        {/if}
 
-    {#each ZONE_IDS as zone (zone)}
-        <FormationZone
-            {zone}
-            mode={resolvedMode}
+        {#each ZONE_IDS as zone (zone)}
+            <FormationZone
+                {zone}
+                mode={resolvedMode}
+                {team}
+                {opponent}
+                displayData={getZoneDisplay(zone)}
+                {viewOpponent}
+                {opponentMode}
+                {focusedZone}
+                {dropdownActive}
+                zIndex={getZoneZIndex(zone)}
+            />
+        {/each}
+    </div>
+
+    {#if resolvedMode !== 'select'}
+        <FormationDetailPanel
+            {tabDisplay}
+            activeGroup={activeTab}
+            {activeZone}
+            zoneDisplayData={activeZone != null ? getZoneDisplay(activeZone) : null}
             {team}
             {opponent}
-            displayData={getZoneDisplay(zone)}
-            {viewOpponent}
             {opponentMode}
-            {focusedZone}
-            {dropdownActive}
-            zIndex={getZoneZIndex(zone)}
         />
-    {/each}
-
+    {/if}
 </div>
 
 <style>
     .field {
       position: relative;
-      width: 60%;
+      flex: 0 0 60%;
       height: 70rem;
       background: linear-gradient(#228B22, #006400);
       border: 4px solid #004d00;
@@ -508,6 +462,11 @@
        border: 1px solid rgba(255, 255, 255, 0.2);
    }
 
+    .hover-zone.is-active,
+    .hover-zone-square.is-active {
+        background-color: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
    .tab-container {
        position: absolute;
        left: 100%;     
@@ -516,79 +475,10 @@
        pointer-events: auto;
    }
 
-     .zone-display-container {
-       position: absolute;
-       left: 220%;     
-       /* top: 50%;        */
-       transform: translateY(-30%);
-       pointer-events: auto;
-       z-index: 1000;
-   }
-
-   .zone-display-container-right {
-        position: absolute;
-        left: 102%;     
-        /* top: 50%;        */
-        transform: translateY(-30%);
-        pointer-events: auto;
-        z-index: 1000;
-   }
-
-    .zone-display-container-left {
-        position: absolute;
-        left: 289%;     
-        /* top: 50%;        */
-        transform: translateY(-30%);
-        pointer-events: auto;
-        z-index: 1000;
-   }
-
-   .top-left {
-        top: 60%;
-        transform: translateY(-20%);
-   }
-
-   .tab-container-zone {
-       position: absolute;
-       top: 50%;       
-       transform: translateY(-50%);
-       pointer-events: auto;
-       z-index: 1000;
-       /* Position based on zone location */
-   }
-
-   /* Position zone tabs appropriately based on their location */
-   .hover-zone-square:nth-child(1) .tab-container-zone,
-   .hover-zone-square:nth-child(4) .tab-container-zone,
-   .hover-zone-square:nth-child(7) .tab-container-zone,
-   .hover-zone-square:nth-child(10) .tab-container-zone,
-   .hover-zone-square:nth-child(13) .tab-container-zone {
-       /* Left zones - show tab on left */
-       right: 100%;
-       left: auto;
-       margin-right: 10px;
-   }
-
-   .hover-zone-square:nth-child(3) .tab-container-zone,
-   .hover-zone-square:nth-child(6) .tab-container-zone,
-   .hover-zone-square:nth-child(9) .tab-container-zone,
-   .hover-zone-square:nth-child(12) .tab-container-zone,
-   .hover-zone-square:nth-child(15) .tab-container-zone {
-       /* Right zones - show tab on right */
-       left: 100%;
-       right: auto;
-       margin-left: 10px;
-   }
-
-   .hover-zone-square:nth-child(2) .tab-container-zone,
-   .hover-zone-square:nth-child(5) .tab-container-zone,
-   .hover-zone-square:nth-child(8) .tab-container-zone,
-   .hover-zone-square:nth-child(11) .tab-container-zone,
-   .hover-zone-square:nth-child(14) .tab-container-zone,
-   .hover-zone-square:nth-child(16) .tab-container-zone {
-       /* Center zones - show tab on right */
-       left: 100%;
-       right: auto;
-       margin-left: 10px;
-   }
+   .formation-layout {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        width: 100%;
+    }
  </style>
