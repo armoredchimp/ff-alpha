@@ -22,13 +22,13 @@ export async function loadFixturesData(): Promise<boolean> {
 
         if (fixtures && fixtures.length > 0) {
             for (const fixture of fixtures) {
-                fixturesByID[fixture.fixture_id] = fixture;   // ✅ fixture, not fixtures
+                fixturesByID[fixture.fixture_id] = fixture;  
             }
             console.log(`Loaded ${fixtures.length} fixtures`);
         } else {
             console.log('No fixtures for this season yet');
         }
-        return true;   // empty is a valid load, not a failure
+        return true;   
     } catch (error) {
         console.error('Error loading fixtures:', error);
         return false;

@@ -4,8 +4,7 @@ import type { LayoutLoad } from './$types';
 
 interface SessionData {
     userId: string;
-    leagueId: string | null;
-    // Add other session properties as needed
+    leagueId: string | null; 
 }
 
 interface ParentData {
@@ -13,13 +12,11 @@ interface ParentData {
 }
 
 export const load: LayoutLoad = async ({ parent, url }) => {
-    // Get data from parent layout
     const data = await parent() as ParentData;
     
-    console.log('Protected layout - session:', data.session); // Debug log
-    console.log('Protected layout - URL:', url.pathname); // Debug log
+    console.log('Protected layout - session:', data.session); 
+    console.log('Protected layout - URL:', url.pathname); 
     
-    // Only do client-side checks if we're in the browser
     if (browser) {
         if (!data.session) {
             console.log('No session found, redirecting to login');

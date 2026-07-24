@@ -111,12 +111,6 @@
         console.log(outfieldAverages, keeperAverages)
     }
 
-    async function addExtraPlayers(ids){
-        for(let i = 0; i < ids.length; i++){
-            getPlayerStatsAndUpload(ids[i])
-        }
-    }
-
     function calculateImportance(weight) {
         if (weight >= 0) {
             if (weight < 100) return 1;
