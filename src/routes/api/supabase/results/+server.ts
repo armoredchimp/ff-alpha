@@ -9,21 +9,21 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let matchWeek = 0;
+    let league_week = 0;
 
     try {
         const leagueId = getLeagueId(cookies)
-        let matchWeekCode = url.searchParams.get('matchWeek');
-        if (matchWeekCode) {
-            matchWeek = parseInt(matchWeekCode)
+        let league_weekCode = url.searchParams.get('league_week');
+        if (league_weekCode) {
+            league_week = parseInt(league_weekCode)
         } else {
-            console.warn('Failed to get matchweek from frontend', matchWeek)
+            console.warn('Failed to get matchweek from frontend', league_week)
         }
         const { data: results, error } = await supabaseScaling
             .from('match_results')
             .select('*')
             .eq('league_id', leagueId)
-            .eq('gameweek', matchWeek)
+            .eq('league_week', league_week)
 
 
         if (error) {

@@ -63,9 +63,9 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 			getCurrentScores(id)
 		]);
 		if (statsResult.status === 'fulfilled') currentStats = statsResult.value;
-		else console.error('current_week_stats load failed:', statsResult.reason);
+		else console.error('current_player_stats load failed:', statsResult.reason);
 		if (scoresResult.status === 'fulfilled') currentScores = scoresResult.value;
-		else console.error('current_week_scores load failed:', scoresResult.reason);
+		else console.error('current_player_scores load failed:', scoresResult.reason);
 	}
 
 	if (player) {

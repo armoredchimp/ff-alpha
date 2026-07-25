@@ -8,7 +8,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
     try {
-        // upcoming_fixtures only ever holds the current gameweek window
+        // upcoming_fixtures only ever holds the current league_week window
         // (the job clears + repopulates weekly), so no date filter needed.
         const { data: fixtures, error } = await supabase
             .from('upcoming_fixtures')

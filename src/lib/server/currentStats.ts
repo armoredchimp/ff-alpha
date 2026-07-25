@@ -2,7 +2,7 @@ import { supabase } from "$lib/client/supabase/supaClient";
 
 export async function getCurrentStats(playerId: string | number): Promise<any[]> {
     const { data, error } = await supabase
-        .from('current_week_stats')
+        .from('current_player_stats')
         .select('*')
         .eq('player_id', playerId);
 

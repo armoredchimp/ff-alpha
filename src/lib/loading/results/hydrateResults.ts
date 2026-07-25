@@ -2,10 +2,10 @@ import axios from "axios";
 import { teams, playerTeam } from "$lib/stores/teams.svelte";
 import { results } from "$lib/stores/generic.svelte";
 
-export async function loadMatchResults(matchWeek: number) {
+export async function loadMatchResults(league_week: number) {
     try {
         const response = await axios.get('/api/supabase/results', {
-            params: matchWeek ? { matchWeek } : {}
+            params: league_week ? { league_week } : {}
         })
         return hydrateMatchResults(response.data.results);
     } catch (err) {

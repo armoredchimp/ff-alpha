@@ -46,7 +46,7 @@
     <div class="modal">
         <h2>Choose favored fixture</h2>
         <p class="sub">
-            These players have two matches this gameweek. Pick which one counts at full
+            These players have two matches this league_week. Pick which one counts at full
             weight — the other is scored at a reduced rate.
         </p>
 

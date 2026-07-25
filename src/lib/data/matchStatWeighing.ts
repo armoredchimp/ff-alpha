@@ -50,7 +50,7 @@ export const KEEPER_ALWAYS_SHOW = ['saves', 'punches', 'goalkeeper_goals_concede
 
 // Outfield fallback fill order. When fewer than TOP_STAT_LIMIT ranked stats
 // exist, top up from this list (skipping any already shown), shown even when
-// null/zero (rendered blank, no number). current_week_stats column keys.
+// null/zero (rendered blank, no number). current_player_stats column keys.
 export const FALLBACK_STAT_ORDER = [
 	'goals',
 	'assists',
@@ -64,7 +64,7 @@ export const FALLBACK_STAT_ORDER = [
  
 export const TOP_STAT_LIMIT = 6;
  
-// Columns on a current_week_stats row that are metadata, not stats — excluded
+// Columns on a current_player_stats row that are metadata, not stats — excluded
 // from the dropdown's "everything not null" listing.
 export const STATS_ROW_METADATA = new Set([
 	'player_id',

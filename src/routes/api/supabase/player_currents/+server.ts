@@ -31,10 +31,10 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         ]);
 
         if (statsResult.status === 'rejected') {
-            console.error('current_week_stats fetch failed:', statsResult.reason);
+            console.error('current_player_stats fetch failed:', statsResult.reason);
         }
         if (scoresResult.status === 'rejected') {
-            console.error('current_week_scores fetch failed:', scoresResult.reason);
+            console.error('current_player_scores fetch failed:', scoresResult.reason);
         }
 
         // only overwrite a field on success; keep prior cached value if a fetch failed

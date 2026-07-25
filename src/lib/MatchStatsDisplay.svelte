@@ -37,7 +37,7 @@
 
 	const fixture = $derived(fixturesByID[fixtureId] ?? null);
 
-	// Player's team id lives on the stats row (added to current_week_stats).
+	// Player's team id lives on the stats row (added to current_player_stats).
 	const teamId = $derived(stats?.team_id ?? null);
 	const isAway = $derived(fixture != null && teamId != null && fixture.away_team_id === teamId);
 
