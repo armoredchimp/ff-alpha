@@ -89,7 +89,7 @@
             // Clear the existing table data before processing new data
             statusMessage = 'Clearing existing player stats...';
             const { error: deleteError } = await supabase
-                .from('current_week_stats')
+                .from('current_player_stats')
                 .delete()
                 .neq('player_id', 0);
             
@@ -98,7 +98,7 @@
                 throw new Error(`Failed to clear existing data: ${deleteError.message}`);
             }
             
-            console.log('Successfully cleared current_week_stats table');
+            console.log('Successfully cleared current_player_stats table');
             
             while (hasMore) {
                 statusMessage = `Fetching page ${currentPage}...`;
@@ -173,7 +173,7 @@
                         const batch = playerRecords.slice(i, Math.min(i + BATCH_SIZE, playerRecords.length));
                         
                         const { data, error: supabaseError } = await supabase
-                            .from('current_week_stats')
+                            .from('current_player_stats')
                             .insert(batch); 
                         
                         if (supabaseError) {
@@ -278,7 +278,7 @@
                         const batch = playerData.slice(i, Math.min(i + BATCH_SIZE, playerData.length));
                         
                         const { data, error: supabaseError } = await supabase
-                            .from('current_week_stats')
+                            .from('current_player_stats')
                             .upsert(batch, { 
                                 onConflict: 'player_id',
                                 ignoreDuplicates: false 

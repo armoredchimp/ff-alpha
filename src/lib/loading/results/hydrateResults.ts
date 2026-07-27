@@ -1,11 +1,11 @@
 import axios from "axios";
-import { teams, playerTeam } from "$lib/stores/teams.svelte";
+import { getTeamByDbId } from "$lib/stores/teams.svelte";
 import { results } from "$lib/stores/generic.svelte";
 
-export async function loadMatchResults(matchWeek: number) {
+export async function loadMatchResults(league_week: number) {
     try {
         const response = await axios.get('/api/supabase/results', {
-            params: matchWeek ? { matchWeek } : {}
+            params: league_week ? { league_week } : {}
         })
         return hydrateMatchResults(response.data.results);
     } catch (err) {
@@ -14,18 +14,12 @@ export async function loadMatchResults(matchWeek: number) {
 }
 
 function hydrateMatchResults(matchResults) {
-    const allTeams = [...Object.values(teams), playerTeam];
-    const teamMap = new Map();
-    for (const team of allTeams) {
-        teamMap.set(team.dbId, team);
-    }
-
     for (const result of matchResults) {
-        const homeTeam = teamMap.get(result.home_team_id);
-        const awayTeam = teamMap.get(result.away_team_id);
+        const homeTeam = getTeamByDbId(result.home_team_id);
+        const awayTeam = getTeamByDbId(result.away_team_id);
 
         // Store in results store with team references
-        results[result.id] = {
+        results[result.match_id] = {
             homeTeam,
             awayTeam,
             homeScore: result.home_score,
@@ -38,7 +32,7 @@ function hydrateMatchResults(matchResults) {
 
         if (homeTeam) {
             homeTeam.lastResult = {
-                matchId: result.id,
+                matchId: result.match_id,
                 oppId: result.away_team_id,
                 home: true,
                 result: result.home_score > result.away_score ? 'W' : result.home_score < result.away_score ? 'L' : 'D',
@@ -52,7 +46,7 @@ function hydrateMatchResults(matchResults) {
         }
         if (awayTeam) {
             awayTeam.lastResult = {
-                matchId: result.id,
+                matchId: result.match_id,
                 oppId: result.home_team_id,
                 home: false,
                 result: result.away_score > result.home_score ? 'W' : result.away_score < result.home_score ? 'L' : 'D',

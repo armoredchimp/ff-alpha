@@ -1,6 +1,7 @@
 <script lang="ts">
 	import FormationPlayer from './FormationPlayer.svelte';
 	import PlayerMini from './PlayerMini.svelte';
+	import PostMatchPlayer from './PostMatchPlayer.svelte';
 	import { ZONE_LAYOUT, KEEPER_ZONE, getSlotsByZone, hasZoneInFormation } from './utils/formation';
 
 	let {
@@ -13,13 +14,16 @@
 		opponentMode = 0,
 		focusedZone = null as number | null,
 		dropdownActive = false,
-		zIndex = 5
+		zIndex = 5,
+		playerData = {} as Record<number, any>,   // postmatch: player_id -> bundle player
+		onPlayerHover = null as ((id: number | null) => void) | null
 	} = $props();
 
 	const layout = ZONE_LAYOUT[zone];
 	const isKeeperZone = zone === KEEPER_ZONE;
 
 	let isSelect = $derived(mode === 'select');
+	let isPostMatch = $derived(mode === 'postmatch');
 	let teamSlots = $derived(getSlotsByZone(zone, team));
 	let opponentSlots = $derived(isKeeperZone ? getSlotsByZone(zone, opponent) : []);
 
@@ -27,6 +31,9 @@
 	// The keeper zone deliberately checks slots for BOTH teams and does not
 	// branch on mode — that is how it behaved before.
 	let visible = $derived.by(() => {
+		// Post-match renders one team only; keeper zone isn't special here since
+		// there's no opponent side to co-locate.
+		if (isPostMatch) return Boolean(displayData?.teamPlayers?.length);
 		if (isKeeperZone) return teamSlots.length > 0 || opponentSlots.length > 0;
 		if (isSelect) return hasZoneInFormation(zone, team);
 		return Boolean(displayData?.teamPlayers?.length || displayData?.opponentPlayers?.length);
@@ -38,7 +45,20 @@
 		class="zone"
 		style="left: {layout.left}; top: {layout.top}; z-index: {zIndex};"
 	>
-		{#if isSelect}
+		{#if isPostMatch}
+			<div class="zone-players-container">
+				<div class="player-row">
+					{#each displayData.teamPlayers as slot, i ('pm-' + slot.player.id + '-' + i)}
+						<PostMatchPlayer
+							player={slot.player}
+							currentPosition={slot.currentPosition}
+							bundlePlayer={playerData[slot.player.id] ?? null}
+							onHover={onPlayerHover}
+						/>
+					{/each}
+				</div>
+			</div>
+		{:else if isSelect}
 			{#each teamSlots as slot, i (slot.currentPosition + '-' + i)}
 				<FormationPlayer
 					player={slot.player}

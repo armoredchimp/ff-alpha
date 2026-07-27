@@ -190,7 +190,7 @@
 
     // Modal confirm → stash favored on playerTeam, then run the real upload
     function onFavoredConfirm(favored: Record<number, number>): void {
-        playerTeam.favored = favored;       // the new Team field you added
+        playerTeam.favored = favored;       
         showFavoredModal = false;
         favoredCandidates = [];
         uploadLeaguePlayers();

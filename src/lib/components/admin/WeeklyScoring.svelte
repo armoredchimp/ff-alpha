@@ -467,7 +467,7 @@
         
 
         const { data, error } = await supabase
-            .from('current_week_stats')
+            .from('current_player_stats')
             .select('*')
             .eq('player_id', player_id)
             .single();
@@ -481,7 +481,7 @@
             const scores = calculatePlayerScores(data, true); // Enable logging for individual scoring
             
             const { data: insertedData, error: insertError } = await supabase
-                .from('current_week_scores')
+                .from('current_player_scores')
                 .upsert(scores, { 
                     onConflict: 'player_id'
                 })
@@ -533,7 +533,7 @@
 
             // Clear the existing table data before processing new data
             const { error: deleteError } = await supabase
-                .from('current_week_scores')
+                .from('current_player_scores')
                 .delete()
                 .neq('player_id', 0); 
             
@@ -544,7 +544,7 @@
 
             // Get the count of all players
             const { count, error: countError } = await supabase
-                .from('current_week_stats')
+                .from('current_player_stats')
                 .select('*', { count: 'exact', head: true });
             
             if (countError) {
@@ -566,7 +566,7 @@
                 console.log(`\n📦 Processing batch ${batchProgress.currentBatch} of ${batchProgress.totalBatches}...`);
                 
                 const { data: batch, error: batchError } = await supabase
-                    .from('current_week_stats')
+                    .from('current_player_stats')
                     .select('*')
                     .range(i, Math.min(i + batchSize - 1, count - 1));
                 
@@ -594,7 +594,7 @@
 
                 if (scoresArray.length > 0) {
                     const { data: insertedData, error: insertError } = await supabase
-                        .from('current_week_scores')
+                        .from('current_player_scores')
                         .insert(scoresArray, { 
                             onConflict: 'player_id'
                         })

@@ -116,7 +116,7 @@
     
     while (hasMore) {
       const { data: scores, error } = await supabase
-        .from('current_week_scores')
+        .from('current_player_scores')
         .select('*')
         .range(offset, offset + limit - 1);
       
@@ -297,25 +297,25 @@
     if(!countriesCode){
       throw new Error('Failed to retrieve country code')
     }
-    const gameweek = matchweeksByCountry.get(countriesCode) 
-    if(!gameweek){
+    const league_week = matchweeksByCountry.get(countriesCode) 
+    if(!league_week){
       throw new Error('Failed to retrieve game week')
     }
     
-    // Delete existing results for this league/gameweek/season
+    // Delete existing results for this league/league_week/season
     const { error: deleteError } = await supabaseScaling
         .from('match_results')
         .delete()
         .eq('league_id', leagueId)
         .eq('season', season)
-        .eq('gameweek', gameweek);
+        .eq('league_week', league_week);
     
     if (deleteError) {
         console.error('Error deleting existing match results:', deleteError);
         throw new Error('Failed to clear existing results');
     }
 
-    console.log(`Cleared existing results for league ${leagueId}, gameweek ${gameweek}`);
+    console.log(`Cleared existing results for league ${leagueId}, league_week ${league_week}`);
     for (const [matchupId, result] of Object.entries(matchResults)) {
         
         
@@ -325,7 +325,7 @@
             .insert({
                 league_id: leagueId,
                 season,
-                gameweek,
+                league_week,
                 home_team_id: result.homeTeamId,
                 away_team_id: result.awayTeamId,
                 home_score: result.score.home,

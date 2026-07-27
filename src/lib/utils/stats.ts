@@ -1,6 +1,6 @@
 // $lib/utils/matchStats.ts
 // Domain logic for per-match stat display. Pure functions over a
-// current_week_stats row + the player's detailed_position. Shared by the
+// current_player_stats row + the player's detailed_position. Shared by the
 // fixture component and (later) the post-match screen.
 
 import {
@@ -14,7 +14,7 @@ import {
 import { IMP_MAPS } from '$lib/stores/generic.svelte';
 
 export interface MatchStat {
-	/** current_week_stats column key, e.g. "big_chances_created" */
+	/** current_player_stats column key, e.g. "big_chances_created" */
 	col: string;
 	/** display label, e.g. "Big Chances Created" */
 	label: string;

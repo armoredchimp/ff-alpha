@@ -61,3 +61,16 @@ export const teams = $state<Record<string, Team>>(
 );
 
 export const playerTeam = $state<Team>(createDefaultTeam({ player: true }));
+
+const teamsByDbIdMap = $derived.by(() => {
+    const map = new Map<number, Team>();
+    for (const team of Object.values(teams)) {
+        if (team.dbId) map.set(team.dbId, team);
+    }
+    if (playerTeam.dbId) map.set(playerTeam.dbId, playerTeam);
+    return map;
+});
+
+export function getTeamByDbId(dbId: number): Team | undefined {
+    return teamsByDbIdMap.get(dbId);
+}
