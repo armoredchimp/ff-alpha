@@ -10,8 +10,8 @@
     <div class="border-b border-gray-200 py-1 mb-1">
       <span class="font-semibold text-gray-500">Last Results</span>
     </div>
-    {#each Object.values(results) as match}
-        <a href="/teams/{match.homeTeam?.player ? 'player' : match.homeTeam?.name?.toLowerCase()}/last" class="flex items-center py-0.5 border-b border-gray-100 no-underline text-inherit">
+    {#each Object.entries(results) as [matchId, match]}
+        <a href="/postmatch/{matchId}" class="flex items-center py-0.5 border-b border-gray-100 no-underline text-inherit">
             <span class="truncate flex-1 font-medium text-right">{match.homeTeam?.name}</span>
             <span class="font-bold px-2 whitespace-nowrap">{match.homeScore} - {match.awayScore}</span>
             <span class="truncate flex-1 font-medium">{match.awayTeam?.name}</span>
@@ -20,10 +20,10 @@
   </div>
 {:else}
     <div class="results-list">
-        {#each Object.values(results) as match}
+        {#each Object.entries(results) as [matchId, match]}
             {@const homePoss = getPossessionPercentage(match.homePossWins, match.awayPossWins)}
             {@const awayPoss = getPossessionPercentage(match.awayPossWins, match.homePossWins)}
-            <a href="/teams/{match.homeTeam?.player ? 'player' : match.homeTeam?.name?.toLowerCase()}/last" class="match-card">
+            <a href="/postmatch/{matchId}" class="match-card">
                 <div class="teams-row">
                     <span class="team-name home">{match.homeTeam?.name}</span>
                     <div class="score">

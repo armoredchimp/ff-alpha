@@ -1,5 +1,5 @@
 import axios from "axios";
-import { teams, playerTeam } from "$lib/stores/teams.svelte";
+import { getTeamByDbId } from "$lib/stores/teams.svelte";
 import { results } from "$lib/stores/generic.svelte";
 
 export async function loadMatchResults(league_week: number) {
@@ -14,15 +14,9 @@ export async function loadMatchResults(league_week: number) {
 }
 
 function hydrateMatchResults(matchResults) {
-    const allTeams = [...Object.values(teams), playerTeam];
-    const teamMap = new Map();
-    for (const team of allTeams) {
-        teamMap.set(team.dbId, team);
-    }
-
     for (const result of matchResults) {
-        const homeTeam = teamMap.get(result.home_team_id);
-        const awayTeam = teamMap.get(result.away_team_id);
+        const homeTeam = getTeamByDbId(result.home_team_id);
+        const awayTeam = getTeamByDbId(result.away_team_id);
 
         // Store in results store with team references
         results[result.match_id] = {
