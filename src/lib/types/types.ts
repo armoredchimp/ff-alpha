@@ -192,3 +192,22 @@ export function isValidSchedule(schedule: unknown): schedule is Schedule {
 
   return true;
 }
+
+export interface MatchBundlePlayer {
+	fantasy: {
+		goals: number;
+		assists: number;
+		clean_sheets: number;
+		sub: boolean;
+		favored_fixture_id: number | null;
+	};
+	fixtureIds: number[];
+	statsRows: any[];  // 1-2 retained current_player_stats rows
+	scoresRows: any[]; // matching current_player_scores rows
+}
+ 
+export interface MatchBundle {
+	match: any;    // match_results row
+	details: any;  // match_details row (selected snapshots, chance_breakdown, etc.)
+	players: Record<number, MatchBundlePlayer>;
+}

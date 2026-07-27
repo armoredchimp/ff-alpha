@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fixturesByID } from '$lib/stores/generic.svelte';
-	import { rankMatchStats, dropdownMatchStats } from '$lib/utils';
+	import { rankMatchStats, dropdownMatchStats } from '$lib/utils/stats';
 
 	// Resolved by the parent (slug page / post-match), NOT derived here — keeps
 	// the component identical across screens.
@@ -8,12 +8,14 @@
 		stats = null as Record<string, any> | null,
 		scores = null as Record<string, any> | null,
 		fixtureId,
-		detailedPosition
+		detailedPosition,
+		compact = false
 	} = $props<{
 		stats?: Record<string, any> | null;
 		scores?: Record<string, any> | null;
 		fixtureId: number;
 		detailedPosition: string;
+		compact?: boolean;
 	}>();
 
 	let expanded = $state(false);
@@ -37,7 +39,7 @@
 
 	const fixture = $derived(fixturesByID[fixtureId] ?? null);
 
-	// Player's team id lives on the stats row (added to current_player_stats).
+	// Player's team id lives on the stats row (added to current_week_stats).
 	const teamId = $derived(stats?.team_id ?? null);
 	const isAway = $derived(fixture != null && teamId != null && fixture.away_team_id === teamId);
 
@@ -77,8 +79,12 @@
 		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 	});
 
-	const topStats = $derived(rankMatchStats(stats, detailedPosition));
-	const dropdownStats = $derived(dropdownMatchStats(stats));
+	// Compact (post-match panel) shows the 3 most significant; full shows 6.
+	// Ranking order is already correct, so slicing the top 3 gives the top 3.
+	const topStats = $derived(
+		compact ? rankMatchStats(stats, detailedPosition).slice(0, 3) : rankMatchStats(stats, detailedPosition)
+	);
+	const dropdownStats = $derived(compact ? [] : dropdownMatchStats(stats));
 
 	function barWidth(val: number | null | undefined): string {
 		if (val == null || val <= 0) return '0%';
@@ -92,7 +98,7 @@
 	}
 </script>
 
-<div class="match-card">
+<div class="match-card" class:compact>
 	<div class="match-header-row">
 		<h4 class="match-title">{title}</h4>
 		<span class="match-date">{dateLabel}</span>
@@ -112,7 +118,7 @@
 			{/each}
 		</div>
 
-		<!-- Notable stats: 2 rows of 3 -->
+		<!-- Notable stats: 2 rows of 3 (full) or a single row of 3 (compact) -->
 		<div class="match-stats-grid">
 			{#each topStats as stat}
 				<div class="match-stat">
@@ -123,31 +129,33 @@
 		</div>
 	</div>
 
-	<!-- Expandable: everything on the row that isn't null -->
-	<button
-		class="dropdown-toggle"
-		onclick={() => (expanded = !expanded)}
-		aria-expanded={expanded}
-	>
-		<span>All match stats</span>
-		<span class="chevron">{expanded ? '▲' : '▼'}</span>
-	</button>
+	{#if !compact}
+		<!-- Expandable: everything on the row that isn't null -->
+		<button
+			class="dropdown-toggle"
+			onclick={() => (expanded = !expanded)}
+			aria-expanded={expanded}
+		>
+			<span>All match stats</span>
+			<span class="chevron">{expanded ? '▲' : '▼'}</span>
+		</button>
 
-	{#if expanded}
-		<div class="dropdown-body">
-			{#if dropdownStats.length > 0}
-				<div class="dropdown-grid">
-					{#each dropdownStats as stat}
-						<div class="dropdown-stat">
-							<span class="dropdown-stat-label">{stat.label}</span>
-							<span class="dropdown-stat-value">{fmt(stat.value)}</span>
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<p class="dropdown-empty">No match stats recorded.</p>
-			{/if}
-		</div>
+		{#if expanded}
+			<div class="dropdown-body">
+				{#if dropdownStats.length > 0}
+					<div class="dropdown-grid">
+						{#each dropdownStats as stat}
+							<div class="dropdown-stat">
+								<span class="dropdown-stat-label">{stat.label}</span>
+								<span class="dropdown-stat-value">{fmt(stat.value)}</span>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<p class="dropdown-empty">No match stats recorded.</p>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -339,5 +347,37 @@
 		.match-bars {
 			flex-basis: auto;
 		}
+	}
+
+	/* Compact variant for the post-match hover panel: tighter, single stat row,
+	   no dropdown. Bars stay but the card is denser. */
+	.match-card.compact {
+		padding: 0.6rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.compact .match-header-row {
+		margin-bottom: 0.5rem;
+	}
+
+	.compact .match-title {
+		font-size: 0.85rem;
+	}
+
+	.compact .match-body {
+		gap: 0.75rem;
+	}
+
+	.compact .match-stat {
+		padding: 0.4rem 0.3rem;
+	}
+
+	.compact .match-stat-value {
+		font-size: 1.1rem;
+		min-height: 1.1rem;
+	}
+
+	.compact .match-stat-label {
+		font-size: 0.6rem;
 	}
 </style>

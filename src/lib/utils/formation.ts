@@ -857,6 +857,23 @@ export function hydrateSelected(team: Team): void {
     team.unused.push(...injuredPlayers);
 }
 
+export function hydrateSelectedSnapshot(
+    selected: Record<string, any>
+): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const [group, positions] of Object.entries(selected)) {
+        out[group] = {};
+        for (const [pos, cfg] of Object.entries(positions as Record<string, any>)) {
+            out[group][pos] = {
+                ...cfg,
+                players: (cfg.players as number[])
+                    .map((id) => (id == null ? null : playersByID[id] ?? null))
+                    .filter((p) => p !== null)
+            };
+        }
+    }
+    return out;
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Lineup Teardown & Batch Setup

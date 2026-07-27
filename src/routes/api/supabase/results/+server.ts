@@ -16,6 +16,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         let league_weekCode = url.searchParams.get('league_week');
         if (league_weekCode) {
             league_week = parseInt(league_weekCode)
+            console.log('League week:', league_week)
         } else {
             console.warn('Failed to get matchweek from frontend', league_week)
         }

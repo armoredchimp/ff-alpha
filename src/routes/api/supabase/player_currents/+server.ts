@@ -16,6 +16,14 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             return json({ error: 'Player ID required' }, { status: 400 });
         }
 
+        // Client passes its current league_week (from leagueState.currentMatchweek),
+        // the same way season_id is passed to the fixtures route.
+        const leagueWeekParam = url.searchParams.get('league_week');
+        if (!leagueWeekParam) {
+            return json({ error: 'league_week required' }, { status: 400 });
+        }
+        const leagueWeek = Number(leagueWeekParam);
+
         const cached = serverPlayerCache[playerId];
 
         if (cached?.currentStats && cached?.currentScores) {
@@ -26,8 +34,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         const [statsResult, scoresResult] = await Promise.allSettled([
-            getCurrentStats(playerId),
-            getCurrentScores(playerId)
+            getCurrentStats(playerId, leagueWeek),
+            getCurrentScores(playerId, leagueWeek)
         ]);
 
         if (statsResult.status === 'rejected') {
@@ -37,7 +45,6 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             console.error('current_player_scores fetch failed:', scoresResult.reason);
         }
 
-        // only overwrite a field on success; keep prior cached value if a fetch failed
         const currentStats =
             statsResult.status === 'fulfilled' ? statsResult.value : cached?.currentStats;
         const currentScores =

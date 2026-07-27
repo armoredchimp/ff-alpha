@@ -15,10 +15,16 @@
       tabDisplay = 0, // 0 = Positional groups // 1 = Individual zones
       base = true,
       zonesVisible = true,
-      mode = null
+      mode = null,
+      // ---- postmatch mode props ----
+      side = 'home',                 // 'home' | 'away' — which chanceBreakdown slice
+      chanceBreakdown = null,        // this match's { home:{byZone,byGroup}, away:{...} }
+      playerData = {},               // player_id -> bundle player (rating, fixtures, etc.)
+      onPlayerHover = null           // (playerId | null) => void — drives the page panel
     } = $props();
 
     let resolvedMode = $derived(mode ?? (base ? 'select' : 'preview'));
+    let isPostMatch = $derived(resolvedMode === 'postmatch');
 
     let activeTab = $state(null)
     let activeZone = $state(null) // For zone-based highlighting
@@ -27,12 +33,16 @@
     let dropdownActive = $state(false)
     let zoneData = $derived(initializeZoneData());
 
-    const groupStrengths = $derived({
-        attackers: calculateGroupMatchup(team, opponent, 'attackers', opponentMode),
-        midfielders: calculateGroupMatchup(team, opponent, 'midfielders', opponentMode),
-        defenders: calculateGroupMatchup(team, opponent, 'defenders', opponentMode),
-        keepers: calculateGroupMatchup(team, opponent, 'keepers', opponentMode)
-    });
+    const groupStrengths = $derived(
+        isPostMatch
+            ? {} // groups colored from chanceBreakdown in post-match, not the matchup engine
+            : {
+                attackers: calculateGroupMatchup(team, opponent, 'attackers', opponentMode),
+                midfielders: calculateGroupMatchup(team, opponent, 'midfielders', opponentMode),
+                defenders: calculateGroupMatchup(team, opponent, 'defenders', opponentMode),
+                keepers: calculateGroupMatchup(team, opponent, 'keepers', opponentMode)
+            }
+    );
 
     function setActiveTab(tab){
         activeTab = tab;
@@ -57,6 +67,28 @@
     }
 
     function initializeZoneData() {
+        // ---- Post-match: zone data is just this team's players per zone; the
+        // colour comes from chanceBreakdown, not from any matchup calculation. ----
+        if (isPostMatch) {
+            const data = {};
+            for (const zone of ZONE_IDS) {
+                const teamPlayers = [];
+                if (team.selected) {
+                    Object.values(team.selected).forEach(group => {
+                        Object.entries(group).forEach(([positionName, positionData]) => {
+                            if (positionData.zone === zone) {
+                                positionData.players.forEach(player => {
+                                    if (player) teamPlayers.push({ player, currentPosition: positionName });
+                                });
+                            }
+                        });
+                    });
+                }
+                data[zone] = { teamPlayers, opponentPlayers: [], scores: null, isEmpty: teamPlayers.length === 0 };
+            }
+            return data;
+        }
+
         const data = {};
         const emptyZones = [];
 
@@ -205,6 +237,28 @@
         return `rgba(${color}, ${opacity})`;
     }
 
+    // ---- Post-match colour helpers (chance-based, soft wash under players) ----
+    // Zones 0-35, groups 0-130 -> red(low)->blue(high) on a gentle opacity ramp.
+    function getPostMatchZoneColor(zone) {
+        const chances = chanceBreakdown?.[side]?.byZone?.[zone] ?? 0;
+        const t = Math.max(0, Math.min(chances / 35, 1));           // 0..1
+        return postMatchWash(t);
+    }
+    function getPostMatchGroupColor(group) {
+        const chances = chanceBreakdown?.[side]?.byGroup?.[group] ?? 0;
+        const t = Math.max(0, Math.min(chances / 130, 1));          // 0..1
+        return postMatchWash(t);
+    }
+    function postMatchWash(t) {
+        // t=0 -> red, t=0.5 -> neutral, t=1 -> blue. Low opacity so player rings dominate.
+        if (t < 0.5) {
+            const k = (0.5 - t) / 0.5;                 // 0..1 toward red
+            return `rgba(239, 68, 68, ${(k * 0.22).toFixed(3)})`;
+        }
+        const k = (t - 0.5) / 0.5;                     // 0..1 toward blue
+        return `rgba(59, 130, 246, ${(k * 0.22).toFixed(3)})`;
+    }
+
     // Handle focus event from FormationPlayer
     function handlePlayerFocus(event) {
         if (focusedZone !== event.detail.zone) {
@@ -252,11 +306,11 @@
     }
 </script>
 
-<div class="formation-layout">
-    <div class="field" onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
+<div class="formation-layout" class:postmatch={isPostMatch}>
+    <div class="field" class:field-postmatch={isPostMatch} onfocusplayer={handlePlayerFocus} onblurplayer={handlePlayerBlur}>
         {#if zonesVisible}
         <div class="zone-lines">
-          <!-- internal horizontal boundaries (6 rows ⇒ 5 lines) -->
+          <!-- internal horizontal boundaries (6 rows â‡’ 5 lines) -->
           <div class="horizontal-line" style="top: 17.5%;"></div>
           <div class="horizontal-line" style="top: 32.5%;"></div>
           <div class="horizontal-line" style="top: 47.5%;"></div>
@@ -267,8 +321,28 @@
         </div>
         {/if}
 
-        {#if resolvedMode !== 'select'}
-            <!-- Zone overlays for strength visualization -->
+        {#if isPostMatch}
+            <!-- Post-match: group bands + zone overlays coloured from chanceBreakdown -->
+            <div class="hover-zones">
+                {#each GROUP_ROWS as row}
+                    <div
+                        class="hover-zone postmatch-band"
+                        style="top: {row.top}; height: {row.height}; background-color: {getPostMatchGroupColor(row.group)};"
+                    ></div>
+                {/each}
+            </div>
+            <div class="zone-overlays">
+                {#each ZONE_IDS as zone}
+                    {@const rect = ZONE_LAYOUT[zone].rect}
+                    <div
+                        class="zone-overlay"
+                        style="left: {rect.left}; top: {rect.top}; width: {rect.width}; height: {rect.height}; background-color: {getPostMatchZoneColor(zone)}"
+                    ></div>
+                {/each}
+            </div>
+
+        {:else if !base}
+            <!-- Zone overlays for strength visualization (preview) -->
             <div class="zone-overlays">
                 {#each ZONE_IDS as zone}
                     {@const displayData = getZoneDisplay(zone)}
@@ -283,8 +357,8 @@
             </div>
         {/if}
 
-        <!-- Conditional hover zones based on 'base' prop -->
-        {#if resolvedMode === 'select'}
+        <!-- Hover layers only for the interactive (non-postmatch) modes -->
+        {#if base}
           <!-- Selection screen: unchanged, keeps its in-field FormationTab popups -->
           <div class="hover-zones">
             {#each GROUP_ROWS as row}
@@ -304,7 +378,7 @@
             {/each}
           </div>
 
-        {:else if tabDisplay === 0}
+        {:else if resolvedMode === 'preview' && tabDisplay === 0}
           <!-- Preview: hovering only sets state; content renders in the side panel -->
           <div class="hover-zones">
             {#each GROUP_ROWS as row}
@@ -318,7 +392,7 @@
             {/each}
           </div>
 
-        {:else if tabDisplay === 1}
+        {:else if resolvedMode === 'preview' && tabDisplay === 1}
           <!-- Zone-based hover zones -->
           <div class="hover-zones-detailed">
             {#each ZONE_IDS as zone}
@@ -348,11 +422,13 @@
                 {focusedZone}
                 {dropdownActive}
                 zIndex={getZoneZIndex(zone)}
+                {playerData}
+                {onPlayerHover}
             />
         {/each}
     </div>
 
-    {#if resolvedMode !== 'select'}
+    {#if resolvedMode === 'preview'}
         <FormationDetailPanel
             {tabDisplay}
             activeGroup={activeTab}
@@ -364,6 +440,7 @@
         />
     {/if}
 </div>
+
 
 <style>
     .field {
@@ -480,5 +557,19 @@
         gap: 1.5rem;
         align-items: flex-start;
         width: 100%;
+    }
+
+    .formation-layout.postmatch {
+        display: block;
+        width: 100%;
+    }
+
+    .field-postmatch {
+        width: 100%;
+        height: 52rem; /* reduced from 70rem; rough, tune later */
+    }
+
+    .postmatch-band {
+        pointer-events: none; /* bands are decorative in post-match, not hoverable */
     }
  </style>
