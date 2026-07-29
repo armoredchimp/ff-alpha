@@ -185,3 +185,138 @@ export async function validateFavored(
 
     return null;
 }
+
+// ---- Load the team's currently-stored ARRANGEMENT (not ownership) ----
+// loadStoredRoster reads the immutable pos-group ownership. This reads the
+// mutable lineup arrangement (selected/subs/unused/favored) that player_upload
+// is the sole writer of — the trusted "before" state for lock enforcement.
+export async function loadStoredArrangement(teamId: number): Promise<{
+	selected: any;
+	subs: number[];
+	unused: number[];
+	favored: Record<string, number>;
+} | null> {
+	const { data, error } = await supabaseScaling
+		.from('team_players')
+		.select('selected, subs, unused, favored')
+		.eq('team_id', teamId)
+		.maybeSingle();
+ 
+	if (error) {
+		console.error('loadStoredArrangement failed:', error.message);
+		throw error;
+	}
+	if (!data) return null;
+ 
+	return {
+		selected: data.selected ?? {},
+		subs: (data.subs ?? []) as number[],
+		unused: (data.unused ?? []) as number[],
+		favored: (data.favored ?? {}) as Record<string, number>
+	};
+}
+ 
+// ---- Load the set of locked player_ids (real match has kicked off) ----
+// Global fact — a kickoff is league-agnostic. Live query, no stored state.
+export async function loadLockedPlayerIds(): Promise<Set<number>> {
+	const nowIso = new Date().toISOString();
+	const { data, error } = await supabaseScaling
+		.from('upcoming_fixtures')
+		.select('player_id')
+		.lte('kickoff', nowIso);
+ 
+	if (error) {
+		console.error('loadLockedPlayerIds failed:', error.message);
+		throw error;
+	}
+ 
+	const set = new Set<number>();
+	for (const row of data ?? []) set.add(row.player_id);
+	return set;
+}
+ 
+// ---- Bucket resolution ----
+type Bucket = 'starter' | 'sub' | 'unused' | 'absent';
+ 
+// Flatten a selected structure ({group:{position:{players:[ids]}}}) to a set.
+function startersOf(selected: any): Set<number> {
+	const set = new Set<number>();
+	if (!selected) return set;
+	for (const group of Object.values(selected) as any[]) {
+		for (const positionData of Object.values(group) as any[]) {
+			for (const id of positionData.players ?? []) {
+				if (id != null) set.add(id);
+			}
+		}
+	}
+	return set;
+}
+ 
+function bucketOf(
+	id: number,
+	starters: Set<number>,
+	subs: number[],
+	unused: number[]
+): Bucket {
+	if (starters.has(id)) return 'starter';
+	if (subs.includes(id)) return 'sub';
+	if (unused.includes(id)) return 'unused';
+	return 'absent';
+}
+ 
+// ---- The lock check ----
+// Returns the player_ids that violate a lock: a locked player whose bucket
+// changed, or whose favored-fixture entry changed, between stored and incoming.
+export function checkLockedPlayers(
+	stored: {
+		selected: any;
+		subs: number[];
+		unused: number[];
+		favored: Record<string, number>;
+	} | null,
+	incoming: {
+		selected: any;
+		subs: number[];
+		unused: number[];
+		favored: Record<string, number>;
+	},
+	lockedSet: Set<number>
+): number[] {
+	// No stored arrangement (brand-new team, first submit mid-season): every
+	// locked player is 'absent' in the baseline, so placing one into any bucket
+	// registers as a change and is rejected. This is deliberately strict for now
+	// — a mid-season new team can't field a player whose match already started.
+	// Revisit with new-team onboarding (auto-pick that avoids locked players).
+	const storedSelected = stored?.selected ?? {};
+	const storedSubs = stored?.subs ?? [];
+	const storedUnused = stored?.unused ?? [];
+	const storedFavored = stored?.favored ?? {};
+ 
+	const storedStarters = startersOf(storedSelected);
+	const incomingStarters = startersOf(incoming.selected);
+ 
+	const violations: number[] = [];
+ 
+	for (const id of lockedSet) {
+		const before = bucketOf(id, storedStarters, storedSubs, storedUnused);
+		const after = bucketOf(id, incomingStarters, incoming.subs, incoming.unused);
+ 
+		// A locked player not on this team at all in either state — nothing to check.
+		if (before === 'absent' && after === 'absent') continue;
+ 
+		if (before !== after) {
+			violations.push(id);
+			continue;
+		}
+ 
+		// Bucket unchanged — also lock the favored-fixture pick for this player.
+		// String key: favored is keyed by player id.
+		const key = String(id);
+		if (storedFavored[key] !== incoming.favored?.[key]) {
+			violations.push(id);
+		}
+	}
+ 
+	return violations;
+}
+ 
