@@ -6,7 +6,7 @@
   import { getFallbackPos } from "./data/fallbackOrder";
   import PlayerMini from "./PlayerMini.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
-  import { clientPlayerCache } from '$lib/stores/generic.svelte';
+  import { clientPlayerCache, lockedPlayers } from '$lib/stores/generic.svelte';
   import { onMount } from "svelte";
   import type { Player, Team } from "$lib/types/types";
 
@@ -70,6 +70,8 @@
     return subs.length;
   });
 
+  let canRemove = $derived(!(player?.id && lockedPlayers.has(player.id)));
+
   onMount(() => {
     // console.log('=== FormationPlayer MOUNT ===');
     // console.log('Position:', currentPosition);
@@ -80,7 +82,6 @@
     getEligiblePositions();
     // Always get eligible players, even if no player is selected
     getEligiblePlayers();
-    
     
     currentSlot = getSelectedSlot();
     // console.log('Initial currentSlot:', currentSlot);
@@ -201,27 +202,30 @@
     }
     
     // Also scan subs for eligible replacements
+    // ... inside scanPlayersForPos, the subs loop:
     if (playerTeam.subs && playerTeam.subs.length > 0) {
-      for (let i = 0; i < playerTeam.subs.length; i++) {
-        const sub = playerTeam.subs[i];
-        if (sub && typeof sub !== 'number' && 
-            'detailed_position' in sub && 
-            sub.detailed_position === position && 
-            sub.id) {
-          // Skip if this is the current player or already found
-          if ((!player || !player.id || sub.id !== player.id) && 
-              !foundPlayerIds.has(sub.id)) {
-            foundPlayerIds.add(sub.id);
-            eligibleReplacements.push(sub as Player);
-          }
+        for (let i = 0; i < playerTeam.subs.length; i++) {
+            const sub = playerTeam.subs[i];
+            if (sub && typeof sub !== 'number' &&
+                'detailed_position' in sub &&
+                sub.detailed_position === position &&
+                sub.id) {
+                // Locked sub can't be promoted to starter — skip. (Only here, NOT in
+                // the roster-group scan, where a locked player is a current starter
+                // being offered for a legal same-bucket reposition.)
+                if (lockedPlayers.has(sub.id)) continue;
+                if ((!player || !player.id || sub.id !== player.id) &&
+                    !foundPlayerIds.has(sub.id)) {
+                    foundPlayerIds.add(sub.id);
+                    eligibleReplacements.push(sub as Player);
+                }
+            }
         }
-      }
     }
-  }
 
   function removePlayer(): void {
     if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
-    
+
     const removedPlayer = currentSlot.player;
     
     // Ensure subs array exists
@@ -595,6 +599,7 @@
         aria-label="Swap players dropdown"
       >
       <!-- Remove Player Button (X) -->
+       {#if canRemove}
       <button 
         class="remove-player-btn" 
         onclick={() => removePlayer()}
@@ -604,7 +609,8 @@
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       </button>
-      
+      {/if}
+
       <!-- Swap Players Dropdown -->
       {#if showDropdown}
         <div 

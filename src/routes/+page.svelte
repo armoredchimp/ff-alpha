@@ -17,6 +17,7 @@
     import { delay } from '../lib/utils';
     import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     import { loadMatchResults } from '$lib/loading/results/hydrateResults';
+	import { loadLockedPlayers } from '$lib/loading/players/lockedPlayers';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -138,6 +139,7 @@ async function signUserIn(values) {
                             // Load players from the appropriate table based on countries code
                             await Promise.all([
                                 loadPlayersData(countriesCode), 
+                                loadLockedPlayers(),
                                 loadManagersData(countriesCode),
                                 loadClubsData(),
                                 loadFixturesData()

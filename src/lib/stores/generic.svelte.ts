@@ -11,8 +11,12 @@ export const clientMatchCache = $state<Record<string, MatchBundle>>({});
 export let injuredByTeam: Record<string, Player[]> = $state({});
 export let injuredByFantasyTeam: Record<string, Player[]> = $state({});
 
+export const lockedPlayers = $state<Set<number>>(new Set());
+
 export let playerCall = $state(false)
 let playerPageInit = $state<boolean>(false)
+
+
 
 export function getPlayerInit() {
     return playerPageInit
