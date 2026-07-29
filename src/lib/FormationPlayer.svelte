@@ -222,6 +222,7 @@
             }
         }
     }
+  }
 
   function removePlayer(): void {
     if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
