@@ -657,124 +657,128 @@
   {/if}
 
   <!-- Current Player Hover popup -->
-  {#if player}  
-  {#if player.detailed_position !== "Goalkeeper"}
-   <div class="player-popup" class:comparison-mode={showComparison}>
-    <div class="popup-upper-section">
-        <div class="popup-info">
-            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-            <div><strong>Age: </strong>   {player.player_age} yrs</div>
+  {#if player}
+    {#if !canRemove && !showComparison}
+      <div class="player-popup locked-bare">
+        <LockedFixturePopup {player} />
+      </div>  
+    {:else if player.detailed_position !== "Goalkeeper"}
+    <div class="player-popup" class:comparison-mode={showComparison}>
+      <div class="popup-upper-section">
+          <div class="popup-info">
+              <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
+              <div><strong>Age: </strong>   {player.player_age} yrs</div>
+          </div>
+          
+          <div class="team-name">{player.player_team}</div>
+        
+      </div>
+      <!-- Metrics bar graph -->
+      <div class="player-metrics">
+        <div class="metric">
+          <span class="metric-label">Def. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-def"
+              style="width: {(player.defensive_score / 5000) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Poss. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-poss"
+              style="width: {(player.possession_score / 5000 ) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Pass. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-pass"
+              style="width: {(player.passing_score / 5000 ) * 100}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-label">Atk. Score</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-attk"
+              style="width: {(player.attacking_score / 4000 ) * 100}%"
+            ></div>
+          </div>
         </div>
         
-        <div class="team-name">{player.player_team}</div>
-      
-    </div>
-     <!-- Metrics bar graph -->
-     <div class="player-metrics">
-       <div class="metric">
-         <span class="metric-label">Def. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-def"
-             style="width: {(player.defensive_score / 5000) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Poss. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-poss"
-             style="width: {(player.possession_score / 5000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Pass. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-pass"
-             style="width: {(player.passing_score / 5000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Atk. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-attk"
-             style="width: {(player.attacking_score / 4000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-       
-        <div class="metric">
-         <span class="metric-label">Goalscoring</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-fin"
-             style="width: {(player.finishing_score / 4000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-     </div>
-
-     {#if clientPlayerCache[player.id]}
-       {@const stats = clientPlayerCache[player.id]}
-       <div class="cache-stats">
-           {#if stats.player?.statistics?.length}
-               {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
-               {@const dets = season?.details ?? []}
-               {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
-               {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
-               <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
-               <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
-           {/if}
-           {#if stats.fantasyStats}
-               <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
-               <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
-           {/if}
-       </div>
-     {/if}
-
-   </div>
-   {:else if player.detailed_position === "Goalkeeper"}
-   <div class="player-popup" class:comparison-mode={showComparison}>
-    <div class="popup-upper-section">
-        <div class="popup-info">
-            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-            <div><strong>Age: </strong>   {player.player_age} yrs</div>
+          <div class="metric">
+          <span class="metric-label">Goalscoring</span>
+          <div class="metric-bar-container">
+            <div
+              class="metric-bar bar-fin"
+              style="width: {(player.finishing_score / 4000 ) * 100}%"
+            ></div>
+          </div>
         </div>
-        <div class="team-name">{player.player_team}</div>
-    </div>
 
-    <div class="metric">
-      <span class="metric-label">Keeping</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-poss"
-          style="width: {((player.keeper_score || 0) / 5000) * 100}%"
-        ></div>
       </div>
+
+      {#if clientPlayerCache[player.id]}
+        {@const stats = clientPlayerCache[player.id]}
+        <div class="cache-stats">
+            {#if stats.player?.statistics?.length}
+                {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
+                {@const dets = season?.details ?? []}
+                {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
+                {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
+                <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
+                <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
+            {/if}
+            {#if stats.fantasyStats}
+                <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
+                <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
+            {/if}
+        </div>
+      {/if}
+
     </div>
-    
-     <div class="metric">
-       <span class="metric-label">Passing</span>
-       <div class="metric-bar-container">
-         <div
-           class="metric-bar bar-pass"
-           style="width: {(player.passing_score / 5000) * 100}%"
-         ></div>
-       </div>
-     </div>
- 
-   </div>
-   {/if}
-   {/if}
+    {:else if player.detailed_position === "Goalkeeper"}
+    <div class="player-popup" class:comparison-mode={showComparison}>
+      <div class="popup-upper-section">
+          <div class="popup-info">
+              <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
+              <div><strong>Age: </strong>   {player.player_age} yrs</div>
+          </div>
+          <div class="team-name">{player.player_team}</div>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Keeping</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-poss"
+            style="width: {((player.keeper_score || 0) / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+      
+      <div class="metric">
+        <span class="metric-label">Passing</span>
+        <div class="metric-bar-container">
+          <div
+            class="metric-bar bar-pass"
+            style="width: {(player.passing_score / 5000) * 100}%"
+          ></div>
+        </div>
+      </div>
+  
+    </div>
+    {/if}
+  {/if}
 
    <!-- Replacement Player Hover popup -->
   {#if hoveredReplacement}  
