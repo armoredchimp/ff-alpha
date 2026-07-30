@@ -51,8 +51,7 @@
                 <Formation
                     team={data.team}
                     base={false}
-                    allowModification={false}
-                    opponent={opponent}
+                    {opponent}
                     viewOpponent={true}
                     {opponentMode}
                     {tabDisplay}

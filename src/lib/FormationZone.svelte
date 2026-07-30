@@ -13,7 +13,7 @@
 		displayData = null as any,
 		viewOpponent = false,
 		opponentMode = 0,
-        allowModification = false,
+        allowModification = true,
 		focusedZone = null as number | null,
 		dropdownActive = false,
 		zIndex = 5,
@@ -67,7 +67,7 @@
 					currentPosition={slot.currentPosition}
 					{zone}
 					hide={focusedZone !== zone && dropdownActive}
-                    {allowModification}
+                    allowModification={allowModification}
 				/>
 			{/each}
 		{:else if isKeeperZone}
