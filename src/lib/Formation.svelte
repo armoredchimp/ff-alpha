@@ -342,7 +342,7 @@
                 {/each}
             </div>
 
-        {:else if !base}
+        {:else if resolvedMode === 'preview'}
             <!-- Zone overlays for strength visualization (preview) -->
             <div class="zone-overlays">
                 {#each ZONE_IDS as zone}
@@ -359,7 +359,7 @@
         {/if}
 
         <!-- Hover layers only for the interactive (non-postmatch) modes -->
-        {#if base}
+        {#if resolvedMode === 'select'}
           <!-- Selection screen: unchanged, keeps its in-field FormationTab popups -->
           <div class="hover-zones">
             {#each GROUP_ROWS as row}
