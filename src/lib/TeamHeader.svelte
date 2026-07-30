@@ -4,6 +4,8 @@
     import { getPossessionColor, getPossessionPercentage} from "./utils/team.ts"
     import { teams, playerTeam } from "$lib/stores/teams.svelte";
     import type { Team, Manager } from "$lib/types/types";
+    import ScoreBars from "./ScoreBars.svelte";
+    import { teamScores, TEAM_SCORE_KEYS } from "./data/scoreConfig";
 
     interface Rival {
         name: string;
@@ -17,28 +19,7 @@
 
 
     let {
-        team = {
-            name: '',
-            draftOrder: 0,
-            attackers: [],
-            midfielders: [],
-            defenders: [],
-            keepers: [],
-            playerCount: 0,
-            traits: [],
-            transferBudget: 0,
-            manager: null,
-            rivals: [],
-            lastResult: {
-                oppId: 0,
-                result: '',
-                goalsFor: 0,
-                goalsAgainst: 0,
-                chancePoints: 0,
-                chancePointsOpp: 0,
-                possWins: 0,
-                possWinsOpp: 0
-            }
+        team = {   
         } as Team,
         computer = false
     }: {
@@ -218,26 +199,12 @@
 
             <div class="popup-scores">
                 <h5 class="scores-title">Team Ratings</h5>
-                <div class="scores-list">
-                    {#each [
-                        { label: 'ATK', value: rivalTeam.scores.total.attacking / rivalTeam.playerCount, color: '#fca5a5' },
-                        { label: 'PAS', value: rivalTeam.scores.total.passing / rivalTeam.playerCount, color: '#93c5fd' },
-                        { label: 'POS', value: rivalTeam.scores.total.possession / rivalTeam.playerCount, color: '#6ee7b7' },
-                        { label: 'DEF', value: rivalTeam.scores.total.defense / rivalTeam.playerCount, color: '#fde68a' },
-                        { label: 'KEP', value: rivalTeam.scores.total.keeping / (rivalTeam.keepers?.length || 1), color: '#a074cf' }
-                    ] as stat}
-                        <div class="score-row">
-                            <span class="score-label">{stat.label}</span>
-                            <div class="score-bar-container">
-                                <div 
-                                    class="score-bar"
-                                    style="width: {getBarWidth(stat.value)}; background-color: {stat.color};"
-                                ></div>
-                            </div>
-                            <span class="score-number">{Math.round(stat.value)}</span>
-                        </div>
-                    {/each}
-                </div>
+                    <ScoreBars
+                        scores={teamScores(rivalTeam)}
+                        keys={TEAM_SCORE_KEYS}
+                        labels="abbrev"
+                        showValues
+                    />
             </div>
         </div>
     {/if}

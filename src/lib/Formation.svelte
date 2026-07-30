@@ -10,6 +10,7 @@
     let {
       team = {} as Team,
       opponent = {} as Team,
+      allowModification = true,
       viewOpponent = false,
       opponentMode = 0, // 0 = Direct comparison // 1 = Matchup view,
       tabDisplay = 0, // 0 = Positional groups // 1 = Individual zones
@@ -420,6 +421,7 @@
                 {viewOpponent}
                 {opponentMode}
                 {focusedZone}
+                {allowModification}
                 {dropdownActive}
                 zIndex={getZoneZIndex(zone)}
                 {playerData}
