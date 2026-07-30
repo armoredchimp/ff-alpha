@@ -17,7 +17,7 @@
     import { delay } from '../lib/utils';
     import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     import { loadMatchResults } from '$lib/loading/results/hydrateResults';
-	import { loadLockedPlayers } from '$lib/loading/players/lockedPlayers';
+	import { loadLockedFixtureData, loadLockedPlayers } from '$lib/loading/players/lockedPlayers';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -212,6 +212,7 @@ async function handlePostLeagueLoad(leagueData) {
                     console.error('error hydrating teams', err);
                 }
                 delay(100);
+                loadLockedFixtureData()
                 hydrateManagers();
                 delay(100);
                 try {

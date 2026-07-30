@@ -5,6 +5,7 @@
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
   import PlayerMini from "./PlayerMini.svelte";
+  import LockedFixturePopup from "./LockedFixturePopup.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
   import { clientPlayerCache, lockedPlayers } from '$lib/stores/generic.svelte';
   import { onMount } from "svelte";

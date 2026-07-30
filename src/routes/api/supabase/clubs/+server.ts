@@ -10,7 +10,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
     try {
         const { data: clubs, error } = await supabase
             .from('clubs')
-            .select('team_id, name');
+            .select('team_id, name, short_code');
 
         if (error) {
             console.error('Error loading clubs:', error);
