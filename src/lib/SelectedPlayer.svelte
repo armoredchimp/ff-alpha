@@ -1,5 +1,7 @@
-<script>
+<script lang="ts">
     import { positionAbbrev } from './utils';
+    import { playerScores } from './data/scoreConfig';
+    import ScoreBars from './ScoreBars.svelte';
 
     let {
         player = {},
@@ -8,15 +10,16 @@
     } = $props();
 
     const validGroups = ['attackers', 'midfielders', 'defenders', 'keepers', 'subs'];
-    let groupClass = $state(validGroups.includes(posGroup) ? posGroup : 'default');
+    const groupClass = $derived(validGroups.includes(posGroup) ? posGroup : 'default');
 
-   
-    if(posGroup === "unused" && player?.injured?.category){
-      position = player?.injured?.category === 'injury' ? 'Injured' : 'Suspended'
-    }
- 
+    const displayPosition = $derived(
+        posGroup === 'unused' && player?.injured?.category
+            ? (player.injured.category === 'injury' ? 'Injured' : 'Suspended')
+            : position
+    );
+
+    const isKeeper = $derived(player?.detailed_position === 'Goalkeeper');
 </script>
-
 
 <div class="wrapper">
   <div class="tab 
@@ -24,7 +27,7 @@
     {player?.player_name ? '' : 'empty'} 
     {player?.injured?.category === 'injury' ? 'injured' : ''} 
     {player?.injured?.category === 'suspended' ? 'suspended' : ''}">
-    <span class="position">{positionAbbrev(position)}</span>
+    <span class="position">{positionAbbrev(displayPosition)}</span>
     {#if player?.player_name}
       <span class="name">{player.player_name}</span>
     {:else}
@@ -32,7 +35,7 @@
     {/if}
   </div>
 
-  {#if player?.player_name && player?.detailed_position !== "Goalkeeper"}
+  {#if player?.player_name}
     <div class="player-popup">
       <div><strong>{player.player_name}</strong></div>
       <div>{player.player_team || 'Unknown'}</div>
@@ -41,86 +44,8 @@
       <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
 
       <div class="player-metrics">
-        <div class="metric">
-          <span class="metric-label">Defense</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-def"
-              style="width: {((player.defensive_score || 0) / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Possession</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-poss"
-              style="width: {((player.possession_score || 0) / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Passing</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-pass"
-              style="width: {((player.passing_score || 0) / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Attacking</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-attk"
-              style="width: {((player.attacking_score || 0) / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Goalscoring</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-fin"
-              style="width: {((player.finishing_score || 0) / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
+        <ScoreBars scores={playerScores(player)} {isKeeper} variant="stacked" />
       </div>
-    </div>
-  {:else if player?.player_name && player?.detailed_position === "Goalkeeper"}
-    <div class="player-popup">
-      <div><strong>{player.player_name}</strong></div>
-      <div>{player.player_team || 'Unknown'}</div>
-      <div><strong>Nationality:</strong> {player.nationality || 'Unknown'}</div>
-      <div><strong>Position:</strong> {positionAbbrev(player.detailed_position || '')}</div>
-      <div><strong>Age:</strong> {player.player_age || 'Unknown'} yrs</div>
-
-      <div class="metric">
-        <span class="metric-label">Keeping</span>
-        <div class="metric-bar-container">
-          <div
-            class="metric-bar bar-poss"
-            style="width: {((player.keeper_score || 0) / 5000) * 100}%"
-          ></div>
-        </div>
-      </div>
-      
-      <div class="metric">
-        <span class="metric-label">Passing</span>
-        <div class="metric-bar-container">
-          <div
-            class="metric-bar bar-pass"
-            style="width: {((player.passing_score || 0) / 5000) * 100}%"
-          ></div>
-        </div>
-      </div>
-
     </div>
   {/if}
 </div>
@@ -200,35 +125,7 @@
     opacity: 1;
   }
 
-
   .player-metrics {
     margin-top: 0.5rem;
   }
-
-  .metric {
-    margin-bottom: 0.25rem;
-  }
-
-  .metric-label {
-    font-size: 0.7rem;
-    margin-right: 0.25rem;
-  }
-
-  .metric-bar-container {
-    background: #eee;
-    border-radius: 4px;
-    overflow: hidden;
-    height: 0.5rem;
-    margin-top: 0.15rem;
-  }
-
-  .metric-bar {
-    height: 100%;
-  }
-
-  .bar-def { background: #e63946; }
-  .bar-poss { background: #f4a261; }
-  .bar-pass { background: #2a9d8f; }
-  .bar-attk { background: #264653; }
-  .bar-fin { background: #b011e0;}
 </style>

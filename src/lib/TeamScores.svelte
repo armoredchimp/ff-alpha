@@ -1,4 +1,7 @@
 <script lang="ts">
+    import ScoreBars from './ScoreBars.svelte';
+    import { normalizeTeamScores, TEAM_SCORE_KEYS } from './data/scoreConfig';
+
     interface ScoresProps {
         finishing: number;
         attacking: number;
@@ -6,13 +9,6 @@
         possession: number;
         defense: number;
         keeping: number;
-    }
-
-    type StatLabel = 'Keeping' | 'Defending' | 'Possession' | 'Passing' | 'Attacking';
-
-    interface StatItem {
-        label: StatLabel;
-        value: number;
     }
 
     let {
@@ -32,53 +28,22 @@
         keeperCount?: number;
     } = $props();
 
-    const maxScore = 5000;
+    // Defence-up presentation, the inverse of the popup's attack-first order.
+    const keys = [...TEAM_SCORE_KEYS]
 
-    let fin = $derived(scores.finishing /playerCount);
-    let atk = $derived(scores.attacking / playerCount);
-    let pas = $derived(scores.passing / playerCount);
-    let pos = $derived(scores.possession / playerCount);
-    let def = $derived(scores.defense / playerCount);
-    let kep = $derived(scores.keeping ? scores.keeping / keeperCount : 0);
-
-    const percent = (score: number): string => `${Math.min(100, (score / maxScore) * 100)}%`;
-
-    const barColors: Record<StatLabel, string> = {
-        Goalscoring: 'finishing-bar',
-        Attacking: 'attacking-bar',
-        Passing: 'passing-bar',
-        Possession: 'possession-bar',
-        Defending: 'defending-bar',
-        Keeping: 'keeping-bar'
-    };
+    const normalized = $derived(normalizeTeamScores(scores, playerCount, keeperCount));
 </script>
 
 <div class="team-scores-container">
     <h3 class="team-scores-title">Team Ratings</h3>
-
-    <div class="scores-grid">
-        {#each [
-            { label: 'Keeping', value: kep },
-            { label: 'Defending', value: def },
-            { label: 'Possession', value: pos },
-            { label: 'Passing', value: pas },
-            { label: 'Attacking', value: atk },
-            { label: 'Goalscoring', value: fin }
-        ] as stat}
-            <div class="score-item">
-                <div class="score-label">
-                    <span>{stat.label}</span>
-                    <span class="score-value">{stat.value.toFixed(2)}</span>
-                </div>
-                <div class="progress-bar-container">
-                    <div
-                        class={`progress-bar ${barColors[stat.label as StatLabel]}`}
-                        style={`width: ${percent(stat.value)}`}
-                    ></div>
-                </div>
-            </div>
-        {/each}
-    </div>
+    <ScoreBars
+        scores={normalized}
+        {keys}
+        variant="stacked"
+        size="large"
+        showValues
+        decimals={2}
+    />
 </div>
 
 <style>
@@ -100,67 +65,5 @@
         text-align: left;
         border-bottom: 1px solid #f3f4f6;
         padding-bottom: 0.5rem;
-    }
-
-    .scores-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .score-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-    }
-
-    .score-label {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.95rem;
-        color: #374151;
-    }
-
-    .score-value {
-        font-weight: 600;
-        color: #1f2937;
-    }
-
-    .progress-bar-container {
-        width: 100%;
-        height: 10px;
-        background: #f3f4f6;
-        border-radius: 5px;
-        overflow: hidden;
-    }
-
-    .progress-bar {
-        height: 100%;
-        transition: width 0.3s ease-in-out;
-    }
-
-    /* Muted, professional tones */
-    .finishing-bar {
-       background-color: #a541d3; 
-    }
-
-    .attacking-bar {
-        background-color: #fca5a5; /* soft red */
-    }
-
-    .passing-bar {
-        background-color: #93c5fd; /* soft blue */
-    }
-
-    .possession-bar {
-        background-color: #6ee7b7; /* soft green */
-    }
-
-    .defending-bar {
-        background-color: #fde68a; /* soft yellow */
-    }
-
-    .keeping-bar {
-        background-color: #a074cf; /* soft violet */
     }
 </style>

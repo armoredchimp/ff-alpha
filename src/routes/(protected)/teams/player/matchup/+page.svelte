@@ -47,6 +47,7 @@
             <Formation
                 team={playerTeam}
                 mode="preview"
+                allowModification={false}
                 opponent={opponent}
                 viewOpponent={true}
                 {opponentMode}

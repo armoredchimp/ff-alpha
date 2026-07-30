@@ -1,9 +1,14 @@
+// ============================================================
+// player_upload/+server.ts
+//
 // Validation (atomic — any failure rejects the whole write):
 //   1. resolve the requester's team (ignores client-supplied team_id)
 //   2. load that team's stored roster from the DB
 //   3. every selected/subs/unused id must be in the stored roster
 //   4. formation must be a real formationConfig key
 //   5. favored must reference owned players + real current fixtures
+//   6. locked players (real match already kicked off) must not change bucket
+//      or favored-fixture — prevents swapping players after seeing results
 // ============================================================
 
 import { json } from '@sveltejs/kit';
@@ -15,7 +20,10 @@ import {
     assertIdsSubset,
     flattenSelected,
     isValidFormation,
-    validateFavored
+    validateFavored,
+    loadLockedPlayerIds,
+    loadStoredArrangement,
+    checkLockedPlayers,
 } from '$lib/server/validation';
 
 export const POST: RequestHandler = async (event) => {
@@ -77,7 +85,43 @@ export const POST: RequestHandler = async (event) => {
     const favoredErr = await validateFavored(favored, roster);
     if (favoredErr) return json({ error: favoredErr.error }, { status: favoredErr.status });
 
+    // ---- 6. locked players may not change bucket or favored-fixture ----
+    // The locked set is loaded per-request (NOT at module scope) so it reflects
+    // kickoffs as of now, not as of server boot. Only when the incoming lineup
+    // actually contains a locked player do we read the stored arrangement and
+    // diff — otherwise this costs a single indexed query and nothing more.
+    const lockedSet = await loadLockedPlayerIds();
 
+    const incomingIds = new Set<number>([...selectedIds, ...subsIds, ...unusedIds]);
+    let anyLocked = false;
+    for (const id of incomingIds) {
+        if (lockedSet.has(id)) { anyLocked = true; break; }
+    }
+
+    if (anyLocked) {
+        const stored = await loadStoredArrangement(teamId);
+        const violations = checkLockedPlayers(
+            stored,
+            { selected, subs: subsIds, unused: unusedIds, favored },
+            lockedSet
+        );
+
+        if (violations.length > 0) {
+            // Atomic reject: nothing is written. Single-team submit, so returning
+            // here before any DB update keeps the whole thing atomic.
+            return json(
+                {
+                    success: false,
+                    error: 'locked_players',
+                    lockedPlayers: violations,
+                    message: 'Some players cannot be moved — their match has already started.'
+                },
+                { status: 409 }
+            );
+        }
+    }
+
+    // ---- write (all validation passed) ----
     const updateFields: any = { selected, subs, unused, favored };
 
     const { error: updateErr } = await supabaseScaling

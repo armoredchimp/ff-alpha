@@ -7,15 +7,59 @@ export type ScoreKey =
 	| 'keeper'
 	| 'total';
 
-export const SCORE_CONFIG: Record<ScoreKey, { label: string; color: string }> = {
-	defensive: { label: 'Defensive', color: '#2563eb' },
-	passing: { label: 'Passing', color: '#16a34a' },
-	possession: { label: 'Possession', color: '#9333ea' },
-	attacking: { label: 'Attacking', color: '#ea580c' },
-	finishing: { label: 'Finishing', color: '#e11d48' },
-	keeper: { label: 'Keeper', color: '#0891b2' },
-	total: { label: 'Total', color: '#475569' }
+export const SCORE_CONFIG: Record<ScoreKey, { label: string; abbrev: string; color: string }> = {
+    defensive:  { label: 'Defensive',  abbrev: 'DEF', color: '#e63946' },
+    possession: { label: 'Possession', abbrev: 'POS', color: '#f4a261' },
+    passing:    { label: 'Passing',    abbrev: 'PAS', color: '#2a9d8f' },
+    attacking:  { label: 'Attacking',  abbrev: 'ATK', color: '#264653' },
+    finishing:  { label: 'Finishing',  abbrev: 'FIN', color: '#b011e0' },
+    keeper:     { label: 'Keeper',     abbrev: 'KEP', color: '#524ff3' },
+    total:      { label: 'Total',      abbrev: 'TOT', color: '#475569' }
 };
+
+export function playerScores(p: any): Record<ScoreKey, number> {
+    return {
+        defensive:  p?.defensive_score  ?? 0,
+        possession: p?.possession_score ?? 0,
+        passing:    p?.passing_score    ?? 0,
+        attacking:  p?.attacking_score  ?? 0,
+        finishing:  p?.finishing_score  ?? 0,
+        keeper:     p?.keeper_score     ?? 0,
+        total:      p?.total_score      ?? 0
+    };
+}
+
+export function normalizeTeamScores(
+    scores: any,
+    playerCount = 1,
+    keeperCount = 1
+): Record<ScoreKey, number> {
+    const outfield = Math.max(1, playerCount || 1);
+    const keepers = Math.max(1, keeperCount || 1);
+    const t = scores ?? {};
+    return {
+        defensive:  (t.defense    ?? 0) / outfield,
+        possession: (t.possession ?? 0) / outfield,
+        passing:    (t.passing    ?? 0) / outfield,
+        attacking:  (t.attacking  ?? 0) / outfield,
+        finishing:  (t.finishing  ?? 0) / outfield,
+        keeper:     (t.keeping    ?? 0) / keepers,
+        total:      0
+    };
+}
+
+export function teamScores(team: any): Record<ScoreKey, number> {
+    return normalizeTeamScores(team?.scores?.total, team?.playerCount, team?.keepers?.length);
+}
+
+export const TEAM_SCORE_KEYS: ScoreKey[] = [
+	'keeper',
+    'defensive',
+	'passing',
+	'possession',
+	'attacking',
+	'finishing'
+];
 
 /** Display order — mirrors the slug page's score bars. */
 export const OUTFIELD_SCORE_KEYS: ScoreKey[] = [

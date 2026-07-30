@@ -5,10 +5,13 @@
   import { getCountryUrl } from "./data/countryImages";
   import { getFallbackPos } from "./data/fallbackOrder";
   import PlayerMini from "./PlayerMini.svelte";
+  import LockedFixturePopup from "./LockedFixturePopup.svelte";
+  import ScoreBars from "./ScoreBars.svelte";
   import { playerTeam } from "$lib/stores/teams.svelte";
-  import { clientPlayerCache } from '$lib/stores/generic.svelte';
+  import { clientPlayerCache, lockedPlayers } from '$lib/stores/generic.svelte';
   import { onMount } from "svelte";
   import type { Player, Team } from "$lib/types/types";
+	import { all } from "axios";
 
   interface CurrentSlot {
     positionGroup?: string;
@@ -31,12 +34,14 @@
     player = null as Player | null,
     currentPosition,
     zone = null as number | null,
-    hide = false
+    hide = false,
+    allowModification = true
   } = $props<{
     player?: Player | null;
     currentPosition: string;
     zone?: number | null;
     hide?: boolean;
+    allowModification?: boolean;
   }>();
 
   let hasTriggeredFetch = $state<boolean>(false);
@@ -70,6 +75,8 @@
     return subs.length;
   });
 
+  let canRemove = $derived(!(player?.id && lockedPlayers.has(player.id)));
+
   onMount(() => {
     // console.log('=== FormationPlayer MOUNT ===');
     // console.log('Position:', currentPosition);
@@ -80,7 +87,6 @@
     getEligiblePositions();
     // Always get eligible players, even if no player is selected
     getEligiblePlayers();
-    
     
     currentSlot = getSelectedSlot();
     // console.log('Initial currentSlot:', currentSlot);
@@ -121,6 +127,17 @@
     } catch (err) {
         console.error('Failed to fetch player stats:', err);
     }
+  }
+
+  function scoresFor(p: Player) {
+    return {
+      defensive: p.defensive_score,
+      passing: p.passing_score,
+      possession: p.possession_score,
+      attacking: p.attacking_score,
+      finishing: p.finishing_score,
+      keeper: p.keeper_score ?? 0
+    };
   }
 
   function getSelectedSlot(): CurrentSlot {
@@ -165,6 +182,7 @@
 
   function getEligiblePlayers(): void {
     eligibleReplacements = [];
+    if (!allowModification) return;
     if(eligiblePositions && eligiblePositions.length > 0){
       eligiblePositions.forEach(pos => {
         scanPlayersForPos(pos)
@@ -201,27 +219,31 @@
     }
     
     // Also scan subs for eligible replacements
+    // ... inside scanPlayersForPos, the subs loop:
     if (playerTeam.subs && playerTeam.subs.length > 0) {
-      for (let i = 0; i < playerTeam.subs.length; i++) {
-        const sub = playerTeam.subs[i];
-        if (sub && typeof sub !== 'number' && 
-            'detailed_position' in sub && 
-            sub.detailed_position === position && 
-            sub.id) {
-          // Skip if this is the current player or already found
-          if ((!player || !player.id || sub.id !== player.id) && 
-              !foundPlayerIds.has(sub.id)) {
-            foundPlayerIds.add(sub.id);
-            eligibleReplacements.push(sub as Player);
-          }
+        for (let i = 0; i < playerTeam.subs.length; i++) {
+            const sub = playerTeam.subs[i];
+            if (sub && typeof sub !== 'number' &&
+                'detailed_position' in sub &&
+                sub.detailed_position === position &&
+                sub.id) {
+                // Locked sub can't be promoted to starter — skip. (Only here, NOT in
+                // the roster-group scan, where a locked player is a current starter
+                // being offered for a legal same-bucket reposition.)
+                if (lockedPlayers.has(sub.id)) continue;
+                if ((!player || !player.id || sub.id !== player.id) &&
+                    !foundPlayerIds.has(sub.id)) {
+                    foundPlayerIds.add(sub.id);
+                    eligibleReplacements.push(sub as Player);
+                }
+            }
         }
-      }
     }
   }
 
   function removePlayer(): void {
     if (!currentSlot || !currentSlot.player || !currentSlot.path) return;
-    
+
     const removedPlayer = currentSlot.player;
     
     // Ensure subs array exists
@@ -563,6 +585,46 @@
 
 </script>
 
+{#snippet cacheStats(p: Player)}
+  {#if clientPlayerCache[p.id]}
+    {@const stats = clientPlayerCache[p.id]}
+    <div class="cache-stats">
+      {#if stats.player?.statistics?.length}
+        {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
+        {@const dets = season?.details ?? []}
+        {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
+        {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
+        <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
+        <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
+      {/if}
+      {#if stats.fantasyStats}
+        <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
+        <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet popupBody(p: Player)}
+  <div class="popup-upper-section">
+    <div class="popup-info">
+      <div><strong>Position: </strong>   {positionAbbrev(p.detailed_position)}</div>
+      <div><strong>Age: </strong>   {p.player_age} yrs</div>
+    </div>
+    <div class="team-name">{p.player_team}</div>
+  </div>
+
+  <div class="player-metrics">
+    <ScoreBars
+      scores={scoresFor(p)}
+      isKeeper={p.detailed_position === 'Goalkeeper'}
+      compact
+    />
+  </div>
+
+  {@render cacheStats(p)}
+{/snippet}
+
 <div class="formation-player" style=
     "opacity: {hide ? 0.7 : 1}; 
     transition: opacity 0.4s ease, z-index 0.2s ease; 
@@ -586,7 +648,7 @@
   <div class="player-position">{currentPosition}</div>
 
   <!-- Replacement Dropdown -->
-  {#if eligibleReplacements.length > 0}
+  {#if allowModification && eligibleReplacements.length > 0}
     <div 
         class="replacement-dropdown-container"
         onmouseenter={handleDropdownMouseEnter}
@@ -595,16 +657,18 @@
         aria-label="Swap players dropdown"
       >
       <!-- Remove Player Button (X) -->
-      <button 
-        class="remove-player-btn" 
-        onclick={() => removePlayer()}
-        aria-label="Remove player"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
-      
+      {#if canRemove}
+        <button 
+          class="remove-player-btn" 
+          onclick={() => removePlayer()}
+          aria-label="Remove player"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      {/if}
+
       <!-- Swap Players Dropdown -->
       {#if showDropdown}
         <div 
@@ -649,243 +713,23 @@
   {/if}
 
   <!-- Current Player Hover popup -->
-  {#if player}  
-  {#if player.detailed_position !== "Goalkeeper"}
-   <div class="player-popup" class:comparison-mode={showComparison}>
-    <div class="popup-upper-section">
-        <div class="popup-info">
-            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-            <div><strong>Age: </strong>   {player.player_age} yrs</div>
-        </div>
-        
-        <div class="team-name">{player.player_team}</div>
-      
-    </div>
-     <!-- Metrics bar graph -->
-     <div class="player-metrics">
-       <div class="metric">
-         <span class="metric-label">Def. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-def"
-             style="width: {(player.defensive_score / 5000) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Poss. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-poss"
-             style="width: {(player.possession_score / 5000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Pass. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-pass"
-             style="width: {(player.passing_score / 5000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-       <div class="metric">
-         <span class="metric-label">Atk. Score</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-attk"
-             style="width: {(player.attacking_score / 4000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-       
-        <div class="metric">
-         <span class="metric-label">Goalscoring</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-fin"
-             style="width: {(player.finishing_score / 4000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-     </div>
-
-     {#if clientPlayerCache[player.id]}
-       {@const stats = clientPlayerCache[player.id]}
-       <div class="cache-stats">
-           {#if stats.player?.statistics?.length}
-               {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
-               {@const dets = season?.details ?? []}
-               {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
-               {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
-               <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
-               <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
-           {/if}
-           {#if stats.fantasyStats}
-               <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
-               <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
-           {/if}
-       </div>
-     {/if}
-
-   </div>
-   {:else if player.detailed_position === "Goalkeeper"}
-   <div class="player-popup" class:comparison-mode={showComparison}>
-    <div class="popup-upper-section">
-        <div class="popup-info">
-            <div><strong>Position: </strong>   {positionAbbrev(player.detailed_position)}</div>
-            <div><strong>Age: </strong>   {player.player_age} yrs</div>
-        </div>
-        <div class="team-name">{player.player_team}</div>
-    </div>
-
-    <div class="metric">
-      <span class="metric-label">Keeping</span>
-      <div class="metric-bar-container">
-        <div
-          class="metric-bar bar-poss"
-          style="width: {((player.keeper_score || 0) / 5000) * 100}%"
-        ></div>
+  {#if player}
+    {#if !canRemove && !showComparison}
+      <div class="player-popup locked-bare">
+        <LockedFixturePopup {player} />
       </div>
-    </div>
-    
-     <div class="metric">
-       <span class="metric-label">Passing</span>
-       <div class="metric-bar-container">
-         <div
-           class="metric-bar bar-pass"
-           style="width: {(player.passing_score / 5000) * 100}%"
-         ></div>
-       </div>
-     </div>
- 
-   </div>
-   {/if}
-   {/if}
-
-   <!-- Replacement Player Hover popup -->
-  {#if hoveredReplacement}  
-   {#if hoveredReplacement.detailed_position !== "Goalkeeper"}
-    <div class="player-popup replacement-popup">
-      <div class="popup-upper-section">
-          <div class="popup-info">
-              <div><strong>Position: </strong>   {positionAbbrev(hoveredReplacement.detailed_position)}</div>
-              <div><strong>Age: </strong>   {hoveredReplacement.player_age} yrs</div>
-          </div>
-          
-          <div class="team-name">{hoveredReplacement.player_team}</div>
-        
+    {:else}
+      <div class="player-popup" class:comparison-mode={showComparison}>
+        {@render popupBody(player)}
       </div>
-      <!-- Metrics bar graph -->
-      <div class="player-metrics">
-        <div class="metric">
-          <span class="metric-label">Def. Score</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-def"
-              style="width: {(hoveredReplacement.defensive_score / 5000) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Poss. Score</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-poss"
-              style="width: {(hoveredReplacement.possession_score / 5000 ) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Pass. Score</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-pass"
-              style="width: {(hoveredReplacement.passing_score / 5000 ) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <span class="metric-label">Att. Score</span>
-          <div class="metric-bar-container">
-            <div
-              class="metric-bar bar-attk"
-              style="width: {(hoveredReplacement.attacking_score / 4000 ) * 100}%"
-            ></div>
-          </div>
-        </div>
-
-        <div class="metric">
-         <span class="metric-label">Goalscoring</span>
-         <div class="metric-bar-container">
-           <div
-             class="metric-bar bar-fin"
-             style="width: {(hoveredReplacement.finishing_score / 4000 ) * 100}%"
-           ></div>
-         </div>
-       </div>
-
-      </div>
-
-      {#if clientPlayerCache[hoveredReplacement.id]}
-        {@const stats = clientPlayerCache[hoveredReplacement.id]}
-        <div class="cache-stats">
-            {#if stats.player?.statistics?.length}
-                {@const season = stats.player.statistics.find((s) => s.season_id === getSeasonID())}
-                {@const dets = season?.details ?? []}
-                {@const goals = dets.find((d) => d.type.developer_name === 'GOALS')}
-                {@const assists = dets.find((d) => d.type.developer_name === 'ASSISTS')}
-                <div class="cache-row"><span>Real Goals:</span><strong>{goals?.value?.total ?? '-'}</strong></div>
-                <div class="cache-row"><span>Real Assists:</span><strong>{assists?.value?.total ?? '-'}</strong></div>
-            {/if}
-            {#if stats.fantasyStats}
-                <div class="cache-row"><span>Fantasy Goals:</span><strong>{stats.fantasyStats.goals ?? '-'}</strong></div>
-                <div class="cache-row"><span>Fantasy Assists:</span><strong>{stats.fantasyStats.assists ?? '-'}</strong></div>
-            {/if}
-        </div>
-      {/if}
-
-    </div>
-    {:else if hoveredReplacement.detailed_position === "Goalkeeper"}
-    <div class="player-popup replacement-popup">
-      <div class="popup-upper-section">
-          <div class="popup-info">
-              <div><strong>Position: </strong>   {positionAbbrev(hoveredReplacement.detailed_position)}</div>
-              <div><strong>Age: </strong>   {hoveredReplacement.player_age} yrs</div>
-          </div>
-          <div class="team-name">{hoveredReplacement.player_team}</div>
-      </div>
-
-      <div class="metric">
-        <span class="metric-label">Keeping</span>
-        <div class="metric-bar-container">
-          <div
-            class="metric-bar bar-poss"
-            style="width: {((hoveredReplacement.keeper_score || 0) / 5000) * 100}%"
-          ></div>
-        </div>
-      </div>
-
-      <div class="metric">
-        <span class="metric-label">Passing</span>
-        <div class="metric-bar-container">
-          <div
-            class="metric-bar bar-pass"
-            style="width: {(hoveredReplacement.passing_score / 5000) * 100}%"
-          ></div>
-        </div>
-      </div>
-  
-    </div>
     {/if}
+  {/if}
+
+  <!-- Replacement Player Hover popup -->
+  {#if hoveredReplacement}
+    <div class="player-popup replacement-popup">
+      {@render popupBody(hoveredReplacement)}
+    </div>
   {/if}
 </div>
 
@@ -1106,6 +950,13 @@
     transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .player-popup.locked-bare {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    width: auto;
+  }
   /* Shift current player popup left when comparing */
   .player-popup.comparison-mode {
     transform: translateX(-16rem);

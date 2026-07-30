@@ -3,6 +3,7 @@ import type { Player, Manager, Fixture, MatchBundle } from "$lib/types/types"
 export let allPlayers = $state<Player[]>([]) //Initial player object containing player objects
 export let playersByID = $state<Record<number, Player>>({}) // KVP object for quick lookups of player objects by ID
 export let clubsByID = $state<Record<number, string>>({}) // KVP: Sportmonks team_id -> club name
+export let clubAbrByID = $state<Record<number, string>>({}) // KVP: Sportmonks team_id -> club short name 
 export let fixturesByID = $state<Record<number, Fixture>>({}) // KVP object for quick lookups of real fixtures by ID
 
 export const clientPlayerCache: Record<string, { player: any; fantasyStats: any; currentStats?: any; currentScores?: any; }> = $state({});
@@ -11,8 +12,13 @@ export const clientMatchCache = $state<Record<string, MatchBundle>>({});
 export let injuredByTeam: Record<string, Player[]> = $state({});
 export let injuredByFantasyTeam: Record<string, Player[]> = $state({});
 
+export const lockedPlayers = $state<Set<number>>(new Set());
+export const lockedPlayerScores = $state<Record<number, any[]>>({});
+
 export let playerCall = $state(false)
 let playerPageInit = $state<boolean>(false)
+
+
 
 export function getPlayerInit() {
     return playerPageInit

@@ -3,15 +3,17 @@
 	import PlayerMini from './PlayerMini.svelte';
 	import PostMatchPlayer from './PostMatchPlayer.svelte';
 	import { ZONE_LAYOUT, KEEPER_ZONE, getSlotsByZone, hasZoneInFormation } from './utils/formation';
+    import type { Team } from './types/types';
 
 	let {
 		zone,
 		mode = 'select',
-		team = {} as any,
+		team = {} as Team,
 		opponent = {} as any,
 		displayData = null as any,
 		viewOpponent = false,
 		opponentMode = 0,
+        allowModification = false,
 		focusedZone = null as number | null,
 		dropdownActive = false,
 		zIndex = 5,
@@ -65,6 +67,7 @@
 					currentPosition={slot.currentPosition}
 					{zone}
 					hide={focusedZone !== zone && dropdownActive}
+                    {allowModification}
 				/>
 			{/each}
 		{:else if isKeeperZone}

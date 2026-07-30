@@ -35,7 +35,7 @@
     />
   </div>
   <div class="middle-section">
-    <Formation team={data.team} />
+    <Formation team={data.team} allowModification={false} />
     <SelectedList team={data.team}/>
   </div>
 </div>
