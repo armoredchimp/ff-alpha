@@ -22,6 +22,7 @@ export async function getPlayerRecentMatches(
         .select('*')
         .eq('player_id', playerId)
         .order('league_week', { ascending: false })
+        .order('fixture_id', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (statErr) {
