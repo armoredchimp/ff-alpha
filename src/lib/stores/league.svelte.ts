@@ -56,7 +56,7 @@ export function setCountry(countriesCode: number) {
     leagueState.leagueId = LEAGUE_ID_LOOKUP[countriesCode]
 }
 
-export function getCountry(): number {
+export function getCountryCode(): number {
     return leagueState.countriesCode;
 }
 
