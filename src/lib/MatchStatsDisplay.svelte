@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { fixturesByID } from '$lib/stores/generic.svelte';
 	import { rankMatchStats, dropdownMatchStats } from '$lib/utils/stats';
+	import ScoreBars from './ScoreBars.svelte';
+	import { playerScores } from './data/scoreConfig';
 
 	// Resolved by the parent (slug page / post-match), NOT derived here — keeps
 	// the component identical across screens.
@@ -20,22 +22,9 @@
 
 	let expanded = $state(false);
 
-	const MAX_SCORE = 5000;
+	
 	const isKeeper = detailedPosition === 'Goalkeeper';
 
-	// Same bars, order, and colors as the seasonal display at the top of the page.
-	const allScoreBars = [
-		{ label: 'Defensive', key: 'defensive_score', color: '#2563eb' },
-		{ label: 'Passing', key: 'passing_score', color: '#16a34a' },
-		{ label: 'Possession', key: 'possession_score', color: '#9333ea' },
-		{ label: 'Attacking', key: 'attacking_score', color: '#ea580c' },
-		{ label: 'Finishing', key: 'finishing_score', color: '#e11d48' },
-		{ label: 'Keeper', key: 'keeper_score', color: '#0891b2' }
-	];
-
-	const scoreBars = isKeeper
-		? allScoreBars.filter((b) => b.key === 'keeper_score' || b.key === 'passing_score')
-		: allScoreBars.filter((b) => b.key !== 'keeper_score');
 
 	const fixture = $derived(fixturesByID[fixtureId] ?? null);
 
@@ -86,11 +75,6 @@
 	);
 	const dropdownStats = $derived(compact ? [] : dropdownMatchStats(stats));
 
-	function barWidth(val: number | null | undefined): string {
-		if (val == null || val <= 0) return '0%';
-		return `${Math.min((val / MAX_SCORE) * 100, 100)}%`;
-	}
-
 	function fmt(val: any): string {
 		if (val == null) return '';
 		if (typeof val === 'number' && !Number.isInteger(val)) return val.toFixed(1);
@@ -107,15 +91,7 @@
 	<div class="match-body">
 		<!-- Score bars: ~1/4 width, rectangular, same order/colors as seasonal -->
 		<div class="match-bars">
-			{#each scoreBars as bar}
-				{@const val = scores?.[bar.key]}
-				<div class="bar-row">
-					<span class="bar-label">{bar.label}</span>
-					<div class="bar-track">
-						<div class="bar-fill" style="width: {barWidth(val)}; background: {bar.color};"></div>
-					</div>
-				</div>
-			{/each}
+			<ScoreBars scores={playerScores(scores)} {isKeeper} size="compact" />
 		</div>
 
 		<!-- Notable stats: 2 rows of 3 (full) or a single row of 3 (compact) -->
@@ -206,39 +182,10 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: 0.35rem;
 		padding: 0.5rem 0.6rem;
 		background: #f9fafb;
 		border: 1px solid #f0f0f0;
 		border-radius: 6px;
-	}
-
-	.bar-row {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-
-	.bar-label {
-		width: 58px;
-		font-size: 0.62rem;
-		color: #64748b;
-		text-align: right;
-		flex-shrink: 0;
-	}
-
-	.bar-track {
-		flex: 1;
-		height: 7px;
-		background: #eceff2;
-		border-radius: 4px;
-		overflow: hidden;
-	}
-
-	.bar-fill {
-		height: 100%;
-		border-radius: 4px;
-		transition: width 0.4s ease;
 	}
 
 	.match-stats-grid {

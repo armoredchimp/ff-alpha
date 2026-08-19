@@ -4,7 +4,7 @@
     import { getCountryUrl } from '$lib/data/countryImages';
     import { calculateAge } from '$lib/utils';
     import { getSeasonID } from '$lib/stores/league.svelte';
-    import MatchStatsDisplay from '$lib/MatchStatsDisplay.svelte';
+    import RecentMatchesSection from '$lib/RecentMatchesSection.svelte';
 
     let { data } = $props();
 
@@ -18,17 +18,6 @@
             };
         }
     });
-
-    const matches = $derived.by(() => {
-		const ids = new Set<number>();
-		for (const s of data.currentStats ?? []) ids.add(s.fixture_id);
-		for (const s of data.currentScores ?? []) ids.add(s.fixture_id);
-		return [...ids].map((fixtureId) => ({
-			fixtureId,
-			stats: (data.currentStats ?? []).find((r) => r.fixture_id === fixtureId) ?? null,
-			scores: (data.currentScores ?? []).find((r) => r.fixture_id === fixtureId) ?? null
-		}));
-	});
 
     const player = data.player;
     let frontend_player = $state({})
@@ -203,14 +192,10 @@
                 <p class="placeholder-text">No fantasy stats available.</p>
             {/if}
         </div>
-        {#each matches as m}
-            <MatchStatsDisplay
-                fixtureId={m.fixtureId}
-                stats={m.stats}
-                scores={m.scores}
+            <RecentMatchesSection
+                playerId={player.id}
                 detailedPosition={frontend_player?.detailed_position ?? 'Unknown'}
             />
-        {/each}
     {:else}
         <p>Player not found</p>
     {/if}

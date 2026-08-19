@@ -1,7 +1,7 @@
 <script>
     import axios from "axios";
     import { draft } from "./stores/draft.svelte";
-    import { getCountry } from "./stores/league.svelte";
+    import { getCountryCode } from "./stores/league.svelte";
     import { getCountryUrl } from "./data/countryImages";
     import { delay, calculatePer90, condenseString } from "./utils";
     import { playerTeam } from "./stores/teams.svelte";
@@ -84,7 +84,7 @@
     let activeTab = $state('notables')
 
     onMount(()=>{
-        country = getCountry()
+        country = getCountryCode()
         leaguePrefix = TABLE_PREFIXES[country]
         seasonID = SEASON_ID_LOOKUP[country]
     })
