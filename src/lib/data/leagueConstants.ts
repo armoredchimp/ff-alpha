@@ -1,4 +1,4 @@
-export const CURRENT_SEASON = '2425'
+export const CURRENT_SEASON = '2627'
 
 export const TABLE_PREFIXES: Record<number, string> = {
     1: 'prem',     // Premier League
