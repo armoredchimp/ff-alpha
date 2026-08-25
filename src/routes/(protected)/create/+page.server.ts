@@ -1,7 +1,7 @@
 import { supabaseScaling } from '$lib/client/supabase/supaClient';
 import { fail, redirect } from '@sveltejs/kit';
 import { updateSession, getSession } from '$lib/server/auth';
-import { generateLeagueSchedule } from '$lib/utils/league';
+import { generateLeagueSchedule, setNextMatchups } from '$lib/utils/league';
 import type { Actions } from './$types';
 
 interface League {
@@ -26,11 +26,11 @@ const maxGames = {
 export const actions: Actions = {
     createLeague: async ({ request, cookies }) => {
         const session = getSession(cookies);
-       
+
         if (!session) {
             return fail(401, { error: 'Not authenticated' });
         }
-       
+
         const data = await request.formData();
         const leagueName = data.get('leagueName') as string;
         const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
@@ -38,11 +38,11 @@ export const actions: Actions = {
         const countriesCode = parseInt(data.get('countriesCode') as string, 10);
 
         const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode])
-       
+
         if (!leagueName?.trim()) {
             return fail(400, { error: 'Please enter a league name' });
         }
-       
+
         if (!creationToken) {
             return fail(403, { error: 'Not authorized to create a league' });
         }
@@ -50,7 +50,7 @@ export const actions: Actions = {
         if (!countriesCode || countriesCode < 1 || countriesCode > 5) {
             return fail(400, { error: 'Invalid country selection' });
         }
-       
+
         try {
             const { data: league, error: supabaseError } = await supabaseScaling
                 .from('leagues')
@@ -58,28 +58,30 @@ export const actions: Actions = {
                     creator: session.userId,
                     league_name: leagueName,
                     total_teams: selectedTeams,
-                    countries_code: countriesCode, 
+                    countries_code: countriesCode,
                     draft_complete: false,
                     schedule: schedule
                 })
                 .select()
                 .single<League>();
-               
+
             if (supabaseError) {
                 console.error('Supabase error:', supabaseError);
                 return fail(500, { error: 'Failed to create league in database' });
             }
-           
+
+            const leagueId = league.league_id.toString()
             // Update the session with the new league ID directly
             const updated = await updateSession(cookies, {
-                leagueId: league.league_id.toString()
+                leagueId: leagueId
             });
-           
+
             if (!updated) {
                 console.error('Failed to update session with league ID');
                 // But continue anyway since league was created
             }
-           
+
+
             // Return the league data for the client to register with Lambda
             return {
                 success: true,
@@ -91,37 +93,37 @@ export const actions: Actions = {
                     schedule: schedule
                 }
             };
-           
+
         } catch (error) {
             console.error('Error creating league:', error);
             return fail(500, { error: 'Failed to create league' });
         }
     },
-   
+
     deleteLeague: async ({ request, cookies }) => {
         const data = await request.formData();
         const leagueId = data.get('leagueId') as string;
-       
+
         if (!leagueId) {
             return fail(400, { error: 'No league ID provided' });
         }
-       
+
         try {
             const { error } = await supabaseScaling
                 .from('leagues')
                 .delete()
                 .eq('league_id', leagueId);
-               
+
             if (error) {
                 console.error('Error deleting league:', error);
                 return fail(500, { error: 'Failed to delete league' });
             }
-           
+
             // Update session to remove league ID
             await updateSession(cookies, { leagueId: null });
-           
+
             return { success: true };
-           
+
         } catch (error) {
             console.error('Error in delete operation:', error);
             return fail(500, { error: 'Failed to delete league' });
