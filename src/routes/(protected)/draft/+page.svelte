@@ -201,6 +201,8 @@
         // page triggers the load() redirect to the main app.
         setNextMatchups(leagueState.leagueId)
         delay(100)
+        console.log('schedule', JSON.stringify(leagueState.schedule))
+        console.log('current matchweek', leagueState.currentMatchweek)
         hydrateNextOpponents(leagueState.schedule, leagueState.currentMatchweek)
         setTimeout(() => goto('/main'), 1200);
     }

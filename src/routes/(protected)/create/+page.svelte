@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { getLeagueState, setCountry, setLeagueSchedule, setTeamCount } from "$lib/stores/league.svelte";
+	import { getLeagueState, setCountry, setLeagueSchedule, setMatchweek, setTeamCount } from "$lib/stores/league.svelte";
 	import { fetchAuthSession } from "aws-amplify/auth";
     import axios from "axios";
     import { enhance } from '$app/forms';
@@ -72,11 +72,19 @@
                         // Update local state
                         const leagueState = getLeagueState();
                         leagueState.hasLeague = true;
-                        leagueState.leagueId = result.data.league.id;
                         leagueState.countriesCode = countries_code;
                         leagueState.canCreateLeague = false;
                         leagueState.creationToken = null;
-                        setLeagueSchedule(result.data.schedule)
+                        if(result.data.league.leagueWeek != null){
+                            setMatchweek(result.data.league.leagueWeek)
+                            console.log('League week set successfully')
+                        }
+                        if(result.data.league.schedule){
+                            setLeagueSchedule(result.data.league.schedule)
+                            console.log('Schedule set successfully')
+                        } else {
+                            console.error ('Error setting schedule')
+                        }
                         await invalidateAll();
                         
                         // Navigate to draft

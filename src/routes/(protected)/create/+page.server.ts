@@ -1,4 +1,4 @@
-import { supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
 import { fail, redirect } from '@sveltejs/kit';
 import { updateSession, getSession } from '$lib/server/auth';
 import { generateLeagueSchedule, setNextMatchups } from '$lib/utils/league';
@@ -33,25 +33,38 @@ export const actions: Actions = {
 
         const data = await request.formData();
         const leagueName = data.get('leagueName') as string;
-        const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
-        const creationToken = data.get('creationToken') as string;
-        const countriesCode = parseInt(data.get('countriesCode') as string, 10);
-
-        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode])
-
         if (!leagueName?.trim()) {
             return fail(400, { error: 'Please enter a league name' });
         }
-
+        const selectedTeams = parseInt(data.get('selectedTeams') as string, 10);
+        const creationToken = data.get('creationToken') as string;
         if (!creationToken) {
             return fail(403, { error: 'Not authorized to create a league' });
         }
-
+        const countriesCode = parseInt(data.get('countriesCode') as string, 10);
         if (!countriesCode || countriesCode < 1 || countriesCode > 5) {
             return fail(400, { error: 'Invalid country selection' });
         }
 
+        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode])
+        console.log('SCHEDULE', schedule)
+
+
+
         try {
+            // Get current matchweek for real league
+            const { data: weekRow, error: league_weekError } = await supabase
+                .from('league_info_reference')
+                .select('league_week')
+                .eq('countries_code', countriesCode)
+                .single()
+
+            if (league_weekError) {
+                console.error('Error retrieving league week after league creation')
+            }
+
+            const leagueWeek = weekRow?.league_week ?? null;
+
             const { data: league, error: supabaseError } = await supabaseScaling
                 .from('leagues')
                 .insert({
@@ -90,7 +103,8 @@ export const actions: Actions = {
                     name: league.league_name,
                     totalTeams: league.total_teams,
                     countriesCode: league.countries_code,
-                    schedule: schedule
+                    schedule: schedule,
+                    leagueWeek: leagueWeek
                 }
             };
 
