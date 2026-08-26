@@ -108,6 +108,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         const bundle: MatchBundle = { match, details, players };
+        console.log(JSON.stringify(bundle))
 
         serverMatchCache[matchId] = bundle;
         return json({ bundle });
