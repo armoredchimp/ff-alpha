@@ -20,23 +20,36 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         } else {
             console.warn('Failed to get matchweek from frontend', league_week)
         }
-        const { data: results, error } = await supabaseScaling
-            .from('match_results')
-            .select('*')
-            .eq('league_id', leagueId)
-            .eq('league_week', league_week)
+        try {
+            const { data: results, error } = await supabaseScaling
+                .from('match_results')
+                .select('*')
+                .eq('league_id', leagueId)
+                .eq('league_week', league_week)
 
 
-        if (error) {
-            console.error(`Error loading match results:`, error);
-            return json({ error: 'Failed to load match results' }, { status: 500 });
+            if (error) {
+                console.log(`Error loading match results with current league week:`, error);
+            }
+            if (!results || results.length === 0) {
+                league_week = league_week - 1
+                const { data: results, error } = await supabaseScaling
+                    .from('match_results')
+                    .select('*')
+                    .eq('league_id', leagueId)
+                    .eq('league_week', league_week)
+
+                if (error) {
+                    return json({ error: 'Failed to load match results with league week -1' }, { status: 500 });
+                }
+                return json({ results }, { status: 200 });
+            }
+
+        } catch (error) {
+            console.error('Error retrieving match results after succesfully obtaining league week', error)
         }
 
-        if (!results || results.length === 0) {
-            return json({ error: 'No results found for this league / match week' }, { status: 404 });
-        }
 
-        return json({ results }, { status: 200 });
 
 
     } catch (err) {

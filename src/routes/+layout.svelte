@@ -1990,7 +1990,7 @@ function toggleDevBar() {
   
 
 
-{#if devBarVisible}
+<!-- {#if devBarVisible}
     <div class="dev-bar">
         <button><a href={'/dev/weekly'}>Weekly Admin</a></button>
         <button><a href={'/dev/weight_tables'}>Weight Tables</a></button>
@@ -2005,34 +2005,35 @@ function toggleDevBar() {
         <button onclick={getLeaguePlayersAndUpload(23621, 'laliga','2425')}>La Liga</button>
         <button onclick={getLeaguePlayersAndUpload(23746, 'seriea','2425')}>Serie A</button>
         <button onclick={getSinglePlayerApi(1743)}>Player by ID - API</button>
-        <!-- <button onclick={fetchAllWeights}>Weights</button>
-        <button onclick={testWeightMap}>Test Weight to Defense</button> -->
+        <button onclick={fetchAllWeights}>Weights</button>
+        <button onclick={testWeightMap}>Test Weight to Defense</button> 
         <button onclick={statRankings}>Stat Rankings</button>
         <button onclick={allManagers}>Managers to DB</button>
         <button onclick={getNations}>Nations</button>
-        <!-- <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
+        <button onclick={getPlayerImages('prem_mini_2425_testing')}>Player Images Test</button>
         <button onclick={getPlayerImages('prem_mini_2425')}>Player Images to Mini</button> -->
-    </div>  
-{/if}
+    <!-- </div>  
+{/if} --> 
 {#if userStore.user}
     <h2>Signed in as {userStore.user ? userStore.user.signInDetails.loginId : null}</h2>
     <button onclick={signUserOut}>Logout</button>
-{/if}
+
 <button><a href="/main">League Page</a></button>
-{#if !draft.complete}
-<button><a href="/draft">To Draft</a></button>
-{/if}
-{#if draft.gate1}
-  <button>
-    <a href={'/table'}>League Table</a>
-  </button>
-  <button>
-    <a href={'/injuries'}>Injuries</a>
-  </button>
-  <button>
-    <a href={'/results'}>Results</a>
-  </button>
-  <LineupCountdown />
+    {#if !draft.complete}
+    <button><a href="/draft">To Draft</a></button>
+    {/if}
+    {#if draft.gate1}
+    <button>
+        <a href={'/table'}>League Table</a>
+    </button>
+    <button>
+        <a href={'/injuries'}>Injuries</a>
+    </button>
+    <button>
+        <a href={'/results'}>Results</a>
+    </button>
+    <LineupCountdown />
+    {/if}
 {/if}
 <style>
  button {
