@@ -1,5 +1,6 @@
 <script lang="ts">
   import { injuredByTeam, injuredByFantasyTeam } from '$lib/stores/generic.svelte';
+  import { playerTeam } from '$lib/stores/teams.svelte';
   import { onMount } from 'svelte';
 
   let { mini = false }: { mini?: boolean } = $props();
@@ -12,6 +13,24 @@
   onMount(() => {
     now = new Date();
   });
+
+  function slug(name: string): string {
+    return name.toLowerCase();
+  }
+
+  function fantasyTeamHref(teamName: string): string {
+    return teamName === playerTeam.name
+      ? '/teams/player/main'
+      : `/teams/${slug(teamName)}`;
+  }
+
+  function teamHref(teamName: string): string {
+    return showFantasy ? fantasyTeamHref(teamName) : `/clubs/${slug(teamName)}`;
+  }
+
+  function playerHref(player: { id: number }): string {
+    return `/player/${player.id}`;
+  }
 
   function daysOut(startDate: string | Date): number {
     const start = new Date(startDate);
@@ -28,8 +47,6 @@
       return daysOut(a.injured.start_date) - daysOut(b.injured.start_date);
     });
   }
-
-  let allPlayers = $derived(Object.values(activeData).flat());
 </script>
 
 {#if mini}
@@ -40,7 +57,9 @@
     </div>
     {#each Object.entries(injuredByFantasyTeam).sort(([a], [b]) => a.localeCompare(b)) as [teamName, players]}
       <div class="flex items-center justify-between py-1 border-b border-gray-100">
-        <span class="truncate max-w-[180px] font-medium">{teamName}</span>
+        <span class="truncate max-w-[180px] font-medium">
+          <a href={fantasyTeamHref(teamName)}>{teamName}</a>
+        </span>
         <span class="font-bold w-[70px] text-right">{players.length}</span>
       </div>
     {/each}
@@ -48,13 +67,13 @@
 {:else}
   <div class="injury-table">
     <div class="toggle-row">
-      <button 
-        class="toggle-btn" 
+      <button
+        class="toggle-btn"
         class:active={showFantasy}
         onclick={() => showFantasy = true}
       >Fantasy Teams</button>
-      <button 
-        class="toggle-btn" 
+      <button
+        class="toggle-btn"
         class:active={!showFantasy}
         onclick={() => showFantasy = false}
       >Real Teams</button>
@@ -62,10 +81,14 @@
 
     {#each sortedTeams() as team}
       <div class="team-section">
-        <h3 class="team-header">{team}</h3>
+        <h3 class="team-header">
+          <a href={teamHref(team)}>{team}</a>
+        </h3>
         {#each sortedPlayers(team) as player}
           <div class="injury-row">
-            <span class="player-name">{player.player_name}</span>
+            <span class="player-name">
+              <a href={playerHref(player)}>{player.player_name}</a>
+            </span>
             <span class="category" class:suspended={player.injured.category === 'suspended'} class:injury={player.injured.category === 'injury'}>
               {player.injured.category}
             </span>
@@ -112,6 +135,17 @@
     font-size: 1rem;
     border-bottom: 1px solid #444;
     padding-bottom: 0.25rem;
+  }
+
+  .team-header a,
+  .player-name a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .team-header a:hover,
+  .player-name a:hover {
+    text-decoration: underline;
   }
 
   .injury-row {
