@@ -2,6 +2,7 @@
 	import axios from 'axios';
 	import { untrack } from 'svelte';
 	import MatchStatsDisplay from '$lib/MatchStatsDisplay.svelte';
+	import { getSeasonID } from './stores/league.svelte';
    
     interface PlayerMatchRow {
 		fixture_id: number;
@@ -48,7 +49,7 @@
 		realError = null;
 		try {
 			const res = await fetch(
-				`/api/supabase/player_recents?player_id=${id}&limit=${pageSize}&offset=${offset}`
+				`/api/supabase/player_recents?player_id=${id}&season_id=${getSeasonID()}&limit=${pageSize}&offset=${offset}`
 			);
 			if (!res.ok) throw new Error(`Request failed: ${res.status}`);
 			const { matches } = await res.json();

@@ -13,6 +13,7 @@ export interface PlayerMatchRow {
 
 export async function getPlayerRecentMatches(
     playerId: string | number,
+    seasonId: string | number,
     limit = 5,
     offset = 0
 ): Promise<PlayerMatchRow[]> {
@@ -21,6 +22,7 @@ export async function getPlayerRecentMatches(
         .from('current_player_stats')
         .select('*')
         .eq('player_id', playerId)
+        .eq('season_id', seasonId)
         .order('league_week', { ascending: false })
         .order('fixture_id', { ascending: false })
         .range(offset, offset + limit - 1);
