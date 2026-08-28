@@ -59,10 +59,6 @@ export async function getPlayerRecentMatches(
     }));
 }
 
-// ---- Batch read by fixture_ids (post-match screen) ----
-// Given the fixture_ids that fed a fantasy match (from fantasy_match_stats),
-// fetch exactly those stat + score rows. Week-agnostic and displacement-proof:
-// keyed on (player_id, fixture_id), so it works for any match all season.
 export interface FixtureStatBundle {
     stats: any[];
     scores: any[];

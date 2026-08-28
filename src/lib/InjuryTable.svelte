@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { injuredByTeam, injuredByFantasyTeam } from '$lib/stores/generic.svelte';
+  import { injuredByTeam, injuredByFantasyTeam, clubsByName } from '$lib/stores/generic.svelte';
   import { playerTeam } from '$lib/stores/teams.svelte';
   import { onMount } from 'svelte';
 
@@ -24,8 +24,10 @@
       : `/teams/${slug(teamName)}`;
   }
 
-  function teamHref(teamName: string): string {
-    return showFantasy ? fantasyTeamHref(teamName) : `/clubs/${slug(teamName)}`;
+  function teamHref(teamName: string): string | null {
+      if (showFantasy) return fantasyTeamHref(teamName);
+      const clubId = clubsByName[teamName];
+      return clubId != null ? `/clubs/${clubId}` : null;
   }
 
   function playerHref(player: { id: number }): string {
@@ -82,7 +84,11 @@
     {#each sortedTeams() as team}
       <div class="team-section">
         <h3 class="team-header">
-          <a href={teamHref(team)}>{team}</a>
+          {#if teamHref(team)}
+            <a href={teamHref(team)}>{team}</a>
+          {:else}
+            {team}
+          {/if}
         </h3>
         {#each sortedPlayers(team) as player}
           <div class="injury-row">

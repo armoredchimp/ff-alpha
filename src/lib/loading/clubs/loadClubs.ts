@@ -1,4 +1,4 @@
-import { clubsByID, clubAbrByID } from '$lib/stores/generic.svelte';
+import { clubsByID, clubAbrByID, clubsByName } from '$lib/stores/generic.svelte';
 import axios from 'axios';
 
 export async function loadClubsData(): Promise<boolean> {
@@ -15,6 +15,7 @@ export async function loadClubsData(): Promise<boolean> {
         if (clubs && clubs.length > 0) {
             for (const club of clubs) {
                 clubsByID[club.team_id] = club.name;
+                clubsByName[club.name] = club.team_id
                 clubAbrByID[club.team_id] = club.short_code
             }
             console.log(`Loaded ${clubs.length} clubs`);
