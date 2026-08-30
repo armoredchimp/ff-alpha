@@ -3,7 +3,7 @@ import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
 // Resolves the current league_week for a fantasy league, server-side.
 // fantasy league (leagues.countries_code) -> league_info_reference.league_week.
 // Mirrors the getMatchweek() logic in the league_info route so both agree.
-export async function getLeagueWeekForLeague(leagueId: number): Promise<number | null> {
+export async function getLeagueWeekForLeague(leagueId: string): Promise<number | null> {
     const { data: league, error: leagueErr } = await supabaseScaling
         .from('leagues')
         .select('countries_code')
