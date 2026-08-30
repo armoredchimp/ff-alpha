@@ -31,7 +31,7 @@
     <span class="position">{positionAbbrev(displayPosition)}</span>
     {#if player?.player_name}
       <span class="name">
-        <a href={`../player/${player.id}`}>
+        <a href={`/player/${player.id}`}>
         {player.player_name}
         </a>
       </span>
