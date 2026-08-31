@@ -1,10 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { sportsmonksGet } from '$lib/server/sportsmonks';
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { DB_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_KEY } from '$env/static/private';
 
-const supabase = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const supabase = createClient(DB_URL, SUPABASE_SERVICE_KEY);
 
 const leagueConfig = [
 	{ seasonID: 23614, prefix: 'prem', label: 'Premier League' },

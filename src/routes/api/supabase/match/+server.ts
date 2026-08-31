@@ -1,10 +1,11 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "@sveltejs/kit";
-import { isAuthenticated } from "$lib/server/auth";
-import { supabaseScaling } from "$lib/server/supaClient";
+import { getIdToken } from "$lib/server/auth";
+import { leagueClientFor } from "$lib/server/supaClient";
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
-    if (!isAuthenticated(cookies)) {
+    const idToken = getIdToken(cookies);
+    if (!idToken) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -14,7 +15,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         return json({ error: 'match_id is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseScaling
+    const { data, error } = await leagueClientFor(idToken)
         .from('match_details')
         .select('*')
         .eq('match_id', matchId)

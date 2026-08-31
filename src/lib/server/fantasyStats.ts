@@ -1,10 +1,10 @@
 import { supabaseScaling } from "$lib/server/supaClient";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function getFantasyStats(leagueId: string, playerId: string) {
+export async function getFantasyStats(client: SupabaseClient, playerId: string) {
     const { data, error } = await supabaseScaling
         .from('fantasy_stats')
         .select('*')
-        .eq('league_id', leagueId)
         .eq('player_id', playerId)
         .single();
 

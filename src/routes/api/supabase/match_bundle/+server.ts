@@ -1,14 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { isAuthenticated } from '$lib/server/auth';
-import { supabase, supabaseScaling } from '$lib/server/supaClient';
+import { getIdToken } from '$lib/server/auth';
+import { supabase, leagueClientFor } from '$lib/server/supaClient';
 import { serverMatchCache } from '$lib/server/serverMatchCache';
 import type { MatchBundle, MatchBundlePlayer } from '$lib/types/types'
 
 const STEP = 'match_bundle';
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
-    if (!isAuthenticated(cookies)) {
+    const idToken = getIdToken(cookies);
+    if (!idToken) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,16 +18,33 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         return json({ error: 'match_id is required' }, { status: 400 });
     }
 
-    // Immutable per match_id — serve cached bundle if present.
-    if (serverMatchCache[matchId]) {
-        return json({ bundle: serverMatchCache[matchId] });
-    }
+    const scaling = leagueClientFor(idToken);
 
     try {
-        // ---- 1 & 2: match_results + match_details (scaling client) ----
+        // Authorize before serving from cache — the bundle is league-scoped and
+        // the cache is shared across all users of this process.
+        const { data: authRow, error: authErr } = await scaling
+            .from('match_results')
+            .select('match_id')
+            .eq('match_id', matchId)
+            .maybeSingle();
+
+        if (authErr) {
+            console.error(`[${STEP}] auth check failed:`, authErr.message);
+            return json({ error: 'Failed to load match result' }, { status: 500 });
+        }
+        if (!authRow) {
+            return json({ error: 'Match not found' }, { status: 404 });
+        }
+
+        if (serverMatchCache[matchId]) {
+            return json({ bundle: serverMatchCache[matchId] });
+        }
+
+        // ---- 1 & 2: match_results + match_details ----
         const [matchRes, detailsRes] = await Promise.all([
-            supabaseScaling.from('match_results').select('*').eq('match_id', matchId).single(),
-            supabaseScaling.from('match_details').select('*').eq('match_id', matchId).single()
+            scaling.from('match_results').select('*').eq('match_id', matchId).single(),
+            scaling.from('match_details').select('*').eq('match_id', matchId).single()
         ]);
 
         if (matchRes.error) {
@@ -41,8 +59,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         const match = matchRes.data;
         const details = detailsRes.data;
 
-        // ---- 3: fantasy_match_stats for this match (scaling client) ----
-        const fantasyRes = await supabaseScaling
+        // ---- 3: fantasy_match_stats for this match ----
+        const fantasyRes = await scaling
             .from('fantasy_match_stats')
             .select('*')
             .eq('match_id', matchId);
@@ -53,7 +71,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
         const fantasyRows = fantasyRes.data ?? [];
 
-        // ---- 4: collect all fixture_ids, fetch currents (base client) ----
+        // ---- 4: collect all fixture_ids, fetch currents (reference data) ----
         const allFixtureIds = Array.from(
             new Set(fantasyRows.flatMap((r) => (r.fixture_ids ?? []) as number[]))
         );
@@ -79,9 +97,6 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         // ---- 5: regroup by player_id ----
-        // Match currents to a player by BOTH player_id and fixture membership,
-        // since two players share a fixture. fixture_ids on the fantasy row is
-        // the authoritative set of fixtures that fed that player's contribution.
         const players: Record<number, MatchBundlePlayer> = {};
 
         for (const fr of fantasyRows) {
@@ -108,7 +123,6 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         const bundle: MatchBundle = { match, details, players };
-        console.log(JSON.stringify(bundle))
 
         serverMatchCache[matchId] = bundle;
         return json({ bundle });

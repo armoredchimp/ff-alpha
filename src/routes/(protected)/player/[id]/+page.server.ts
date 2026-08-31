@@ -1,11 +1,12 @@
 import type { PageServerLoad } from './$types';
-import { isAuthenticated, getLeagueId } from '$lib/server/auth';
+import { isAuthenticated, getLeagueId, getIdToken } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import { sportsmonksGet } from '$lib/server/sportsmonks';
 import { getFantasyStats } from '$lib/server/fantasyStats';
 import { getCurrentStats } from '$lib/server/currentStats';
 import { getCurrentScores } from '$lib/server/currentScores';
 import { getLeagueWeekForLeague } from '$lib/server/leagueWeek';
+import { leagueClientFor } from '$lib/server/supaClient';
 import {
     getCachedPlayer, setCachedPlayer,
     getCachedStats, setCachedStats,
@@ -37,16 +38,19 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     }
 
     const leagueId = getLeagueId(cookies);
+    const idToken = getIdToken(cookies);
     let fantasyStats = null;
     let currentStats;
     let currentScores;
 
     if (leagueId) {
-        // --- Fantasy stats: per fantasy league, never cached server-side ---
-        try {
-            fantasyStats = await getFantasyStats(leagueId, id);
-        } catch (err) {
-            console.error('Error loading fantasy stats:', err);
+        // --- Fantasy stats: scoped by RLS to the user's league ---
+        if (idToken) {
+            try {
+                fantasyStats = await getFantasyStats(leagueClientFor(idToken), id);
+            } catch (err) {
+                console.error('Error loading fantasy stats:', err);
+            }
         }
 
         const leagueWeek = await getLeagueWeekForLeague(leagueId);
