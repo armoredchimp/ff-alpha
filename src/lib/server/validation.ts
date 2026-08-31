@@ -2,7 +2,7 @@
 
 import type { RequestEvent } from '@sveltejs/kit';
 import { getSession } from '$lib/server/auth';
-import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/server/supaClient';
 import { formationConfig } from '$lib/data/formationConfig'
 
 export interface ValidationError {
@@ -142,7 +142,7 @@ export async function validateFavored(
 
     // load the players' current fixtures (id + kickoff): needed both to validate
     // the chosen fixture is real and to compute the deadline (earliest kickoff).
-    const { supabase } = await import('$lib/client/supabase/supaClient');
+    const { supabase } = await import('$lib/server/supaClient');
     const { data: fixtures, error } = await supabase
         .from('upcoming_fixtures')
         .select('player_id, fixture_id, kickoff')

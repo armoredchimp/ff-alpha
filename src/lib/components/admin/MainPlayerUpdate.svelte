@@ -1,6 +1,6 @@
 <script>
     import axios from 'axios';
-    import { supabase } from '$lib/client/supabase/supaClient';
+    import { supabase } from '$lib/server/supaClient';
 
     // NOT TESTED YET - DON'T WANT TO BREAK CURRENT DATA
 

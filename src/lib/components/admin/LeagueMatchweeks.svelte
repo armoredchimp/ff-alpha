@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { supabase } from '$lib/client/supabase/supaClient';
+    import { supabase } from '$lib/server/supaClient';
     
     // Retrieve and update matchweeks 
     

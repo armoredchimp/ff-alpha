@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { supabase } from '$lib/client/supabase/supaClient';
+import { supabase } from '$lib/server/supaClient';
 
 // Scores for a set of players for a given league_week — feeds the locked-player
 // hover popup. Player ids + week come from the client (the locked roster it

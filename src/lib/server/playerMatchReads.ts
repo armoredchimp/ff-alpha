@@ -1,4 +1,4 @@
-import { supabase } from "$lib/client/supabase/supaClient";
+import { supabase } from "$lib/server/supaClient";
 
 // ---- Recent matches for one player (slug page "last 5") ----
 // Paginated from the start so a "browse older matches" UI is a later addition,

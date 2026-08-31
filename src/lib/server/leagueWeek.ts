@@ -1,4 +1,4 @@
-import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
+import { supabase, supabaseScaling } from "$lib/server/supaClient";
 
 // Resolves the current league_week for a fantasy league, server-side.
 // fantasy league (leagues.countries_code) -> league_info_reference.league_week.

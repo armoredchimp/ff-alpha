@@ -1,5 +1,5 @@
 <script>
-  import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
+  import { supabase, supabaseScaling } from "$lib/server/supaClient";
   import { TABLE_PREFIXES } from "$lib/data/leagueConstants";
   import Simulator from "./Simulator.svelte";
 

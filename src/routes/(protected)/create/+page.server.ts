@@ -1,4 +1,4 @@
-import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/server/supaClient';
 import { fail } from '@sveltejs/kit';
 import { updateSession, getSession, getIdToken } from '$lib/server/auth';
 import { generateLeagueSchedule } from '$lib/utils/league';

@@ -1,5 +1,5 @@
 <script>
-    import { supabase } from "$lib/client/supabase/supaClient";
+    import { supabase } from "$lib/server/supaClient";
     import { statsToRank, keeperStatsToRank } from "$lib/data/statsToRank";
     
     const leagues = ["laliga", "prem", "ligue1", "bundes", "seriea"];

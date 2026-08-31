@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/server/supaClient';
 import { serverMatchCache } from '$lib/server/serverMatchCache';
 import type { MatchBundle, MatchBundlePlayer } from '$lib/types/types'
 

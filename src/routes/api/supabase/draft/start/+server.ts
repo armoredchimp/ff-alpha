@@ -4,7 +4,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getLeagueId } from '$lib/server/auth';
-import { supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabaseScaling } from '$lib/server/supaClient';
 import { STARTING_BUDGET, TOTAL_ROUNDS, generateDraftOrder } from '$lib/server/draftEngine';
 
 function shuffle<T>(arr: T[]): T[] {

@@ -1,5 +1,5 @@
 <script>
-    import { supabaseScaling } from "$lib/client/supabase/supaClient";
+    import { supabaseScaling } from "$lib/server/supaClient";
     
     let leagueId = $state('');
     let isResetting = $state(false);

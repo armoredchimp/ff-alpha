@@ -1,4 +1,4 @@
-import { supabase } from "$lib/client/supabase/supaClient";
+import { supabase } from "$lib/server/supaClient";
 
 // Current-week scores for a player: 0-2 rows for the given league_week.
 export async function getCurrentScores(

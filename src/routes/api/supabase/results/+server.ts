@@ -1,4 +1,4 @@
-import { supabaseScaling } from "$lib/client/supabase/supaClient";
+import { supabaseScaling } from "$lib/server/supaClient";
 import type { RequestHandler } from "@sveltejs/kit";
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
 import { json } from "@sveltejs/kit";

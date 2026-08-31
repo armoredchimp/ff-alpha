@@ -12,7 +12,7 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabase, supabaseScaling } from '$lib/server/supaClient';
 
 export const POST: RequestHandler = async ({ request }) => {
     const body = await request.json().catch(() => null);

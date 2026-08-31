@@ -2,7 +2,7 @@
 // cached pool). The human team's lineup stays empty — they set it on the team
 // page. Called by /pick and /advance on termination.
 
-import { supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabaseScaling } from '$lib/server/supaClient';
 import { buildTeamBudgetUpdates, type DraftState } from '$lib/server/draftEngine';
 import { createFormationStructure, populateLineup, extractPlayerIds } from '$lib/utils';
 

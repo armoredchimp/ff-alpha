@@ -1,5 +1,5 @@
 <script>
-    import { supabase } from '$lib/client/supabase/supaClient';
+    import { supabase } from '$lib/server/supaClient';
     import axios from 'axios';
     
     // State variables

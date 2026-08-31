@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "@sveltejs/kit";
 import { getLeagueId } from "$lib/server/auth";
-import { supabase, supabaseScaling } from "$lib/client/supabase/supaClient";
+import { supabase, supabaseScaling } from "$lib/server/supaClient";
 import { generateLeagueSchedule } from "$lib/utils/league";
 import { type Schedule, isValidSchedule } from "$lib/types/types";
 
