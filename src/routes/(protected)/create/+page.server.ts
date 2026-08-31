@@ -1,7 +1,8 @@
 import { supabase, supabaseScaling } from '$lib/client/supabase/supaClient';
-import { fail, redirect } from '@sveltejs/kit';
-import { updateSession, getSession } from '$lib/server/auth';
-import { generateLeagueSchedule, setNextMatchups } from '$lib/utils/league';
+import { fail } from '@sveltejs/kit';
+import { updateSession, getSession, getIdToken } from '$lib/server/auth';
+import { generateLeagueSchedule } from '$lib/utils/league';
+import { AWS_REGISTER_LEAGUE_URL } from '$env/static/private';
 import type { Actions } from './$types';
 
 interface League {
@@ -21,14 +22,16 @@ const maxGames = {
     5: 38
 };
 
-
-
 export const actions: Actions = {
     createLeague: async ({ request, cookies }) => {
         const session = getSession(cookies);
-
         if (!session) {
             return fail(401, { error: 'Not authenticated' });
+        }
+
+        const idToken = getIdToken(cookies);
+        if (!idToken) {
+            return fail(401, { error: 'No valid token — please sign in again' });
         }
 
         const data = await request.formData();
@@ -46,25 +49,24 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid country selection' });
         }
 
-        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode])
-        console.log('SCHEDULE', schedule)
+        const schedule = generateLeagueSchedule(selectedTeams, maxGames[countriesCode]);
 
-
+        let createdLeagueId: string | null = null;
 
         try {
-            // Get current matchweek for real league
             const { data: weekRow, error: league_weekError } = await supabase
                 .from('league_info_reference')
                 .select('league_week')
                 .eq('countries_code', countriesCode)
-                .single()
+                .single();
 
             if (league_weekError) {
-                console.error('Error retrieving league week after league creation')
+                console.error('Error retrieving league week after league creation');
             }
 
             const leagueWeek = weekRow?.league_week ?? null;
 
+            // 1. Create the league
             const { data: league, error: supabaseError } = await supabaseScaling
                 .from('leagues')
                 .insert({
@@ -78,28 +80,64 @@ export const actions: Actions = {
                 .select()
                 .single<League>();
 
-            if (supabaseError) {
+            if (supabaseError || !league) {
                 console.error('Supabase error:', supabaseError);
                 return fail(500, { error: 'Failed to create league in database' });
             }
 
-            const leagueId = league.league_id.toString()
-            // Update the session with the new league ID directly
-            const updated = await updateSession(cookies, {
-                leagueId: leagueId
-            });
+            createdLeagueId = league.league_id;
 
-            if (!updated) {
-                console.error('Failed to update session with league ID');
-                // But continue anyway since league was created
+            // 2. Record membership. The league id never leaves the server.
+            const { error: memberError } = await supabaseScaling
+                .from('league_members')
+                .insert({
+                    user_id: session.userId,
+                    league_id: league.league_id,
+                    role: 'commissioner'
+                });
+
+            if (memberError) {
+                console.error('league_members insert failed:', memberError);
+                await rollback(createdLeagueId);
+                return fail(500, { error: 'Failed to register league membership' });
             }
 
+            // 3. Claim the creation token in DynamoDB (one league per user)
+            const registerRes = await fetch(AWS_REGISTER_LEAGUE_URL, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': idToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    leagueId: league.league_id,
+                    creationToken
+                })
+            });
 
-            // Return the league data for the client to register with Lambda
+            if (!registerRes.ok) {
+                const detail = await registerRes.text();
+                console.error('League registration failed:', registerRes.status, detail);
+                await rollback(createdLeagueId);
+
+                if (registerRes.status === 403) {
+                    return fail(403, {
+                        error: 'Your session expired or you already have a league. Please refresh and try again.'
+                    });
+                }
+                return fail(500, { error: 'Failed to register league' });
+            }
+
+            // 4. Only now is the league real — update the session
+            const updated = await updateSession(cookies, { leagueId: league.league_id });
+            if (!updated) {
+                console.error('Failed to update session with league ID');
+            }
+
             return {
                 success: true,
                 league: {
-                    id: league.league_id.toString(),
+                    id: league.league_id,
                     name: league.league_name,
                     totalTeams: league.total_teams,
                     countriesCode: league.countries_code,
@@ -110,37 +148,20 @@ export const actions: Actions = {
 
         } catch (error) {
             console.error('Error creating league:', error);
+            if (createdLeagueId) await rollback(createdLeagueId);
             return fail(500, { error: 'Failed to create league' });
-        }
-    },
-
-    deleteLeague: async ({ request, cookies }) => {
-        const data = await request.formData();
-        const leagueId = data.get('leagueId') as string;
-
-        if (!leagueId) {
-            return fail(400, { error: 'No league ID provided' });
-        }
-
-        try {
-            const { error } = await supabaseScaling
-                .from('leagues')
-                .delete()
-                .eq('league_id', leagueId);
-
-            if (error) {
-                console.error('Error deleting league:', error);
-                return fail(500, { error: 'Failed to delete league' });
-            }
-
-            // Update session to remove league ID
-            await updateSession(cookies, { leagueId: null });
-
-            return { success: true };
-
-        } catch (error) {
-            console.error('Error in delete operation:', error);
-            return fail(500, { error: 'Failed to delete league' });
         }
     }
 };
+
+/** Undo a partial creation. league_members cascades via the FK. */
+async function rollback(leagueId: string) {
+    const { error } = await supabaseScaling
+        .from('leagues')
+        .delete()
+        .eq('league_id', leagueId);
+
+    if (error) {
+        console.error('Rollback failed — orphaned league:', leagueId, error);
+    }
+}

@@ -40,84 +40,46 @@
         })();
     });
 
-    const handleFormSubmit: SubmitFunction = async ({ formData, action, cancel }) => {
+    const handleFormSubmit: SubmitFunction = async ({ formData }) => {
         isCreating = true;
-        
-        const countries_code = countriesCodeMap[selectedCountry]
+
+        const countries_code = countriesCodeMap[selectedCountry];
         formData.append('countriesCode', countries_code.toString());
-        
-        // Let the form submit to server action
-        return async ({ result, update }) => {
+
+        return async ({ result }) => {
             if (result.type === 'success' && result.data?.success) {
-                // League created in Supabase, now register with Lambda
-                try {
-                    const session = await fetchAuthSession();
-                    const idToken = session.tokens?.idToken?.toString();
-                    
-                    const registerResponse = await axios.put(REGISTER_LEAGUE_URL, {
-                        leagueId: result.data.league.id,
-                        creationToken: creationToken
-                    }, {
-                        headers: {
-                            'Authorization': idToken,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (registerResponse.data.success) {
-                        console.log('League registered successfully!');
-                        
-                        setCountry(countries_code)
-                        setTeamCount(selectedTeams)
-                        // Update local state
-                        const leagueState = getLeagueState();
-                        leagueState.hasLeague = true;
-                        leagueState.countriesCode = countries_code;
-                        leagueState.canCreateLeague = false;
-                        leagueState.creationToken = null;
-                        if(result.data.league.leagueWeek != null){
-                            setMatchweek(result.data.league.leagueWeek)
-                            console.log('League week set successfully')
-                        }
-                        if(result.data.league.schedule){
-                            setLeagueSchedule(result.data.league.schedule)
-                            console.log('Schedule set successfully')
-                        } else {
-                            console.error ('Error setting schedule')
-                        }
-                        await invalidateAll();
-                        
-                        // Navigate to draft
-                        goto('/draft');
-                    } else {
-                        throw new Error('Failed to register league');
-                    }
-                } catch (error: any) {
-                    console.error('Error registering league:', error);
-                    
-                    // Clean up the created league
-                    const deleteForm = new FormData();
-                    deleteForm.append('leagueId', result.data.league.id);
-                    
-                    await fetch('?/deleteLeague', {
-                        method: 'POST',
-                        body: deleteForm
-                    });
-                    
-                    if (error.response?.status === 403) {
-                        alert('Your session has expired or you already have a league. Please refresh and try again.');
-                        goto('/');
-                    } else {
-                        alert('Failed to register league. Please try again.');
-                    }
+                const league = result.data.league;
+
+                setCountry(countries_code);
+                setTeamCount(selectedTeams);
+
+                const leagueState = getLeagueState();
+                leagueState.hasLeague = true;
+                leagueState.countriesCode = countries_code;
+                leagueState.canCreateLeague = false;
+                leagueState.creationToken = null;
+
+                if (league.leagueWeek != null) {
+                    setMatchweek(league.leagueWeek);
                 }
+                if (league.schedule) {
+                    setLeagueSchedule(league.schedule);
+                } else {
+                    console.error('Error setting schedule');
+                }
+
+                await invalidateAll();
+                goto('/draft');
             } else if (result.type === 'failure') {
                 alert(result.data?.error || 'Failed to create league');
+                if (result.status === 403) {
+                    goto('/');
+                }
             }
-            
+
             isCreating = false;
         };
-    }
+    };
 </script>
 
 <div class="create-league-container">
