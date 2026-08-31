@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "@sveltejs/kit";
-import { getLeagueId } from "$lib/server/auth";
-import { supabaseScaling } from "$lib/server/supaClient";
+import { getIdToken } from "$lib/server/auth";
+import { leagueClientFor } from "$lib/server/supaClient";
 
 interface DbTeam {
     team_id: number;
@@ -38,33 +38,33 @@ interface DbTeamPlayers {
 // Load teams from teams table, then players from team_players table, prep data for teams hydration
 export const GET: RequestHandler = async ({ cookies }) => {
     try {
-        const leagueId = getLeagueId(cookies);
-        
-        if (!leagueId) {
-            return json({ error: 'No league ID found' }, { status: 400 });
+        const idToken = getIdToken(cookies);
+
+        if (!idToken) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
         }
-        
-        // Load teams from database
-        const { data: teamsData, error } = await supabaseScaling
+
+        const scaling = leagueClientFor(idToken);
+
+        // Load teams from database (RLS scopes to the user's league)
+        const { data: teamsData, error } = await scaling
             .from('teams')
             .select('*')
-            .eq('league_id', leagueId)
             .order('frontend_number', { ascending: true });
-        
+
         if (error) {
             console.error('Error loading teams:', error);
             return json({ error: 'Failed to load teams' }, { status: 500 });
         }
-        
+
         if (!teamsData || teamsData.length === 0) {
             return json({ error: 'No teams found for this league' }, { status: 404 });
         }
-        
+
         // Load team players from database
-        const { data: teamPlayersData, error: playersError } = await supabaseScaling
+        const { data: teamPlayersData, error: playersError } = await scaling
             .from('team_players')
-            .select('*')
-            .eq('league_id', leagueId);
+            .select('*');
 
         if (playersError) {
             console.error('Error loading team players:', playersError);
@@ -91,7 +91,6 @@ export const GET: RequestHandler = async ({ cookies }) => {
         let playerTeam: any = null;
 
         (teamsData as DbTeam[]).forEach(dbTeam => {
-            // Link player data for this team by team_id
             const playerData = teamPlayersMap.get(dbTeam.team_id) || {
                 attackers: [],
                 midfielders: [],
@@ -118,7 +117,6 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 goalsAgainst: dbTeam.goals_against || 0,
                 formation: dbTeam.formation || '4-4-2',
                 manager: dbTeam.manager_id,
-                // Add player IDs
                 attackers: playerData.attackers,
                 midfielders: playerData.midfielders,
                 defenders: playerData.defenders,
@@ -127,18 +125,17 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 subs: playerData.subs,
                 unused: playerData.unused
             };
-            
+
             if (dbTeam.frontend_number === 0) {
-                // Assign to playerTeam instead of teams
                 playerTeam = teamData;
             } else {
                 const teamKey = `team${dbTeam.frontend_number}`;
                 teams[teamKey] = teamData;
             }
         });
-        
+
         return json({ teams, playerTeam, success: true });
-        
+
     } catch (error) {
         console.error('Error in teams endpoint:', error);
         return json({ error: 'Internal server error' }, { status: 500 });

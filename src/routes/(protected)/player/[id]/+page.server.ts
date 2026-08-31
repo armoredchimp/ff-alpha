@@ -53,7 +53,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
             }
         }
 
-        const leagueWeek = await getLeagueWeekForLeague(leagueId);
+        const leagueWeek = await getLeagueWeekForLeague(leagueId, leagueClientFor(idToken));
 
         if (leagueWeek != null) {
             // --- Stats and scores: generic per (player, week), short TTL ---

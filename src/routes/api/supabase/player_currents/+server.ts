@@ -1,9 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { serverPlayerCache } from '$lib/server/serverPlayerCache';
 import { getCurrentStats } from '$lib/server/currentStats';
 import { getCurrentScores } from '$lib/server/currentScores';
+import {
+    getCachedStats, setCachedStats,
+    getCachedScores, setCachedScores
+} from '$lib/server/serverPlayerCache';
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
     if (!isAuthenticated(cookies)) {
@@ -16,47 +19,45 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             return json({ error: 'Player ID required' }, { status: 400 });
         }
 
-        // Client passes its current league_week (from leagueState.currentMatchweek),
-        // the same way season_id is passed to the fixtures route.
         const leagueWeekParam = url.searchParams.get('league_week');
         if (!leagueWeekParam) {
             return json({ error: 'league_week required' }, { status: 400 });
         }
         const leagueWeek = Number(leagueWeekParam);
-
-        const cached = serverPlayerCache[playerId];
-
-        if (cached?.currentStats && cached?.currentScores) {
-            return json({
-                currentStats: cached.currentStats,
-                currentScores: cached.currentScores
-            });
+        if (!Number.isFinite(leagueWeek)) {
+            return json({ error: 'league_week must be a number' }, { status: 400 });
         }
 
-        const [statsResult, scoresResult] = await Promise.allSettled([
-            getCurrentStats(playerId, leagueWeek),
-            getCurrentScores(playerId, leagueWeek)
-        ]);
+        let currentStats = await getCachedStats(playerId, leagueWeek);
+        let currentScores = await getCachedScores(playerId, leagueWeek);
 
-        if (statsResult.status === 'rejected') {
-            console.error('current_player_stats fetch failed:', statsResult.reason);
+        const needStats = currentStats === undefined;
+        const needScores = currentScores === undefined;
+
+        if (needStats || needScores) {
+            const [statsResult, scoresResult] = await Promise.allSettled([
+                needStats ? getCurrentStats(playerId, leagueWeek) : Promise.resolve(currentStats),
+                needScores ? getCurrentScores(playerId, leagueWeek) : Promise.resolve(currentScores)
+            ]);
+
+            if (statsResult.status === 'fulfilled') {
+                currentStats = statsResult.value;
+                if (needStats && currentStats !== undefined) {
+                    await setCachedStats(playerId, leagueWeek, currentStats);
+                }
+            } else {
+                console.error('current_player_stats fetch failed:', statsResult.reason);
+            }
+
+            if (scoresResult.status === 'fulfilled') {
+                currentScores = scoresResult.value;
+                if (needScores && currentScores !== undefined) {
+                    await setCachedScores(playerId, leagueWeek, currentScores);
+                }
+            } else {
+                console.error('current_player_scores fetch failed:', scoresResult.reason);
+            }
         }
-        if (scoresResult.status === 'rejected') {
-            console.error('current_player_scores fetch failed:', scoresResult.reason);
-        }
-
-        const currentStats =
-            statsResult.status === 'fulfilled' ? statsResult.value : cached?.currentStats;
-        const currentScores =
-            scoresResult.status === 'fulfilled' ? scoresResult.value : cached?.currentScores;
-
-        serverPlayerCache[playerId] = {
-            ...serverPlayerCache[playerId],
-            player: serverPlayerCache[playerId]?.player ?? null,
-            fantasyStats: serverPlayerCache[playerId]?.fantasyStats ?? null,
-            currentStats,
-            currentScores
-        };
 
         return json({
             currentStats: currentStats ?? [],
