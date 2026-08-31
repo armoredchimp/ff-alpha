@@ -31,33 +31,33 @@
 
 async function checkUserLeagueStatus() {
     const leagueState = getLeagueState();
-    
+
     try {
         leagueState.loading = true;
         leagueState.error = null;
-        
+
         const session = await fetchAuthSession();
         const idToken = session.tokens?.idToken?.toString();
-        
+
         if (!idToken) {
             throw new Error('No authentication token available');
         }
-        
+
         const response = await axios.get(`${POST_LOGIN_URL}`, {
             headers: {
                 'Authorization': idToken
             }
         });
-        
+
         console.log('League status:', response.data);
-        
+
         setLeagueStatus(response.data);
-        
-        return response.data;
-        
-    } catch (error) {
+
+        return { ...response.data, idToken };
+
+        } catch (error) {
         console.error('Error checking league status:', error);
-        
+
         if (error.response) {
             leagueState.error = `Server error: ${error.response.status}`;
             throw new Error(`Failed to check league status: ${error.response.status}`);
@@ -68,6 +68,7 @@ async function checkUserLeagueStatus() {
             leagueState.error = error.message;
             throw error;
         }
+    
     } finally {
         leagueState.loading = false;
     }
@@ -107,14 +108,12 @@ async function signUserIn(values) {
             try {
                 // Check league status using AWS Lambda
                 const leagueInfo = await checkUserLeagueStatus();
-                
-                // Create session with auth info AND league ID if they have one
+
                 const sessionResponse = await axios.post('/api/auth/session', {
-                    userId: currentUser.userId,
-                    username: values.email,
+                    idToken: leagueInfo.idToken,
                     leagueId: leagueInfo.leagueId || null
                 });
-                
+                    
                 if (sessionResponse.status === 200) {
                     displayConfirmCodes = false;
                     emailValue = '';
@@ -145,6 +144,9 @@ async function signUserIn(values) {
                                 loadFixturesData()
                             ]);
                             
+                            // const s = await (await import('aws-amplify/auth')).fetchAuthSession();
+                            // console.log('SMEEGO', s.tokens?.idToken?.payload);
+
                             await handlePostLeagueLoad(leagueData);
                         }
                     } else if (leagueInfo.status === 'CAN_CREATE_LEAGUE') {

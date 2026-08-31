@@ -1,9 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated, getLeagueId } from '$lib/server/auth';
-import { serverPlayerCache } from '$lib/server/serverPlayerCache';
 import { getFantasyStats } from '$lib/server/fantasyStats';
-
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
     if (!isAuthenticated(cookies)) {
@@ -22,10 +20,6 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         }
 
         const fantasyStats = await getFantasyStats(leagueId, playerId);
-      
-        if (fantasyStats) {
-            serverPlayerCache[playerId] = { ...serverPlayerCache[playerId], player: serverPlayerCache[playerId]?.player ?? null, fantasyStats };
-        }
         return json({ fantasyStats });
     } catch (err) {
         console.error('Fantasy stats fetch error:', err);

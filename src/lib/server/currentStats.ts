@@ -1,4 +1,4 @@
-import { supabase } from "$lib/client/supabase/supaClient";
+import { supabase } from "$lib/server/supaClient";
 
 // Current-week stats for a player: 0-2 rows for the given league_week.
 // The table now retains the whole season, so the league_week filter is what

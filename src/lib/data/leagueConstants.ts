@@ -1,4 +1,4 @@
-export const CURRENT_SEASON = '2425'
+export const CURRENT_SEASON = '2627'
 
 export const TABLE_PREFIXES: Record<number, string> = {
     1: 'prem',     // Premier League
@@ -10,11 +10,11 @@ export const TABLE_PREFIXES: Record<number, string> = {
 
 //THIS IS LAST SEASON (24/25) VALUES, STILL IN PLACE SO NOTHING BREAKS
 export const SEASON_ID_LOOKUP: Record<number, number> = {
-    1: 23614,
-    2: 23621,
-    3: 23744,
-    4: 23643,
-    5: 23746
+    1: 28083,
+    2: 27965,
+    3: 28321,
+    4: 28082,
+    5: 27895
 }
 
 export const LEAGUE_ID_LOOKUP: Record<number, number> = {

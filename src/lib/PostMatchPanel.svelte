@@ -84,7 +84,7 @@
 <style>
 	.post-match-panel {
 		width: 100%;
-		min-height: 8rem;
+		height: 14rem;
 		background: #fff;
 		border: 1px solid #e2e8f0;
 		border-radius: 0.5rem;
@@ -97,7 +97,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 6rem;
+		height: 100%;
 		color: #94a3b8;
 		font-size: 0.85rem;
 	}

@@ -4,6 +4,7 @@ export let allPlayers = $state<Player[]>([]) //Initial player object containing 
 export let playersByID = $state<Record<number, Player>>({}) // KVP object for quick lookups of player objects by ID
 export let clubsByID = $state<Record<number, string>>({}) // KVP: Sportmonks team_id -> club name
 export let clubAbrByID = $state<Record<number, string>>({}) // KVP: Sportmonks team_id -> club short name 
+export let clubsByName = $state<Record<string, number>>({}) // KVP: Team name -> club id
 export let fixturesByID = $state<Record<number, Fixture>>({}) // KVP object for quick lookups of real fixtures by ID
 
 export const clientPlayerCache: Record<string, { player: any; fantasyStats: any; currentStats?: any; currentScores?: any; }> = $state({});
@@ -50,12 +51,12 @@ export let finishingImpMap = $state({})
 export let keepingImpMap = $state({})
 
 export const IMP_MAPS: Record<string, Record<string, any>> = {
-  defense: defenseImpMap,
-  passing: passingImpMap,
-  possession: possessionImpMap,
-  attacking: attackingImpMap,
-  keeping: keepingImpMap,
-  finishing: finishingImpMap,
+    defense: defenseImpMap,
+    passing: passingImpMap,
+    possession: possessionImpMap,
+    attacking: attackingImpMap,
+    keeping: keepingImpMap,
+    finishing: finishingImpMap,
 };
 
 export let outfieldAverages = $state({})

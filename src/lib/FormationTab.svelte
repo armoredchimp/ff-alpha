@@ -82,7 +82,7 @@
         </div>
       </div>
       <div class="metric">
-        <span class="metric-label">Goalscoring</span>
+        <span class="metric-label">Finishing</span>
         <div class="metric-bar-container">
           <div
             class="metric-bar bar-fin"

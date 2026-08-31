@@ -21,6 +21,7 @@
     const isKeeper = $derived(player?.detailed_position === 'Goalkeeper');
 </script>
 
+
 <div class="wrapper">
   <div class="tab 
     {groupClass} 
@@ -29,7 +30,11 @@
     {player?.injured?.category === 'suspended' ? 'suspended' : ''}">
     <span class="position">{positionAbbrev(displayPosition)}</span>
     {#if player?.player_name}
-      <span class="name">{player.player_name}</span>
+      <span class="name">
+        <a href={`/player/${player.id}`}>
+        {player.player_name}
+        </a>
+      </span>
     {:else}
       <span class="name">No Player Selected</span>
     {/if}

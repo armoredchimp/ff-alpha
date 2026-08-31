@@ -7,7 +7,7 @@
     import { playerTeam } from "./stores/teams.svelte";
     import { nonPer90Stats } from "./data/nonPer90Stats";
     import NotableStat from "./NotableStat.svelte";
-    import { TABLE_PREFIXES, SEASON_ID_LOOKUP } from "./data/leagueConstants";
+    import { TABLE_PREFIXES, SEASON_ID_LOOKUP, CURRENT_SEASON } from "./data/leagueConstants";
     import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, keepingImpMap, defenseImpMap, possessionImpMap, passingImpMap, attackingImpMap, finishingWeightMap, finishingImpMap } from "./stores/generic.svelte";
 	import { onMount } from "svelte";
 
@@ -298,7 +298,7 @@
    
     async function getPlayerRankings(id) {
     try {
-        const res = await fetch(`/api/supabase/rankings?id=${id}&leaguePrefix=${leaguePrefix}`);
+        const res = await fetch(`/api/supabase/rankings?id=${id}&currentSeason=${CURRENT_SEASON}&leaguePrefix=${leaguePrefix}`);
         const result = await res.json();
 
         if (!res.ok) {
@@ -661,7 +661,7 @@
                                         toggleSection('finishing');
                                     }}
                                 >
-                                    <span>Goalscoring:</span>
+                                    <span>Finishing:</span>
                                     <span class="arrow-icon" style="margin-left: 1rem;">{expandedSection === 'finishing' ? '▲' : '▼'}</span>
                                 </div>
                                 <div class="progress-bar-container">

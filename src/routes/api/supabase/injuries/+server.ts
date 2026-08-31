@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { supabase } from "$lib/client/supabase/supaClient";
+import { supabase } from "$lib/server/supaClient";
 
 
 export const GET: RequestHandler = async ({ cookies, url }) => {

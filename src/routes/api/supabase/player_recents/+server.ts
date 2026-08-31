@@ -12,6 +12,10 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	if (!playerId) {
 		throw error(400, 'player_id is required');
 	}
+	const seasonId = url.searchParams.get('season_id')
+	if (!seasonId) {
+		throw error(400, 'season_id is required');
+	}
 
 	const limit = Number(url.searchParams.get('limit') ?? 5);
 	const offset = Number(url.searchParams.get('offset') ?? 0);
@@ -21,7 +25,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	}
 
 	try {
-		const matches = await getPlayerRecentMatches(playerId, limit, offset);
+		const matches = await getPlayerRecentMatches(playerId, seasonId, limit, offset);
 		return json({ matches });
 	} catch (err) {
 		console.error('player-recent-matches failed:', err);

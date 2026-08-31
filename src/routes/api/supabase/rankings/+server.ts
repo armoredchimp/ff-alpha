@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAuthenticated } from '$lib/server/auth';
-import { supabase } from '$lib/client/supabase/supaClient';
+import { supabase } from '$lib/server/supaClient';
 
 // Not tested yet but should work
 
@@ -12,6 +12,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
     const id = url.searchParams.get('id');
     const leaguePrefix = url.searchParams.get('leaguePrefix');
+    const currentSeason = url.searchParams.get('currentSeason')
 
     if (!id || !leaguePrefix) {
         return json({ error: 'Missing id or leaguePrefix' }, { status: 400 });
@@ -19,7 +20,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
     try {
         const { data, error } = await supabase
-            .from(`${leaguePrefix}_stats_2425_rankings`)
+            .from(`${leaguePrefix}_stats_${currentSeason}_rankings`)
             .select('*')
             .eq('id', id)
             .single();

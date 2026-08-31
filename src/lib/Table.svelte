@@ -51,7 +51,11 @@
             <tbody>
                 {#each sortedTeams as team, index}
                     <tr class="border-b border-gray-100 {team === playerTeam ? 'bg-blue-50' : ''}">
-                        <td class="py-1 font-medium truncate max-w-[320px]">{team.name || `Team ${index + 1}`}</td>
+                        <td class="py-1 font-medium truncate max-w-[320px]">
+                            <a href="teams/{team.player ? 'player/main' : team.name.toLowerCase()}">
+                                {team.name || `Team ${index + 1}`}
+                            </a>
+                        </td>
                         <td class="py-1 text-right font-bold w-[40px]">{team.points}</td>
                     </tr>
                 {/each}

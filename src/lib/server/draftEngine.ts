@@ -1,7 +1,7 @@
 // Server-authoritative draft brain. All draft integrity lives here
 // draft_picks is the SOURCE OF TRUTH for position + rosters
 
-import { supabase } from '$lib/client/supabase/supaClient';
+import { supabase } from '$lib/server/supaClient';
 import { getPlayerValue, getPositionalNeeds } from '$lib/utils';
 import { TABLE_PREFIXES, CURRENT_SEASON } from '$lib/data/leagueConstants'
 

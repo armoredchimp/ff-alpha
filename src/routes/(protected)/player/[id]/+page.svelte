@@ -22,7 +22,7 @@
     const player = data.player;
     let frontend_player = $state({})
 
-    if(player.id){
+    if(player?.id){
         frontend_player = playersByID[player.id];
 
     }

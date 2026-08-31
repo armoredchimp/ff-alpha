@@ -1,11 +1,8 @@
 import { getSession } from '$lib/server/auth';
 
-
 export async function load({ cookies }) {
     const session = getSession(cookies);
-    
-    console.log('Root layout server - session:', session); 
-    
+
     return {
         session: session ? {
             userId: session.userId,

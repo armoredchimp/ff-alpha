@@ -1,4 +1,4 @@
-import { supabase } from "$lib/client/supabase/supaClient";
+import { supabase } from "$lib/server/supaClient";
 
 // ---- Recent matches for one player (slug page "last 5") ----
 // Paginated from the start so a "browse older matches" UI is a later addition,
@@ -13,6 +13,7 @@ export interface PlayerMatchRow {
 
 export async function getPlayerRecentMatches(
     playerId: string | number,
+    seasonId: string | number,
     limit = 5,
     offset = 0
 ): Promise<PlayerMatchRow[]> {
@@ -21,6 +22,7 @@ export async function getPlayerRecentMatches(
         .from('current_player_stats')
         .select('*')
         .eq('player_id', playerId)
+        .eq('season_id', seasonId)
         .order('league_week', { ascending: false })
         .order('fixture_id', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -57,10 +59,6 @@ export async function getPlayerRecentMatches(
     }));
 }
 
-// ---- Batch read by fixture_ids (post-match screen) ----
-// Given the fixture_ids that fed a fantasy match (from fantasy_match_stats),
-// fetch exactly those stat + score rows. Week-agnostic and displacement-proof:
-// keyed on (player_id, fixture_id), so it works for any match all season.
 export interface FixtureStatBundle {
     stats: any[];
     scores: any[];

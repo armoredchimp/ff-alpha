@@ -5,7 +5,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getLeagueId } from '$lib/server/auth';
-import { supabaseScaling } from '$lib/client/supabase/supaClient';
+import { supabaseScaling } from '$lib/server/supaClient';
 import { reconstructState, STARTING_BUDGET } from '$lib/server/draftEngine';
 
 export const GET: RequestHandler = async ({ cookies }) => {

@@ -4,10 +4,12 @@
     import '../../../app.css';
     import { allPlayers, managers, managersByID } from '$lib/stores/generic.svelte';
     import {
+	delay,
         generateClubName,
         generateClubTraits,
         getRandomItem,
-        playerName
+        playerName,
+		setNextMatchups
     } from '$lib/utils';
     import { teams, playerTeam } from '$lib/stores/teams.svelte';
     import { draft } from '$lib/stores/draft.svelte';
@@ -18,6 +20,7 @@
     import DraftTeam from '$lib/DraftTeam.svelte';
     import { getLeagueState } from '$lib/stores/league.svelte';
     import { TABLE_PREFIXES } from '$lib/data/leagueConstants';
+	import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
 
     const { data } = $props();
 
@@ -196,6 +199,11 @@
         draft.complete = true;
         // server has finalized (team_players + budgets + draft_complete). Leaving the
         // page triggers the load() redirect to the main app.
+        setNextMatchups(leagueState.leagueId)
+        delay(100)
+        console.log('schedule', JSON.stringify(leagueState.schedule))
+        console.log('current matchweek', leagueState.currentMatchweek)
+        hydrateNextOpponents(leagueState.schedule, leagueState.currentMatchweek)
         setTimeout(() => goto('/main'), 1200);
     }
 
