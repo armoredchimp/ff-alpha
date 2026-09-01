@@ -12,22 +12,26 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { supabase, supabaseScaling } from '$lib/server/supaClient';
+import { getIdToken } from '$lib/server/auth';
+import { supabase, supabaseScaling, leagueClientFor } from '$lib/server/supaClient';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
+    const idToken = getIdToken(cookies);
+    if (!idToken) throw error(401, 'Unauthorized');
+
     const body = await request.json().catch(() => null);
     const leagueId = body?.leagueId;
     if (!leagueId) throw error(400, 'leagueId required');
 
-    // ---- league + schedule ----
-    const { data: league, error: leagueErr } = await supabaseScaling
+    // Membership check: RLS returns the league only if the caller belongs to it.
+    const { data: league, error: leagueErr } = await leagueClientFor(idToken)
         .from('leagues')
         .select('league_id, countries_code, schedule')
         .eq('league_id', leagueId)
-        .single();
+        .maybeSingle();
 
     if (leagueErr) throw error(500, `league read failed: ${leagueErr.message}`);
-    if (!league) throw error(404, `league ${leagueId} not found`);
+    if (!league) throw error(403, 'Not a member of this league');
     if (!league.schedule) throw error(400, `league ${leagueId} has no schedule`);
     if (!league.countries_code) throw error(400, `league ${leagueId} has no countries_code`);
 

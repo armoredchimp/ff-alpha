@@ -1,8 +1,8 @@
 
 
 import type { RequestEvent } from '@sveltejs/kit';
-import { getSession } from '$lib/server/auth';
-import { supabase, supabaseScaling } from '$lib/server/supaClient';
+import { getIdToken } from './auth';
+import { supabase, supabaseScaling, leagueClientFor } from '$lib/server/supaClient';
 import { formationConfig } from '$lib/data/formationConfig'
 
 export interface ValidationError {
@@ -29,15 +29,15 @@ const ok = <T>(value: T): Resolved<T> => ({ ok: true, value });
 // cookie for a league proves ownership of it.
 
 export async function resolveRequesterTeam(event: RequestEvent): Promise<Result<number>> {
-    const session = getSession(event.cookies);
-    if (!session || !session.leagueId) {
+    const idToken = getIdToken(event.cookies);
+    if (!idToken) {
         return fail(401, 'Not authenticated');
     }
 
-    const { data, error } = await supabaseScaling
+    // RLS scopes to the caller's league; frontend_number 0 is their team.
+    const { data, error } = await leagueClientFor(idToken)
         .from('teams')
         .select('team_id')
-        .eq('league_id', session.leagueId)
         .eq('frontend_number', 0)
         .single();
 

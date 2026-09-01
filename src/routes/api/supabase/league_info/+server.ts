@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "@sveltejs/kit";
-import { getLeagueId } from "$lib/server/auth";
-import { supabase, supabaseScaling } from "$lib/server/supaClient";
+import { getLeagueId, getIdToken } from "$lib/server/auth";
+import { supabase, supabaseScaling, leagueClientFor } from "$lib/server/supaClient";
 import { generateLeagueSchedule } from "$lib/utils/league";
 import { type Schedule, isValidSchedule } from "$lib/types/types";
 
@@ -28,19 +28,22 @@ async function getMatchweek(countriesCode: number) {
     return leagueInfo.league_week
 }
 
-
 export const GET: RequestHandler = async ({ cookies }) => {
     try {
+        const idToken = getIdToken(cookies);
         const leagueId = getLeagueId(cookies);
 
+        if (!idToken) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+        }
         if (!leagueId) {
             return json({ error: 'No league ID found' }, { status: 400 });
         }
 
-        const { data: league, error } = await supabaseScaling
+        // RLS scopes this to leagues the user belongs to.
+        const { data: league, error } = await leagueClientFor(idToken)
             .from('leagues')
             .select('total_teams, draft_complete, countries_code, schedule')
-            .eq('league_id', leagueId)
             .single();
 
         if (error) {
@@ -57,13 +60,12 @@ export const GET: RequestHandler = async ({ cookies }) => {
         if (!isValidSchedule(league.schedule)) {
             console.log('Invalid or missing schedule, generating new one...');
 
-            // Generate new schedule
             const newSchedule = generateLeagueSchedule(
                 league.total_teams,
                 maxGames[league.countries_code as keyof typeof maxGames]
             );
 
-            // Update league table with new schedule
+            // Write stays on the service key — no write policies yet.
             const { error: updateError } = await supabaseScaling
                 .from('leagues')
                 .update({ schedule: newSchedule })
@@ -83,7 +85,6 @@ export const GET: RequestHandler = async ({ cookies }) => {
             currentMatchweek: currentMatchweek,
             schedule: league.schedule as Schedule,
             redirect: league.draft_complete ? '/main' : '/draft'
-            // redirect: league.draft_complete ? '/teams/player/main' : '/draft'
         });
 
     } catch (error) {
