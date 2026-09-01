@@ -18,6 +18,7 @@
     import { hydrateNextOpponents } from '$lib/loading/schedule/hydrateSchedule';
     import { loadMatchResults } from '$lib/loading/results/hydrateResults';
 	import { loadLockedFixtureData, loadLockedPlayers } from '$lib/loading/players/lockedPlayers';
+	import { fetchAllWeights } from '$lib/loading/weights/loadWeights';
     
     const POST_LOGIN_URL = import.meta.env.VITE_AWS_POST_LOGIN_URL
 
@@ -127,6 +128,7 @@ async function signUserIn(values) {
                         const leagueData = await fetchLeagueInfo();
                         
                         if (leagueData) {
+                            fetchAllWeights()
                             const countriesCode = leagueData.countriesCode;
                             const numOfTeams = leagueData.numOfTeams;
                             setCountry(countriesCode)
