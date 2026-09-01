@@ -7,7 +7,7 @@
     import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { afterNavigate } from "$app/navigation";
     import { refreshServerToken } from "$lib/client/auth/tokenRefresh";
-    import { outfieldAverages, keeperAverages, defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
+    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
 	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
@@ -28,7 +28,7 @@
         Amplify.configure(amplifyConfig)
         checkUser()
         fetchAllWeights()
-        getAverages()
+        // getAverages()
 
         refreshInterval = setInterval(() => {
             if (userStore.user) refreshServerToken();
@@ -89,29 +89,29 @@
         }
     }
 
-    async function getAverages(){
-        const { data: outfieldData, outError } = await supabase
-            .from('outfield_per90_averages')
-            .select('*') 
+    // async function getAverages(){
+    //     const { data: outfieldData, outError } = await supabase
+    //         .from('outfield_per90_averages')
+    //         .select('*') 
 
-        if (outError){
-            console.error('Error retrieving outfield avgs: ', outError)
-        }
-        const { data: keeperData, keepError } = await supabase
-            .from('gk_per90_averages')
-            .select('*') 
+    //     if (outError){
+    //         console.error('Error retrieving outfield avgs: ', outError)
+    //     }
+    //     const { data: keeperData, keepError } = await supabase
+    //         .from('gk_per90_averages')
+    //         .select('*') 
 
-        if (keepError){
-            console.error('Error retrieving keeper avgs: ', keepError)
-        }
-        setAvgs(outfieldData, keeperData, outfieldAverages, keeperAverages)
-    }
+    //     if (keepError){
+    //         console.error('Error retrieving keeper avgs: ', keepError)
+    //     }
+    //     setAvgs(outfieldData, keeperData, outfieldAverages, keeperAverages)
+    // }
 
-    function setAvgs(outD, keepD, outAvgs, keepAvgs){
-        outAvgs['data'] = outD;
-        keepAvgs['data'] = keepD;
-        console.log(outfieldAverages, keeperAverages)
-    }
+    // function setAvgs(outD, keepD, outAvgs, keepAvgs){
+    //     outAvgs['data'] = outD;
+    //     keepAvgs['data'] = keepD;
+    //     console.log(outfieldAverages, keeperAverages)
+    // }
 
     function calculateImportance(weight) {
         if (weight >= 0) {
@@ -129,17 +129,17 @@
         }
     }
 
-    async function getWeightsFromTable(tableName, weightMap, impMap){
-        const { data, error } = await supabase
-            .from(tableName)
-            .select('*');
+    const WEIGHT_MAPS = {
+        getDefensiveScore: [defenseWeightMap, defenseImpMap],
+        getKeeperScore: [keepingWeightMap, keepingImpMap],
+        getPossessionScore: [possessionWeightMap, possessionImpMap],
+        getPassingScore: [passingWeightMap, passingImpMap],
+        getAttackingScore: [attackingWeightMap, attackingImpMap],
+        getFinishingScore: [finishingWeightMap, finishingImpMap]
+    };
 
-        if (error) {
-            console.error(`Error fetching weights from ${tableName}`)
-            return null;
-        }
-        
-        data.forEach(row => {
+    function applyWeights(rows, weightMap, impMap) {
+        rows.forEach(row => {
             const weights = Object.keys(row).reduce((acc, key) => {
                 if (key !== 'Position') {
                     acc[key] = row[key];
@@ -149,29 +149,32 @@
 
             weightMap[row.Position] = weights;
 
-            // Calculate and add importance to the impMap
             const importances = {};
             Object.keys(weights).forEach(stat => {
                 importances[stat] = calculateImportance(weights[stat]);
             });
             impMap[row.Position] = importances;
         });
-
-        // console.log(`Weight Map returned: `, weightMap);
-        // console.log(`Importance Map returned: `, impMap);
     }
 
-    async function fetchAllWeights(){
-        await Promise.all([
-            getWeightsFromTable('getDefensiveScore', defenseWeightMap, defenseImpMap),
-            getWeightsFromTable('getKeeperScore', keepingWeightMap, keepingImpMap),
-            getWeightsFromTable('getPossessionScore', possessionWeightMap, possessionImpMap),
-            getWeightsFromTable('getPassingScore', passingWeightMap, passingImpMap),
-            getWeightsFromTable('getAttackingScore', attackingWeightMap, attackingImpMap),
-            getWeightsFromTable('getFinishingScore', finishingWeightMap, finishingImpMap )
-        ])
+    async function fetchAllWeights() {
+        try {
+            const res = await fetch('/api/supabase/weights');
+            if (!res.ok) {
+                console.error('Failed to load weights:', res.status);
+                return;
+            }
 
-        weightsFetched = true
+            const { weights } = await res.json();
+
+            for (const [table, [weightMap, impMap]] of Object.entries(WEIGHT_MAPS)) {
+                applyWeights(weights[table] ?? [], weightMap, impMap);
+            }
+
+            weightsFetched = true;
+        } catch (err) {
+            console.error('Weights fetch failed:', err);
+        }
     }
 
 
