@@ -207,9 +207,10 @@
             if ((!player || !player.id || rosterPlayer.id !== player.id) && 
                 !foundPlayerIds.has(rosterPlayer.id)){
               if (rosterPlayer.injured?.category === 'injury' || rosterPlayer.injured?.category === 'suspended') {
-                console.log('fack');
                 continue;
-}
+              }
+              if (!swapKeepsLockedBuckets(rosterPlayer.id)) continue;
+
               foundPlayerIds.add(rosterPlayer.id);
               eligibleReplacements.push(rosterPlayer as Player);
             }
@@ -230,7 +231,7 @@
                 // Locked sub can't be promoted to starter — skip. (Only here, NOT in
                 // the roster-group scan, where a locked player is a current starter
                 // being offered for a legal same-bucket reposition.)
-                if (lockedPlayers.has(sub.id)) continue;
+                if (!swapKeepsLockedBuckets(sub.id)) continue;
                 if ((!player || !player.id || sub.id !== player.id) &&
                     !foundPlayerIds.has(sub.id)) {
                     foundPlayerIds.add(sub.id);
@@ -239,6 +240,30 @@
             }
         }
     }
+  }
+
+  // Is this player currently occupying a starting slot?
+  function isStarter(id: number): boolean {
+    for (const group of positionGroups) {
+      const groupData = playerTeam.selected?.[group];
+      if (!groupData) continue;
+      for (const positionData of Object.values(groupData) as any[]) {
+        for (const p of (positionData?.players ?? [])) {
+          if (p && typeof p !== 'number' && 'id' in p && p.id === id) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // A swap must leave BOTH players in the bucket they're already in.
+  // - locked candidate: must already be a starter to come in as a starter
+  // - locked current occupant: can only be displaced by another starter,
+  //   otherwise they'd be pushed to the bench
+  function swapKeepsLockedBuckets(candidateId: number): boolean {
+    if (lockedPlayers.has(candidateId) && !isStarter(candidateId)) return false;
+    if (player?.id && lockedPlayers.has(player.id) && !isStarter(candidateId)) return false;
+    return true;
   }
 
   function removePlayer(): void {
