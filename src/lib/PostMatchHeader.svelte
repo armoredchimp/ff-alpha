@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { playersByID } from "./stores/generic.svelte";
+    import { playersByID, getPlayerTeamName } from "./stores/generic.svelte";
     import { getTeamByDbId } from "./stores/teams.svelte";
     import { getPossessionColor, getPossessionPercentage } from "./utils/team";
 
@@ -12,6 +12,8 @@
         match?: any;
         details?: any;
     }>();
+
+    const playerTeam = getPlayerTeamName()
 
     const goalDetails = $derived(details?.goal_details ?? {});
     const chanceBreakdown = $derived(details?.chance_breakdown ?? {});
@@ -111,11 +113,11 @@
 
 <div class="match-container">
     <div class="score-header">
-        <div class="team-name home">{homeName}</div>
+        <div class="team-name home"><a href={homeName == playerTeam ? "/teams/player/main ": `/teams/${homeName}`}>{homeName}</a></div>
         <div class="score">
             {match?.home_score ?? 0} - {match?.away_score ?? 0}
         </div>
-        <div class="team-name away">{awayName}</div>
+        <div class="team-name away"><a href={awayName == playerTeam ? "/teams/player/main ": `/teams/${awayName}`}>{awayName}</a></div>
     </div>
 
     <div class="goals-section">

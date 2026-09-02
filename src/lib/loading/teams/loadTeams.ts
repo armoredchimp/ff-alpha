@@ -1,3 +1,4 @@
+import { getPlayerTeamName, setPlayerTeamName } from '$lib/stores/generic.svelte';
 import { teams, playerTeam } from '$lib/stores/teams.svelte';
 
 interface TeamApiResponse {
@@ -105,6 +106,9 @@ export async function loadTeamsData(): Promise<boolean> {
                 playerTeam.subs = data.playerTeam.subs || [];
                 playerTeam.unused = data.playerTeam.unused || [];
                 
+                setPlayerTeamName(playerTeam.name)
+                console.log('player team name:', getPlayerTeamName())
+
                 console.log('Player team loaded successfully');
             }
        

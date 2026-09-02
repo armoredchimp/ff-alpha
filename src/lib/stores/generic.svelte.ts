@@ -16,17 +16,21 @@ export let injuredByFantasyTeam: Record<string, Player[]> = $state({});
 export const lockedPlayers = $state<Set<number>>(new Set());
 export const lockedPlayerScores = $state<Record<number, any[]>>({});
 
-export let playerCall = $state(false)
+
 let playerPageInit = $state<boolean>(false)
-
-
-
 export function getPlayerInit() {
     return playerPageInit
 }
-
 export function setPlayerInit(data: boolean) {
     playerPageInit = data
+}
+
+let playerTeamName = $state<string>('')
+export function getPlayerTeamName() {
+    return playerTeamName
+}
+export function setPlayerTeamName(data: string) {
+    playerTeamName = data
 }
 
 export let teamIdsToName = $state({})

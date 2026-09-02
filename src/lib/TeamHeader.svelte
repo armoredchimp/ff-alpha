@@ -87,7 +87,7 @@
                     <span class="result-score">{team.lastResult.goalsFor} - {team.lastResult.goalsAgainst}</span>
                 </div>
                 <div>
-                    <button><a href="/teams/{computer ? team.name.toLowerCase() : "player"}/last">View Details</a></button>
+                    <button><a href="/postmatch/{team.lastResult.matchId}">View Details</a></button>
                 </div>
                 <div class="result-details">
                     <span class="detail-item">Chances: {Math.round(team.lastResult.chancePoints / 15)} - {Math.round(team.lastResult.chancePointsOpp / 15)}</span>
