@@ -13,7 +13,10 @@
         details?: any;
     }>();
 
-    const playerTeam = getPlayerTeamName()
+    const playerTeamName = getPlayerTeamName()
+    function teamHref(name: string): string {
+        return name === playerTeamName ? '/teams/player/main' : `/teams/${name}`;
+    }
 
     const goalDetails = $derived(details?.goal_details ?? {});
     const chanceBreakdown = $derived(details?.chance_breakdown ?? {});
@@ -40,7 +43,7 @@
         const away = posBreakdown.away;
         if (!home || !away) return [];
 
-        const insights: { text: string; side: 'home' | 'away'; level: number }[] = [];
+        const insights: { team: string; text: string; side: 'home' | 'away'; level: number }[] = [];
 
         const groups: { key: 'midfielders' | 'attackers' | 'defenders'; hi: string; lo: string }[] = [
             { key: 'midfielders', hi: 'dominated the possession battle', lo: 'won the midfield possession battle' },
@@ -50,34 +53,34 @@
 
         for (const g of groups) {
             const diff = home.byGroup[g.key] - away.byGroup[g.key];
-            if (diff >= 6) insights.push({ text: `${homeName}'s ${g.key} ${g.hi}`, side: 'home', level: 4 });
-            else if (diff >= 3) insights.push({ text: `${homeName}'s ${g.key} ${g.lo}`, side: 'home', level: 3 });
-            else if (diff <= -6) insights.push({ text: `${awayName}'s ${g.key} ${g.hi}`, side: 'away', level: 4 });
-            else if (diff <= -3) insights.push({ text: `${awayName}'s ${g.key} ${g.lo}`, side: 'away', level: 3 });
+            if (diff >= 6) insights.push({ team: homeName, text: `'s ${g.key} ${g.hi}`, side: 'home', level: 4 });
+            else if (diff >= 3) insights.push({ team: homeName, text: `'s ${g.key} ${g.lo}`, side: 'home', level: 3 });
+            else if (diff <= -6) insights.push({ team: awayName, text: `'s ${g.key} ${g.hi}`, side: 'away', level: 4 });
+            else if (diff <= -3) insights.push({ team: awayName, text: `'s ${g.key} ${g.lo}`, side: 'away', level: 3 });
         }
 
         return insights;
     });
 
     // ---- Chance creation insights ----
-    function getChanceInsight(teamName: string, group: string, val: number): { text: string; level: number } | null {
+    function getChanceInsight(group: string, val: number): { text: string; level: number } | null {
         if (group === 'attackers') {
-            if (val <= 12) return { text: `${teamName}'s attackers created very little`, level: 1 };
-            if (val <= 25) return { text: `${teamName}'s attackers generated a moderate number of chances`, level: 2 };
-            if (val <= 40) return { text: `${teamName}'s attackers were a constant threat`, level: 3 };
-            return { text: `${teamName}'s attackers were relentless in chance creation`, level: 4 };
+            if (val <= 12) return { text: `'s attackers created very little`, level: 1 };
+            if (val <= 25) return { text: `'s attackers generated a moderate number of chances`, level: 2 };
+            if (val <= 40) return { text: `'s attackers were a constant threat`, level: 3 };
+            return { text: `'s attackers were relentless in chance creation`, level: 4 };
         }
         if (group === 'midfielders') {
-            if (val <= 12) return { text: `${teamName}'s midfielders offered little going forward`, level: 1 };
-            if (val <= 25) return { text: `${teamName}'s midfielders contributed some chances`, level: 2 };
-            if (val <= 40) return { text: `${teamName}'s midfielders drove a lot of the attacking play`, level: 3 };
-            return { text: `${teamName}'s midfielders were the engine of the attack`, level: 4 };
+            if (val <= 12) return { text: `'s midfielders offered little going forward`, level: 1 };
+            if (val <= 25) return { text: `'s midfielders contributed some chances`, level: 2 };
+            if (val <= 40) return { text: `'s midfielders drove a lot of the attacking play`, level: 3 };
+            return { text: `'s midfielders were the engine of the attack`, level: 4 };
         }
         if (group === 'defenders') {
             if (val <= 12) return null;
-            if (val <= 25) return { text: `${teamName}'s defenders chipped in with some chances`, level: 2 };
-            if (val <= 40) return { text: `${teamName}'s defenders were surprisingly productive going forward`, level: 3 };
-            return { text: `${teamName}'s defenders were a major source of chance creation`, level: 4 };
+            if (val <= 25) return { text: `'s defenders chipped in with some chances`, level: 2 };
+            if (val <= 40) return { text: `'s defenders were surprisingly productive going forward`, level: 3 };
+            return { text: `'s defenders were a major source of chance creation`, level: 4 };
         }
         return null;
     }
@@ -88,19 +91,20 @@
         const away = chanceBreakdown.away;
         if (!home || !away) return [];
 
-        const results: { text: string; side: 'home' | 'away'; level: number }[] = [];
+        const results: { team: string; text: string; side: 'home' | 'away'; level: number }[] = [];
 
         for (const [side, dataObj, name] of [['home', home, homeName], ['away', away, awayName]] as const) {
             let best: { text: string; level: number } | null = null;
             for (const group of ['attackers', 'midfielders', 'defenders'] as const) {
-                const r = getChanceInsight(name, group, dataObj.byGroup[group]);
+                const r = getChanceInsight(group, dataObj.byGroup[group]);
                 if (r && (!best || r.level > best.level)) best = r;
             }
             if (best && best.level >= 2) {
-                results.push({ ...best, side });
+                results.push({ ...best, team: name, side });
             } else {
                 results.push({
-                    text: `${name} struggled to create meaningful chances throughout the match`,
+                    team: name,
+                    text: ` struggled to create meaningful chances throughout the match`,
                     side,
                     level: 1
                 });
@@ -113,11 +117,11 @@
 
 <div class="match-container">
     <div class="score-header">
-        <div class="team-name home"><a href={homeName == playerTeam ? "/teams/player/main ": `/teams/${homeName}`}>{homeName}</a></div>
+        <div class="team-name home"><a href={teamHref(homeName)}>{homeName}</a></div>
         <div class="score">
             {match?.home_score ?? 0} - {match?.away_score ?? 0}
         </div>
-        <div class="team-name away"><a href={awayName == playerTeam ? "/teams/player/main ": `/teams/${awayName}`}>{awayName}</a></div>
+        <div class="team-name away"><a href={teamHref(awayName)}>{awayName}</a></div>
     </div>
 
     <div class="goals-section">
@@ -127,11 +131,19 @@
                     <div class="goal-entry">
                         <div class="goal-main">
                             <span class="minute">{goal.minute}'</span>
-                            <span class="scorer">{goal.scorerName}</span>
+                            <span class="scorer">
+                                {#if goal.scorerPlayerId}
+                                    <a href={`/player/${goal.scorerPlayerId}`}>{goal.scorerName}</a>
+                                {:else}
+                                    {goal.scorerName}
+                                {/if}
+                            </span>
                         </div>
                         {#if goal.assister}
                             {@const assister = playersByID[goal.assister]}
-                            <span class="assister">Assist: {assister?.player_name}</span>
+                            <span class="assister">
+                                Assist: <a href={`/player/${goal.assister}`}>{assister?.player_name}</a>
+                            </span>
                         {/if}
                     </div>
                 {/each}
@@ -145,12 +157,20 @@
                 {#each awayGoals as goal}
                     <div class="goal-entry">
                         <div class="goal-main">
-                            <span class="scorer">{goal.scorerName}</span>
+                            <span class="scorer">
+                                {#if goal.scorerPlayerId}
+                                    <a href={`/player/${goal.scorerPlayerId}`}>{goal.scorerName}</a>
+                                {:else}
+                                    {goal.scorerName}
+                                {/if}
+                            </span>
                             <span class="minute">{goal.minute}'</span>
                         </div>
                         {#if goal.assister}
                             {@const assister = playersByID[goal.assister]}
-                            <span class="assister">Assist: {assister?.player_name}</span>
+                            <span class="assister">
+                                Assist: <a href={`/player/${goal.assister}`}>{assister?.player_name}</a>
+                            </span>
                         {/if}
                     </div>
                 {/each}
@@ -163,23 +183,23 @@
     {#if posInsights.length > 0}
         <div class="pos-insights">
             <span class="section-label">Possession</span>
-            {#each posInsights as insight}
-                <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
-                    <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
-                    {insight.text}
-                </div>
-            {/each}
+                {#each posInsights as insight}
+                    <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
+                        <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
+                        <span><a href={teamHref(insight.team)}>{insight.team}</a>{insight.text}</span>
+                    </div>
+                {/each}
         </div>
     {/if}
 
     {#if chanceInsights.length > 0}
         <div class="pos-insights">
             <span class="section-label">Chance Creation</span>
-            {#each chanceInsights as insight}
-                <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
-                    <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
-                    {insight.text}
-                </div>
+                {#each chanceInsights as insight}
+                    <div class="pos-insight" style="color: {getInsightColor(insight.side, insight.level)};">
+                        <span class="pos-dot" style="background: {getInsightColor(insight.side, 4)};"></span>
+                        <span><a href={teamHref(insight.team)}>{insight.team}</a>{insight.text}</span>
+                    </div>
             {/each}
         </div>
     {/if}
@@ -220,6 +240,21 @@
         color: #dc2626;
     }
  
+    .team-name a,
+    .scorer a,
+    .assister a,
+    .pos-insight a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .team-name a:hover,
+    .scorer a:hover,
+    .assister a:hover,
+    .pos-insight a:hover {
+        text-decoration: underline;
+    }
+
     .score {
         font-size: 1.75rem;
         font-weight: 700;
