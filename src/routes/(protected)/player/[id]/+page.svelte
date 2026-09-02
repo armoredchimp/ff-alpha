@@ -4,6 +4,7 @@
     import { getCountryUrl } from '$lib/data/countryImages';
     import { calculateAge } from '$lib/utils';
     import { getSeasonID } from '$lib/stores/league.svelte';
+    import { clubsByName } from '$lib/stores/generic.svelte';
     import RecentMatchesSection from '$lib/RecentMatchesSection.svelte';
 
     let { data } = $props();
@@ -124,7 +125,7 @@
                 <div class="player-info-top">
                     <h1>{player.display_name}</h1>
                     {#if frontend_player?.player_team}
-                        <span class="player-team">{frontend_player.player_team}</span>
+                        <span class="player-team"><a href="/clubs/{clubsByName[frontend_player.player_team]}">{frontend_player.player_team}</a></span>
                     {/if}
                 </div>
                 <div class="player-details">
@@ -295,6 +296,10 @@
         color: #aaa;
         font-weight: 400;
         white-space: nowrap;
+    }
+
+    .player-team:hover {
+        text-decoration: underline;
     }
 
     .section-title {
