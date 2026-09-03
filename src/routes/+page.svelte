@@ -217,7 +217,15 @@ async function handlePostLeagueLoad(leagueData) {
                 }
                 delay(100);
                 loadLockedFixtureData()
-                hydrateManagers();
+                const reassignments = hydrateManagers();
+                console.log('reassignments:', reassignments);
+                if (reassignments.length > 0) {
+                    fetch('/api/supabase/manager_reassign', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ assignments: reassignments })
+                    }).catch((err) => console.error('Failed to persist manager reassignments:', err));
+                }
                 delay(100);
                 try {
                   if(leagueData.currentMatchweek){
