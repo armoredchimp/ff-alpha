@@ -7,9 +7,7 @@
     import { getCurrentUser, signOut } from "aws-amplify/auth";
     import { afterNavigate } from "$app/navigation";
     import { refreshServerToken } from "$lib/client/auth/tokenRefresh";
-    import { defenseWeightMap, passingWeightMap, possessionWeightMap, attackingWeightMap, keepingWeightMap, finishingWeightMap, defenseImpMap, passingImpMap, possessionImpMap, attackingImpMap, keepingImpMap, finishingImpMap } from "$lib/stores/generic.svelte";
 	import { draft } from "$lib/stores/draft.svelte";
-	import { managers } from "$lib/stores/generic.svelte";
 	import { userStore, setUser, getUser, resetUserStore } from "$lib/stores/userStore.svelte";
 	import { goto, invalidateAll } from "$app/navigation";
 	import LineupCountdown from "$lib/LineupCountdown.svelte";

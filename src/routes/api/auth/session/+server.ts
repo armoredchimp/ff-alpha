@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
             return json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        // Identity comes from the verified token, never the request body.
+        
         const sessionData = {
             userId: claims.sub as string,
             username: (claims.email as string) ?? '',
@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
         cookies.set('auth-session', JSON.stringify(sessionData), {
             path: '/',
             httpOnly: true,
-            secure: false,   // set true in production
+            secure: true,   
             sameSite: 'strict',
             maxAge: 60 * 60 * 24 * 7
         });
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     }
 };
 
-/** Refresh the stored token. Only accepts a token — nothing else is settable. */
+
 export const PATCH: RequestHandler = async ({ request, cookies }) => {
     try {
         const { idToken } = await request.json();
@@ -69,7 +69,7 @@ export const PATCH: RequestHandler = async ({ request, cookies }) => {
         }), {
             path: '/',
             httpOnly: true,
-            secure: false,
+            secure: true,
             sameSite: 'strict',
             maxAge: 60 * 60 * 24 * 7
         });
