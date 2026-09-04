@@ -1,9 +1,9 @@
 export const formationConfig = {
     '4-4-2': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
-            ['Centre Back', 2, 4], 
+            ['Centre Back', 2, 4],
             ['Right Back', 1, 5]
         ],
         ['midfielders',
@@ -17,9 +17,9 @@ export const formationConfig = {
     ],
     '4-3-3': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
-            ['Centre Back', 2, 4], 
+            ['Centre Back', 2, 4],
             ['Right Back', 1, 5]
         ],
         ['midfielders',
@@ -33,9 +33,9 @@ export const formationConfig = {
     ],
     '4-1-2-2-1': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
-            ['Centre Back', 2, 4], 
+            ['Centre Back', 2, 4],
             ['Right Back', 1, 5]
         ],
         ['midfielders',
@@ -48,40 +48,55 @@ export const formationConfig = {
             ['Right Wing', 1, 17]
         ]
     ],
-    '3-4-2-1':[
+    '3-4-2-1': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
-          ['Centre Back', 3, 4]
+        ['defenders',
+            ['Centre Back', 3, 4]
         ],
         ['midfielders',
-          ['Left-Mid', 1, 9],
-          ['Central Midfield', 2, 10],
-          ['Right-Mid', 1, 11]
+            ['Left-Mid', 1, 9],
+            ['Central Midfield', 2, 10],
+            ['Right-Mid', 1, 11]
         ],
         ['attackers',
-          ['Centre Forward', 1, 16],
-          ['Attacking Midfield', 2, 13]  
+            ['Centre Forward', 1, 16],
+            ['Attacking Midfield', 2, 13]
+        ]
+    ],
+    '3-4-1-2': [
+        ['keepers', ['Goalkeeper', 1, 1]],
+        ['defenders',
+            ['Centre Back', 3, 4]
+        ],
+        ['midfielders',
+            ['Left-Mid', 1, 9],
+            ['Central Midfield', 2, 10],
+            ['Right-Mid', 1, 11]
+        ],
+        ['attackers',
+            ['Centre Forward', 2, 16],
+            ['Attacking Midfield', 1, 13]
         ]
     ],
     '3-5-2': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
-          ['Centre Back', 3, 4]
+        ['defenders',
+            ['Centre Back', 3, 4]
         ],
         ['midfielders',
-          ['Left-Mid', 1, 9],
-          ['Central Midfield', 2, 10],
-          ['Right-Mid', 1, 11],
-          ['Defensive Midfield', 1, 7]
+            ['Left-Mid', 1, 9],
+            ['Central Midfield', 2, 10],
+            ['Right-Mid', 1, 11],
+            ['Defensive Midfield', 1, 7]
         ],
         ['attackers',
-          ['Centre Forward', 2, 16]
+            ['Centre Forward', 2, 16]
         ]
-      ],
+    ],
 
     '5-3-2': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
             ['Centre Back', 3, 4],
             ['Right Back', 1, 5]
@@ -92,11 +107,26 @@ export const formationConfig = {
         ['attackers',
             ['Centre Forward', 2, 16]
         ]
+    ],
+    '5-4-1': [
+        ['keepers', ['Goalkeeper', 1, 1]],
+        ['defenders',
+            ['Left Back', 1, 3],
+            ['Centre Back', 3, 4],
+            ['Right Back', 1, 5]
         ],
-
+        ['midfielders',
+            ['Central Midfield', 2, 10],
+            ['Right-Mid', 1, 11],
+            ['Left-Mid', 1, 9],
+        ],
+        ['attackers',
+            ['Centre Forward', 1, 16]
+        ]
+    ],
     '3-4-3': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Centre Back', 3, 4]
         ],
         ['midfielders',
@@ -109,11 +139,10 @@ export const formationConfig = {
             ['Centre Forward', 1, 16],
             ['Right Wing', 1, 17]
         ]
-        ],
-
-    '4-2-3-1': [
+    ],
+    '4-2-3-1 DM': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
             ['Centre Back', 2, 4],
             ['Right Back', 1, 5]
@@ -127,11 +156,27 @@ export const formationConfig = {
         ['attackers',
             ['Centre Forward', 1, 16]
         ]
+    ],
+    '4-2-3-1': [
+        ['keepers', ['Goalkeeper', 1, 1]],
+        ['defenders',
+            ['Left Back', 1, 3],
+            ['Centre Back', 2, 4],
+            ['Right Back', 1, 5]
         ],
-
+        ['midfielders',
+            ['Central Midfield', 2, 10],
+        ],
+        ['attackers',
+            ['Centre Forward', 1, 16],
+            ['Attacking Midfield', 1, 13],
+            ['Left Wing', 1, 15],
+            ['Right Wing', 1, 17]
+        ]
+    ],
     '4-2-2-2': [
         ['keepers', ['Goalkeeper', 1, 1]],
-        ['defenders', 
+        ['defenders',
             ['Left Back', 1, 3],
             ['Centre Back', 2, 4],
             ['Right Back', 1, 5]
@@ -143,6 +188,23 @@ export const formationConfig = {
         ],
         ['attackers',
             ['Centre Forward', 2, 16]
+        ]
+    ],
+    '4-1-4-1': [
+        ['keepers', ['Goalkeeper', 1, 1]],
+        ['defenders',
+            ['Left Back', 1, 3],
+            ['Centre Back', 2, 4],
+            ['Right Back', 1, 5]
+        ],
+        ['midfielders',
+            ['Left-Mid', 1, 9],
+            ['Central Midfield', 2, 10],
+            ['Right-Mid', 1, 11],
+            ['Defensive Midfield', 1, 7],
+        ],
+        ['attackers',
+            ['Centre Forward', 1, 16]
         ]
     ]
 }
